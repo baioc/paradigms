@@ -1,6 +1,9 @@
+#include <assert.h>
+
 template <typename T>
 Stack<T>::Stack(int size) : _index(0), _size(size)
 {
+	assert(size > 0);
 	_elements = new int [size];
 }
 
@@ -13,17 +16,13 @@ Stack<T>::~Stack(void)
 template <typename T>
 T Stack<T>::pop(void)
 {
-	if (_index > 0)
-		return _elements[--_index];
-	else
-		return _elements[0];	// @TODO
+	assert(_index > 0);
+	return _elements[--_index];
 }
 
 template <typename T>
-void Stack<T>::push(const T value)
+void Stack<T>::push(T element)
 {
-	if (_index < _size)
-		_elements[_index++] = value;
-	else
-		return;	// @TODO
+	assert(_index < _size);
+	_elements[_index++] = element;
 }

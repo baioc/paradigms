@@ -61,7 +61,7 @@ public class Complex implements Comparable<Complex> {
 	}
 
 	public double mag() {
-		return Math.sqrt(Math.pow(real, 2) + Marh.pow(imaginary, 2));
+		return Math.sqrt(Math.pow(real, 2) + Math.pow(imaginary, 2));
 	}
 
 	public double angle() {
@@ -84,16 +84,16 @@ public class Complex implements Comparable<Complex> {
 		double mag = this.mag() * other.mag();
 		double angle = this.angle() + other.angle();
 
-		this.real = mag * cos(angle);
-		this.imaginary = mag * sin(angle);
+		this.real = mag * Math.cos(angle);
+		this.imaginary = mag * Math.sin(angle);
 	}
 
 	public void div(final Complex other) {
 		double mag = this.mag() / other.mag();
 		double angle = this.angle() - other.angle();
 
-		this.real = mag * cos(angle);
-		this.imaginary = mag * sin(angle);
+		this.real = mag * Math.cos(angle);
+		this.imaginary = mag * Math.sin(angle);
 	}
 
 	public Complex conjugate() {
@@ -122,19 +122,19 @@ public class Complex implements Comparable<Complex> {
 	// OPERATIONS TEST
 	public static void main(String[] args) {
 		Complex z1 = new Complex(60, 80);
-		System.out.printf("%s -> %.2f(%.2f)\n", z1.toString(), z1.mag(), toDegrees(z1.angle()));
+		System.out.printf("%s -> %.2f(%.2f)\n", z1.toString(), z1.mag(), Math.toDegrees(z1.angle()));
 
 		z1.sub(new Complex(55, 73));
-		System.out.printf("%s -> %.2f(%.2f)\n", z1.toString(), z1.mag(), toDegrees(z1.angle()));
+		System.out.printf("%s -> %.2f(%.2f)\n", z1.toString(), z1.mag(), Math.toDegrees(z1.angle()));
 
 		Complex z2 = z1.conjugate();
-		System.out.printf("%s -> %.2f(%.2f)\n", z2.toString(), z2.mag(), toDegrees(z2.angle()));
+		System.out.printf("%s -> %.2f(%.2f)\n", z2.toString(), z2.mag(), Math.toDegrees(z2.angle()));
 
 		z1.mult(z2);
-		System.out.printf("%s -> %.2f(%.2f)\n", z1.toString(), z1.mag(), toDegrees(z1.angle()));
+		System.out.printf("%s -> %.2f(%.2f)\n", z1.toString(), z1.mag(), Math.toDegrees(z1.angle()));
 
 		z1.div(z2);
-		System.out.printf("%s -> %.2f(%.2f)\n", z1.toString(), z1.mag(), toDegrees(z1.angle()));
+		System.out.printf("%s -> %.2f(%.2f)\n", z1.toString(), z1.mag(), Math.toDegrees(z1.angle()));
 	}
 
 }

@@ -10,7 +10,7 @@ class Stack {
 		~Stack(void);
 
 		T pop(void);
-		void push(const T);
+		void push(T);
 
 	private:
 		T *_elements;
