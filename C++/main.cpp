@@ -1,6 +1,6 @@
 #include "stack.hpp"
 
-#include <stdio.h>
+#include <iostream>
 
 
 int main(int argc, char const *argv[])
@@ -14,11 +14,11 @@ int main(int argc, char const *argv[])
 	s->push(4);
 	// s->push(5);	// overflows
 
-	printf("%d\n", s->pop());
-	printf("%d\n", s->pop());
-	printf("%d\n", s->pop());
-	printf("%d\n", s->pop());
-	// printf("%d\n", s->pop());	// underflows
+	std::cout << s->pop() << "\n";
+	std::cout << s->pop() << "\n";
+	std::cout << s->pop() << "\n";
+	std::cout << s->pop() << std::endl;
+	// std::cout << s->pop() << "\n"; // underflows
 
 	return 0;
 }
