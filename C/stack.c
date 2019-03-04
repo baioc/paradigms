@@ -29,7 +29,8 @@ void stack_free(struct stack *s)
 	free(s->elements);
 }
 
-static void stack_grow(struct stack *s) {
+static void stack_grow(struct stack *s)
+{
 	s->depth *= 2;
 	s->elements = realloc(s->elements, s->depth * s->type_size);
 }

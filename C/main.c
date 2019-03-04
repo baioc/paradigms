@@ -24,15 +24,55 @@ int my_strcmp(const void *s1, const void *s2)
 	return strcmp(c1, c2);
 }
 
+int fibonacci(int n)
+{
+	int current = 0;
+	int next = 1;
+	int result = 1;
+
+	for (int i = 0; i < n; ++i) {
+		result = current + next;
+		current = next;
+		next = result;
+	}
+
+	return result;
+}
+
+void test_fib(void)
+{
+	{
+		int n = 16;
+		for (int i = 0; i <= n; ++i) {
+			#if DEBUG
+				printf("fib(%d) = %d\n", i, fibonacci(i));
+			#endif // DEBUG
+		}
+	}
+
+	{
+		int f = 0, i = 0, n = 32768;
+		while (f <= n) {
+			f = fibonacci(i++);
+			#if DEBUG
+				printf("fib(%d) = %d <= %d\n", i, f, n);
+			#endif // DEBUG
+		}
+	}
+}
+
 void test_swap(void)
 {
 	int x = 5, y = 7;
 	swap(&x, &y, sizeof(x));
 	assert(x == 7 && y == 5);
 
-	char *s1 = "Hello, generic ", *s2 = "World!";
+	char *s1 = "Hello, generic", *s2 = "World!";
 	swap(&s1, &s2, sizeof(s1));
-	assert(strcmp(s1, "World!") == 0 && strcmp(s2, "Hello, generic ") == 0);
+	assert(strcmp(s1, "World!") == 0 && strcmp(s2, "Hello, generic") == 0);
+	#if DEBUG
+		printf("%s %s\n", s2, s1);
+	#endif // DEBUG
 }
 
 void test_search(void)
@@ -60,7 +100,8 @@ void test_search(void)
 	}
 }
 
-void strfree(void *str) {
+void strfree(void *str)
+{
 	free(*(char **)str);
 }
 
@@ -109,6 +150,7 @@ void test_stack(void)
 
 int main(int argc, char const *argv[])
 {
+	test_fib();
 	test_swap();
 	test_search();
 	test_stack();

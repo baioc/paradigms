@@ -18,7 +18,7 @@ int main(int argc, char const *argv[])
 	printf("%d\n", s->pop());
 	printf("%d\n", s->pop());
 	printf("%d\n", s->pop());
-	printf("%d\n", s->pop());	// underflows
+	// printf("%d\n", s->pop());	// underflows
 
 	return 0;
 }

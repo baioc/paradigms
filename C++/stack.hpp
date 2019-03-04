@@ -19,6 +19,7 @@ class Stack {
 };
 
 #include "stack.ipp"
+// ~.inc~
 
 }
 
