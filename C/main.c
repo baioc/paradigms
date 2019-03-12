@@ -5,6 +5,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
@@ -105,6 +106,46 @@ void strfree(void *str)
 	free(*(char **)str);
 }
 
+bool balanced(const char *string)
+{
+	struct stack brackets;
+	stack_new(&brackets, 2, sizeof(char), NULL);
+
+	size_t length = strlen(string);
+	for (int i = 0; i < length; ++i) {
+		char c = string[i];
+
+		if (c == '(' || c == '[' || c == '{') {
+			stack_push(&brackets, &c);
+
+		} else if (c == ')' || c == ']' || c == '}') {
+			if (stack_empty(&brackets)) {
+				stack_free(&brackets);
+				return false;
+
+			} else {
+				char last_open;
+				stack_pop(&brackets, &last_open);
+
+				if ((last_open == '(' && c != ')')
+					|| (last_open == '[' && c != ']')
+					|| (last_open == '{' && c != '}')) {
+					stack_free(&brackets);
+					return false;
+				}
+			}
+		}
+	}
+
+	if (!stack_empty(&brackets)) {
+		stack_free(&brackets);
+		return false;
+	}
+
+	stack_free(&brackets);
+	return true;
+}
+
 void test_stack(void)
 {
 	{
@@ -119,7 +160,7 @@ void test_stack(void)
 			int temp;
 			stack_pop(&s, &temp);
 			#if DEBUG
-				printf("%d (%d/%d)\n", temp, s.index+1, s.depth);
+				printf("%d (%d/%d)\n", temp, s.current_size+1, s.allocated_size);
 			#endif // DEBUG
 		}
 
@@ -129,7 +170,7 @@ void test_stack(void)
 	{
 		const char *names[] = {"Al", "Bob", "Carl"};
 		struct stack s;
-		stack_new(&s, 2, sizeof(char *), strfree);
+		stack_new(&s, 1, sizeof(char *), strfree);
 
 		for (int i = 0; i < ARRAY_SIZE(names); ++i) {
 			char *copy = (char*) malloc(sizeof(char*));	// no strdup
@@ -144,9 +185,37 @@ void test_stack(void)
 		#endif // DEBUG
 		free(name);
 
+		name = *((char **)stack_top(&s));
+		#if DEBUG
+			printf("%s\n", name);
+		#endif // DEBUG
+
 		stack_free(&s);
+
+		// stack top was freed, this pointer is now dangling
+		#if DEBUG
+			printf("%s\n", name);
+		#endif // DEBUG
+	}
+
+	{
+		const char* cases[] = {
+			"()",
+			")",
+			"([[]]{[]}{()}).",
+			"([)()(])({}{)(})",
+			"[[](){](()",
+		};
+
+		for (int i = 0; i < 5; ++i) {
+			bool b = balanced(cases[i]);
+			#if DEBUG
+				printf("Case %d is %s.\n", i, b ? "balanced" : "not balanced");
+			#endif // DEBUG
+		}
 	}
 }
+
 
 int main(int argc, char const *argv[])
 {

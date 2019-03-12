@@ -13,7 +13,7 @@ void swap(void *a, void *b, int size)
 }
 
 void *lsearch(const void *key, const void *base, int length,
-			  int type_size, int (*cmpfn)(const void *, const void *))
+              int type_size, int (*cmpfn)(const void *, const void *))
 {
 	for (int i = 0; i < length; ++i) {
 		void *addr = (uint8_t *)base + i*type_size;
@@ -25,7 +25,7 @@ void *lsearch(const void *key, const void *base, int length,
 }
 
 void *my_bsearch(const void *key, const void *base, int length,
-				 int type_size, int (*cmpfn)(const void *, const void *))
+                 int type_size, int (*cmpfn)(const void *, const void *))
 {
 	int low = 0;
 	int high = length - 1;

@@ -1,53 +1,68 @@
 #include "stack.h"
 
+#include <stddef.h>
+#include <stdbool.h>
 #include <stdlib.h>
-#include <string.h>
 #include <assert.h>
+#include <string.h>
 
 
-void stack_new(struct stack *s, int depth,
-			   int type_size, void (*freefn)(void *))
+void stack_new(struct stack *s, int initial_size,
+               size_t size_type, void (*freefn)(void *))
 {
-	assert(depth > 0);
-	assert(type_size > 0);
+	assert(initial_size > 0);
 
-	s->depth = depth;
-	s->index = 0;
-	s->type_size = type_size;
+	s->current_size = 0;
+	s->allocated_size = initial_size;
+	s->size_type = size_type;
 	s->freefn = freefn;
 
-	s->elements = malloc(s->depth * s->type_size);
+	s->elements = malloc(s->allocated_size * s->size_type);
 	assert(s->elements != NULL);
 }
 
 void stack_free(struct stack *s)
 {
 	if (s->freefn != NULL) {
-		for (int i = 0; i < s->index; ++i)
-			s->freefn((char *) s->elements + i * s->type_size);
+		for (int i = 0; i < s->current_size; ++i)
+			s->freefn((char *) s->elements + i * s->size_type);
 	}
 	free(s->elements);
 }
 
 static void stack_grow(struct stack *s)
 {
-	s->depth *= 2;
-	s->elements = realloc(s->elements, s->depth * s->type_size);
+	s->allocated_size *= 2;
+	s->elements = realloc(s->elements, s->allocated_size * s->size_type);
+	assert(s->elements != NULL);
 }
 
-void stack_push(struct stack *s, void *elem_addr)
+void stack_push(struct stack *s, void *source)
 {
-	if (s->index == s->depth)
+	if (s->current_size >= s->allocated_size)
 		stack_grow(s);
 
-	void *target = (char *) s->elements + s->index * s->type_size;
-	memcpy(target, elem_addr, s->type_size);
-	s->index++;
+	void *target = (char *) s->elements + s->current_size * s->size_type;
+	memcpy(target, source, s->size_type);
+	s->current_size++;
 }
 
-void stack_pop(struct stack *s, void *elem_addr)
+void stack_pop(struct stack *s, void *sink)
 {
-	s->index--;
-	void *source = (char *) s->elements + s->index * s->type_size;
-	memcpy(elem_addr, source, s->type_size);
+	assert(s->current_size > 0);
+	s->current_size--;
+
+	void *source = (char *) s->elements + s->current_size * s->size_type;
+	memcpy(sink, source, s->size_type);
+}
+
+void *stack_top(const struct stack *s)
+{
+	assert(s->current_size > 0);
+	return (char *) s->elements + (s->current_size-1) * s->size_type;
+}
+
+bool stack_empty(const struct stack *s)
+{
+	return s->current_size <= 0;
 }
