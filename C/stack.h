@@ -12,7 +12,7 @@ struct stack {
 	void (*freefn)(void *);
 };
 
-void stack_new(struct stack *s, int initial_size,
+void stack_new(struct stack *s, int size,
                size_t size_type, void (*freefn)(void *));
 
 // frees the stack and all its elements applying freefn on each one

@@ -7,13 +7,13 @@
 #include <string.h>
 
 
-void stack_new(struct stack *s, int initial_size,
+void stack_new(struct stack *s, int size,
                size_t size_type, void (*freefn)(void *))
 {
-	assert(initial_size > 0);
+	assert(size > 0);
 
 	s->current_size = 0;
-	s->allocated_size = initial_size;
+	s->allocated_size = size;
 	s->size_type = size_type;
 	s->freefn = freefn;
 

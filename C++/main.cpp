@@ -5,20 +5,24 @@
 
 int main(int argc, char const *argv[])
 {
-	structures::Stack<int> stack = structures::Stack<int>(4);
-	structures::Stack<int> *s = &stack;
+	using namespace data_structures;
 
-	s->push(1);
-	s->push(2);
-	s->push(3);
-	s->push(4);
-	// s->push(5);	// overflows
+	// Stack<int> *stack = new Stack<int>(4); // unnecessary dynamic allocation
+	// Stack<int> s = *stack;
 
-	std::cout << s->pop() << "\n";
-	std::cout << s->pop() << "\n";
-	std::cout << s->pop() << "\n";
-	std::cout << s->pop() << std::endl;
-	// std::cout << s->pop() << "\n"; // underflows
+	// Stack<int> s = Stack<int>(4); // static initialization
+	// auto s = Stack<int>(4); // less verbose
+	Stack<int> s(4); // better static construction
+
+	for (int i = 0; i < s.size(); ++i) {
+		std::cout << "push > " << i << std::endl;
+		s.push(i);
+	}
+
+	while (!s.empty())
+		std::cout << s.pop() << " < popped" << std::endl;
+
+	// delete stack; // explicit destruction only needed if dynamically alloc'ed
 
 	return 0;
 }

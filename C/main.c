@@ -68,7 +68,7 @@ void test_swap(void)
 	swap(&x, &y, sizeof(x));
 	assert(x == 7 && y == 5);
 
-	char *s1 = "Hello, generic", *s2 = "World!";
+	const char *s1 = "Hello, generic", *s2 = "World!";
 	swap(&s1, &s2, sizeof(s1));
 	assert(strcmp(s1, "World!") == 0 && strcmp(s2, "Hello, generic") == 0);
 	#if DEBUG
@@ -90,8 +90,8 @@ void test_search(void)
 	}
 
 	{
-		char *notes[] = {"Ab", "B", "D", "F#", "Gb"};
-		char *fav_note = "B";
+		const char *notes[] = {"Ab", "B", "D", "F#", "Gb"};
+		const char *fav_note = "B";
 		char **found = lsearch(&fav_note, notes, ARRAY_SIZE(notes),
 							   sizeof(fav_note), my_strcmp);
 		assert(found != NULL);
@@ -127,9 +127,10 @@ bool balanced(const char *string)
 				char last_open;
 				stack_pop(&brackets, &last_open);
 
-				if ((last_open == '(' && c != ')')
-					|| (last_open == '[' && c != ']')
-					|| (last_open == '{' && c != '}')) {
+				if (   (last_open == '(' && c != ')')
+				    || (last_open == '[' && c != ']')
+				    || (last_open == '{' && c != '}')
+				   ) {
 					stack_free(&brackets);
 					return false;
 				}
