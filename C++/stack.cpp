@@ -19,8 +19,15 @@ int main(int argc, char const *argv[])
 		s.push(i);
 	}
 
-	while (!s.empty())
-		std::cout << s.pop() << " < popped" << std::endl;
+	auto t(std::move(s)); // move constructor
+	std::cout << "s has depth " << s.size() << std::endl;
+
+	while (!t.empty())
+		std::cout << t.pop() << " < popped" << std::endl;
+
+	Stack<int> u(8);
+	s = u; // copy assignment
+	std::cout << "s has depth " << s.size() << std::endl;
 
 	// delete stack; // explicit destruction only needed if dynamically alloc'ed
 
