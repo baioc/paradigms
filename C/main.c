@@ -1,7 +1,7 @@
 #include "generic.h"
 #include "stack.h"
 
-#include <stdio.h>
+#include <stdio.h>  	// printf
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -109,7 +109,7 @@ void strfree(void *str)
 bool balanced(const char *string)
 {
 	struct stack brackets;
-	stack_new(&brackets, 2, sizeof(char), NULL);
+	stack_init(&brackets, 2, sizeof(char), NULL);
 
 	size_t length = strlen(string);
 	for (int i = 0; i < length; ++i) {
@@ -120,8 +120,7 @@ bool balanced(const char *string)
 
 		} else if (c == ')' || c == ']' || c == '}') {
 			if (stack_empty(&brackets)) {
-				stack_free(&brackets);
-				return false;
+				goto FAIL;
 
 			} else {
 				char last_open;
@@ -131,20 +130,19 @@ bool balanced(const char *string)
 				    || (last_open == '[' && c != ']')
 				    || (last_open == '{' && c != '}')
 				   ) {
-					stack_free(&brackets);
-					return false;
+					goto FAIL;
 				}
 			}
 		}
 	}
 
-	if (!stack_empty(&brackets)) {
-		stack_free(&brackets);
-		return false;
+	if (stack_empty(&brackets)) {
+		stack_destroy(&brackets);
+		return true;
 	}
 
-	stack_free(&brackets);
-	return true;
+	FAIL: stack_destroy(&brackets);
+	return false;
 }
 
 void test_stack(void)
@@ -152,7 +150,7 @@ void test_stack(void)
 	{
 		int array[] = {-6, 0, 2, 3, 6, 7, 11};
 		struct stack s;
-		stack_new(&s, 4, sizeof(array[0]), NULL);
+		stack_init(&s, 4, sizeof(array[0]), NULL);
 
 		for (int i = 0; i < ARRAY_SIZE(array); ++i)
 			stack_push(&s, &array[i]);
@@ -165,13 +163,13 @@ void test_stack(void)
 			#endif // DEBUG
 		}
 
-		stack_free(&s);
+		stack_destroy(&s);
 	}
 
 	{
 		const char *names[] = {"Al", "Bob", "Carl"};
 		struct stack s;
-		stack_new(&s, 1, sizeof(char *), strfree);
+		stack_init(&s, 1, sizeof(char *), strfree);
 
 		for (int i = 0; i < ARRAY_SIZE(names); ++i) {
 			char *copy = (char*) malloc(sizeof(char*));	// no strdup
@@ -191,7 +189,7 @@ void test_stack(void)
 			printf("%s\n", name);
 		#endif // DEBUG
 
-		stack_free(&s);
+		stack_destroy(&s);
 
 		// stack top was freed, this pointer is now dangling
 		#if DEBUG
@@ -208,7 +206,7 @@ void test_stack(void)
 			"[[](){](()",
 		};
 
-		for (int i = 0; i < 5; ++i) {
+		for (int i = 0; i < ARRAY_SIZE(cases); ++i) {
 			bool b = balanced(cases[i]);
 			#if DEBUG
 				printf("Case %d is %s.\n", i, b ? "balanced" : "not balanced");
