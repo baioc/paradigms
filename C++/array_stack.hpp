@@ -1,65 +1,59 @@
-#ifndef STRUCTURES_ARRAY_STACK_H
-#define STRUCTURES_ARRAY_STACK_H
+#ifndef STRUCTURES_STACK_H
+#define STRUCTURES_STACK_H
 
 #include <cstdint>  	// std::size_t
-#include <algorithm>	// std::swap
+#include <algorithm>	// std::swap, std::copy
+
+#include <cassert>
+#include <stdexcept>	// C++ exceptions
+
 
 namespace structures {
 
 template <typename T>
-class ArrayStack {
+class Stack {
  public:
-	ArrayStack(); // uses DEFAULT_SIZE
-	explicit ArrayStack(int);
+	explicit Stack(int);
+	Stack(); // uses DEFAULT_SIZE
 	// rule of three
-	~ArrayStack();
-	ArrayStack(const ArrayStack&); // copy constructor
-	ArrayStack& operator=(ArrayStack); // copy assignment operator
+	~Stack();
+	Stack(const Stack&); // copy constructor
+	Stack& operator=(Stack); // copy assignment operator
 	// rule of five
-	ArrayStack(ArrayStack&&); // move constructor
-	ArrayStack& operator=(ArrayStack&&) noexcept; // move assignment operator
+	Stack(Stack&&); // move constructor
+	Stack& operator=(Stack&&) noexcept; // move assignment operator
 
 	void push(const T&);
 	T pop();
-	T& top();
-	std::size_t size() const;
-	std::size_t max_size() const;
+	T& top(); //! returns ref to internal dinamically allocated memory
 	bool empty() const;
 	bool full() const;
-	void clear();
+	std::size_t size() const;
+	void clear(); //! DO NOT use if T is a raw pointer, memory WILL LEAK
 	void pick(int);
 
  private:
 	static const auto DEFAULT_SIZE = 8u;
 
+	T *content_;
+	std::size_t current_size_;
+	std::size_t allocated_size_;
+
 	// rule of three/five and a half
-	friend void swap(ArrayStack<T>& a, ArrayStack<T>& b)
+	friend void swap(Stack<T>& a, Stack<T>& b)
 	{
 		using std::swap; // enables ADL
 		swap(a.content_, b.content_);
 		swap(a.current_size_, b.current_size_);
 		swap(a.allocated_size_, b.allocated_size_);
 	}
-
-	T *content_;
-	std::size_t current_size_;
-	std::size_t allocated_size_;
 };
 
 }	// namespace structures
 
-#endif	// STRUCTURES_ARRAY_STACK_H
-
-
-#include <cstdint>  	// std::size_t
-#include <stdexcept>	// C++ exceptions
-#include <algorithm>	// std::copy
-#include <cassert>
-
-using namespace structures;
 
 template <typename T>
-ArrayStack<T>::ArrayStack(int size):
+structures::Stack<T>::Stack(int size):
 	current_size_(0)
 {
 	assert(size > 0);
@@ -68,18 +62,18 @@ ArrayStack<T>::ArrayStack(int size):
 }
 
 template <typename T>
-ArrayStack<T>::ArrayStack():
-	ArrayStack(DEFAULT_SIZE)
+structures::Stack<T>::Stack():
+	Stack(DEFAULT_SIZE)
 {}
 
 template <typename T>
-ArrayStack<T>::~ArrayStack()
+structures::Stack<T>::~Stack()
 {
 	delete[] content_;	// frees each individual object
 }
 
 template <typename T>
-ArrayStack<T>::ArrayStack(const ArrayStack& origin):
+structures::Stack<T>::Stack(const Stack& origin):
 	current_size_(origin.current_size_),
 	allocated_size_(origin.allocated_size_)
 {
@@ -88,7 +82,7 @@ ArrayStack<T>::ArrayStack(const ArrayStack& origin):
 }
 
 template <typename T>
-ArrayStack<T>& ArrayStack<T>::operator=(ArrayStack origin)
+structures::Stack<T>& structures::Stack<T>::operator=(Stack origin)
 // if you're going to make a copy of something in a function,
 // then let the compiler do it in the parameter list (uses copy constructor)
 {
@@ -97,14 +91,14 @@ ArrayStack<T>& ArrayStack<T>::operator=(ArrayStack origin)
 }
 
 template <typename T>
-ArrayStack<T>::ArrayStack(ArrayStack&& other):
-	ArrayStack()
+structures::Stack<T>::Stack(Stack&& other):
+	Stack()
 {
 	swap(*this, other);
 }
 
 template <typename T>
-ArrayStack<T>& ArrayStack<T>::operator=(ArrayStack&& other) noexcept
+structures::Stack<T>& structures::Stack<T>::operator=(Stack&& other) noexcept
 {
 	swap(*this, other);
 	return *this;
@@ -112,7 +106,7 @@ ArrayStack<T>& ArrayStack<T>::operator=(ArrayStack&& other) noexcept
 
 template <typename T>
 // element may bind to either lvalue or rvalue reference
-void ArrayStack<T>::push(const T& element)
+void structures::Stack<T>::push(const T& element)
 {
 	if (full())
 		throw std::out_of_range("Stack overflow.");
@@ -121,7 +115,7 @@ void ArrayStack<T>::push(const T& element)
 }
 
 template <typename T>
-T ArrayStack<T>::pop()
+T structures::Stack<T>::pop()
 {
 	if (empty())
 		throw std::out_of_range("Stack underflow.");
@@ -130,7 +124,7 @@ T ArrayStack<T>::pop()
 }
 
 template <typename T>
-T& ArrayStack<T>::top()
+T& structures::Stack<T>::top()
 {
 	if (empty())
 		throw std::out_of_range("Stack has nothing on top.");
@@ -139,43 +133,38 @@ T& ArrayStack<T>::top()
 }
 
 template <typename T>
-inline std::size_t ArrayStack<T>::size() const
-{
-	return current_size_;
-}
-
-template <typename T>
-inline std::size_t ArrayStack<T>::max_size() const
-{
-	return allocated_size_;
-}
-
-template <typename T>
-inline bool ArrayStack<T>::empty() const
+inline bool structures::Stack<T>::empty() const
 {
 	return !(current_size_ > 0);
 }
 
 template <typename T>
-inline bool ArrayStack<T>::full() const
+inline bool structures::Stack<T>::full() const
 {
 	return !(current_size_ < allocated_size_);
 }
 
 template <typename T>
-void ArrayStack<T>::clear()
+inline std::size_t structures::Stack<T>::size() const
+{
+	return current_size_;
+}
+
+template <typename T>
+void structures::Stack<T>::clear()
 {
 	current_size_ = 0;
 }
 
 template <typename T>
-void ArrayStack<T>::pick(int offset)
+void structures::Stack<T>::pick(int offset)
 {
 	assert(offset >= 0);
-
 	int access = current_size_ - offset - 1;
 	if (access < 0)
 		throw std::out_of_range("Can't pick that far down the stack.");
 
 	push(content_[access]);
 }
+
+#endif	// STRUCTURES_STACK_H
