@@ -1,27 +1,27 @@
-// Copyright [2019] <Gabriel Baiocchi de Sant'Anna>
 #ifndef STRUCTURES_ARRAY_STACK_H
 #define STRUCTURES_ARRAY_STACK_H
 
 #include <cstdint>  	// std::size_t
+#include <algorithm>	// std::swap
 
 namespace structures {
 
 template <typename T>
 class ArrayStack {
-public:
+ public:
 	ArrayStack(); // uses DEFAULT_SIZE
 	explicit ArrayStack(int);
 	// rule of three
 	~ArrayStack();
 	ArrayStack(const ArrayStack&); // copy constructor
-	ArrayStack& operator=(const ArrayStack&); // copy assignment operator
+	ArrayStack& operator=(ArrayStack); // copy assignment operator
 	// rule of five
 	ArrayStack(ArrayStack&&); // move constructor
-	ArrayStack& operator=(ArrayStack&&); // move assignment operator
+	ArrayStack& operator=(ArrayStack&&) noexcept; // move assignment operator
 
 	void push(const T&);
 	T pop();
-	T& top() const;
+	T& top();
 	std::size_t size() const;
 	std::size_t max_size() const;
 	bool empty() const;
@@ -29,24 +29,37 @@ public:
 	void clear();
 	void pick(int);
 
-private:
+ private:
+	static const auto DEFAULT_SIZE = 8u;
+
+	// rule of three/five and a half
+	friend void swap(ArrayStack<T>& a, ArrayStack<T>& b)
+	{
+		using std::swap; // enables ADL
+		swap(a.content_, b.content_);
+		swap(a.current_size_, b.current_size_);
+		swap(a.allocated_size_, b.allocated_size_);
+	}
+
 	T *content_;
 	std::size_t current_size_;
 	std::size_t allocated_size_;
-
-	static const auto DEFAULT_SIZE = 32u;
 };
 
 }	// namespace structures
 
-#endif	// ifndef STRUCTURES_ARRAY_STACK_H
+#endif	// STRUCTURES_ARRAY_STACK_H
 
 
+#include <cstdint>  	// std::size_t
 #include <stdexcept>	// C++ exceptions
+#include <algorithm>	// std::copy
 #include <cassert>
 
+using namespace structures;
+
 template <typename T>
-structures::ArrayStack<T>::ArrayStack(int size):
+ArrayStack<T>::ArrayStack(int size):
 	current_size_(0)
 {
 	assert(size > 0);
@@ -55,85 +68,51 @@ structures::ArrayStack<T>::ArrayStack(int size):
 }
 
 template <typename T>
-structures::ArrayStack<T>::ArrayStack()
+ArrayStack<T>::ArrayStack():
+	ArrayStack(DEFAULT_SIZE)
+{}
+
+template <typename T>
+ArrayStack<T>::~ArrayStack()
 {
-	ArrayStack(DEFAULT_SIZE);
+	delete[] content_;	// frees each individual object
 }
 
 template <typename T>
-structures::ArrayStack<T>::~ArrayStack()
-{
-	delete[] content_;	// individual objects are NOT freed
-}
-
-template <typename T>
-structures::ArrayStack<T>::ArrayStack(const ArrayStack& origin)
+ArrayStack<T>::ArrayStack(const ArrayStack& origin):
+	current_size_(origin.current_size_),
+	allocated_size_(origin.allocated_size_)
 {
 	content_ = new T[origin.allocated_size_];
 	std::copy(origin.content_, origin.content_ + origin.allocated_size_, content_);
-
-	current_size_ = origin.current_size_;
-	allocated_size_ = origin.allocated_size_;
 }
 
 template <typename T>
-structures::ArrayStack<T>& structures::ArrayStack<T>::operator=(const ArrayStack& origin)
+ArrayStack<T>& ArrayStack<T>::operator=(ArrayStack origin)
+// if you're going to make a copy of something in a function,
+// then let the compiler do it in the parameter list (uses copy constructor)
 {
-	if (this == &origin) // self-assignment guard
-		return *this;
+	swap(*this, origin);
+    return *this;
+}
 
-	{ // destructor
-		delete[] content_;
-	}
+template <typename T>
+ArrayStack<T>::ArrayStack(ArrayStack&& other):
+	ArrayStack()
+{
+	swap(*this, other);
+}
 
-	{ // copy constructor
-		content_ = new T[origin.allocated_size_];
-		std::copy(origin.content_, origin.content_ + origin.allocated_size_, content_);
-
-		current_size_ = origin.current_size_;
-		allocated_size_ = origin.allocated_size_;
-	}
-
+template <typename T>
+ArrayStack<T>& ArrayStack<T>::operator=(ArrayStack&& other) noexcept
+{
+	swap(*this, other);
 	return *this;
 }
 
 template <typename T>
-structures::ArrayStack<T>::ArrayStack(ArrayStack&& other)
-{
-	content_ = other.content_;
-	current_size_ = other.current_size_;
-	allocated_size_ = other.allocated_size_;
-
-	other.content_ = nullptr;
-	other.current_size_ = 0;
-	other.allocated_size_ = 0;
-}
-
-template <typename T>
-structures::ArrayStack<T>& structures::ArrayStack<T>::operator=(ArrayStack&& other)
-{
-	if (this == &other)
-		return *this;
-
-	{ // destructor
-		delete[] content_;
-	}
-
-	{ // move constructor
-		content_ = other.content_;
-		current_size_ = other.current_size_;
-		allocated_size_ = other.allocated_size_;
-
-		other.content_ = nullptr;
-		other.current_size_ = 0;
-		other.allocated_size_ = 0;
-	}
-
-	return *this;
-}
-
-template <typename T>
-void structures::ArrayStack<T>::push(const T& element)
+// element may bind to either lvalue or rvalue reference
+void ArrayStack<T>::push(const T& element)
 {
 	if (full())
 		throw std::out_of_range("Stack overflow.");
@@ -142,7 +121,7 @@ void structures::ArrayStack<T>::push(const T& element)
 }
 
 template <typename T>
-T structures::ArrayStack<T>::pop()
+T ArrayStack<T>::pop()
 {
 	if (empty())
 		throw std::out_of_range("Stack underflow.");
@@ -151,7 +130,7 @@ T structures::ArrayStack<T>::pop()
 }
 
 template <typename T>
-T& structures::ArrayStack<T>::top() const
+T& ArrayStack<T>::top()
 {
 	if (empty())
 		throw std::out_of_range("Stack has nothing on top.");
@@ -160,37 +139,37 @@ T& structures::ArrayStack<T>::top() const
 }
 
 template <typename T>
-inline std::size_t structures::ArrayStack<T>::size() const
+inline std::size_t ArrayStack<T>::size() const
 {
 	return current_size_;
 }
 
 template <typename T>
-inline std::size_t structures::ArrayStack<T>::max_size() const
+inline std::size_t ArrayStack<T>::max_size() const
 {
 	return allocated_size_;
 }
 
 template <typename T>
-inline bool structures::ArrayStack<T>::empty() const
+inline bool ArrayStack<T>::empty() const
 {
 	return !(current_size_ > 0);
 }
 
 template <typename T>
-inline bool structures::ArrayStack<T>::full() const
+inline bool ArrayStack<T>::full() const
 {
 	return !(current_size_ < allocated_size_);
 }
 
 template <typename T>
-void structures::ArrayStack<T>::clear()
+void ArrayStack<T>::clear()
 {
 	current_size_ = 0;
 }
 
 template <typename T>
-void structures::ArrayStack<T>::pick(int offset)
+void ArrayStack<T>::pick(int offset)
 {
 	assert(offset >= 0);
 
