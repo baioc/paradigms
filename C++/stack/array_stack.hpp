@@ -1,5 +1,5 @@
-#ifndef STRUCTURES_STACK_H
-#define STRUCTURES_STACK_H
+#ifndef STRUCTURES_STACK_HPP
+#define STRUCTURES_STACK_HPP
 
 #include <cstdint>  	// std::size_t
 #include <algorithm>	// std::swap, std::copy
@@ -167,4 +167,4 @@ void structures::Stack<T>::pick(int offset)
 	push(content_[access]);
 }
 
-#endif	// STRUCTURES_STACK_H
+#endif	// STRUCTURES_STACK_HPP
