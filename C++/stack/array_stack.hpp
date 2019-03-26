@@ -151,7 +151,7 @@ inline std::size_t structures::Stack<T>::size() const
 }
 
 template <typename T>
-void structures::Stack<T>::clear()
+inline void structures::Stack<T>::clear()
 {
 	current_size_ = 0;
 }
