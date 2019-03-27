@@ -27,7 +27,6 @@ class Stack {
 	T pop();
 	T& top(); //! returns ref to internal dinamically allocated memory
 	bool empty() const;
-	bool full() const;
 	std::size_t size() const;
 	void clear(); //! DO NOT use if T is a raw pointer, memory WILL LEAK
 	void pick(int);
@@ -38,6 +37,8 @@ class Stack {
 	T *content_;
 	std::size_t current_size_;
 	std::size_t allocated_size_;
+
+	bool full() const;
 
 	// rule of three/five and a half
 	friend void swap(Stack<T>& a, Stack<T>& b)

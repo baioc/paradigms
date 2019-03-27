@@ -26,7 +26,6 @@ class Queue {
 	T dequeue();
 	T& back();
 	bool empty() const;
-	bool full() const;
 	std::size_t size() const;
 	void clear(); //! DO NOT use if T is a raw pointer, WILL LEAK MEMORY
 
@@ -38,6 +37,8 @@ class Queue {
 	std::size_t allocated_size_;
 	unsigned front_;
 	unsigned back_;
+
+	bool full() const;
 
 	friend void swap(Queue<T>& a, Queue<T>& b)
 	{
