@@ -3,6 +3,29 @@
 #include <iostream>
 
 
+template <typename T>
+void hanoi(int size, structures::Stack<T>& from,
+           structures::Stack<T>& to, structures::Stack<T>& aux)
+{
+	if (size > 1) {
+		hanoi(size - 1, from, aux, to);
+		hanoi(1, from, to, aux);
+		hanoi(size - 1, aux, to, from);
+	} else if (size == 1) {
+		to.push(from.pop());
+	} else {
+		return;
+	}
+}
+
+template <typename T>
+void hanoi(structures::Stack<T>& from, structures::Stack<T>& to)
+{
+	int n = from.size();
+	structures::Stack<T> aux(n);
+	hanoi(n, from, to, aux);
+}
+
 int main(int argc, char const *argv[])
 {
 	using namespace structures;
@@ -30,7 +53,14 @@ int main(int argc, char const *argv[])
 	}
 
 	std::cout << "before move, s has size " << s.size() << '\n';
-	auto t = std::move(s); // move
+
+	// move with class methods
+	// auto t = std::move(s);
+
+	// move with hanoi
+	Stack<int> t(s.size());
+	hanoi(s, t);
+
 	std::cout << "after move, s has size " << s.size() << '\n';
 
 	while (!t.empty())

@@ -17,13 +17,14 @@ class Queue {
 	Queue();
 
 	~Queue();
-	Queue(const Queue&);
-	Queue& operator=(Queue);
+	Queue(const Queue&) = delete;
+	Queue& operator=(Queue) = delete;
 	Queue(Queue&&);
 	Queue& operator=(Queue&&) noexcept;
 
 	void enqueue(const T&);
 	T dequeue();
+	T& front();
 	T& back();
 	bool empty() const;
 	std::size_t size() const;
@@ -77,24 +78,6 @@ structures::Queue<T>::~Queue()
 }
 
 template <typename T>
-structures::Queue<T>::Queue(const Queue& origin):
-	current_size_(origin.current_size_),
-	allocated_size_(origin.allocated_size_),
-	front_(origin.front_),
-	back_(origin.back_)
-{
-	content_ = new T[origin.allocated_size_];
-	std::copy(origin.content_, origin.content_ + origin.allocated_size_, content_);
-}
-
-template <typename T>
-structures::Queue<T>& structures::Queue<T>::operator=(Queue origin)
-{
-	swap(*this, origin);
-	return *this;
-}
-
-template <typename T>
 structures::Queue<T>::Queue(Queue&& other):
 	Queue()
 {
@@ -129,6 +112,15 @@ T structures::Queue<T>::dequeue()
 	front_ = (front_ + 1) % allocated_size_;
 	current_size_--;
 	return content_[take_idx];
+}
+
+template <typename T>
+T& structures::Queue<T>::front()
+{
+	if (empty())
+		throw std::out_of_range("Queue is empty.");
+
+	return content_[front_];
 }
 
 template <typename T>
