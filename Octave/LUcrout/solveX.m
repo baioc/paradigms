@@ -1,12 +1,16 @@
-function X = solveX(U, C, n)
+function [X, flops] = solveX(U, C)
 
-    X(n) = C(n);
-    
+    n = length(C);
+    flops = 0;
+
+    X(n,1) = C(n);
+
     for i = n-1 : -1 : 1
-        s = sum(U(i, i+1:n) .* X(i+1:n));
-        X(i) = C(i) - s;
+        s = 0;
+        for j = i+1 : n
+            s += U(i,j) * X(j,1); flops+=2;
+        end
+        X(i,1) = C(i) - s; flops+=1;
     end
-    
-    X = transpose(X);
 
 end

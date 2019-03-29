@@ -1,4 +1,4 @@
-function [A, B, L] = swapLines(A, B, L, k, n)
+function [A, B, L] = pivotLine(k, A, B, L, n)
 
     Lmax = abs(L(k,k));
     iMax = k;
@@ -8,17 +8,17 @@ function [A, B, L] = swapLines(A, B, L, k, n)
             iMax = i;
         end
     end
-    
+
     for j = 1 : n
         temp = A(k,j);
         A(k,j) = A(iMax,j);
         A(iMax,j) = temp;
-        
+
         temp = L(k,j);
         L(k,j) = L(iMax,j);
         L(iMax,j) = temp;
     end
-    
+
     temp = B(k);
     B(k) = B(iMax);
     B(iMax) = temp;

@@ -1,16 +1,20 @@
 
-A = [pi   2.1   3.3;
-     pi   2.1  -3.3;
-     1.8 -1.6   0.2]
+A = [1   2   0   0   0;
+     3   4   5   0   0;
+     0   6   7   8   0;
+     0   0   9   10  11;
+     0   0   0   12  13;]
 
-B = [4.1; 
-     4.2; 
-     2.2]
+B = [14;
+     15;
+     16;
+     17;
+     18;]
 
-x = solveGaussJordan(A, B)
+[x, flops] = solveGaussElim(A, B)
 
-y = A*x - B;
-mar = max(abs(y))
+res = A*x - B;
+MAR = max(abs(res))
 
-s = A\B
-e = x - s
+solution = A\B;
+err = x - solution

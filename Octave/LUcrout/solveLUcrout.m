@@ -1,8 +1,9 @@
-function X = solveLUcrout(A, B)
+function [X, flops] = solveLUcrout(A, B)
 
-    n = length(A);
-    [L, U, B] = decompLUcrout(A, B, n);
-    C = solveC(L, B, n);
-    X = solveX(U, C, n);
+    [L, U, B, kLU] = decompLUcrout(A, B);
+    [C, kC] = solveC(L, B);
+    [X, kX] = solveX(U, C);
+
+    flops = kLU + kC + kX;
 
 end
