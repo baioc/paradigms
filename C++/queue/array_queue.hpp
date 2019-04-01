@@ -3,6 +3,7 @@
 
 #include <cstdint>  	// std::size_t
 #include <algorithm>	// std::swap, std::copy
+#include <memory>   	// unique_ptr
 
 #include <cassert>
 #include <stdexcept>	// exceptions
@@ -33,7 +34,7 @@ class Queue {
  private:
 	static const auto DEFAULT_SIZE = 8u;
 
-	T *content_;
+	std::unique_ptr<T[]> content_;
 	std::size_t current_size_;
 	std::size_t allocated_size_;
 	unsigned front_;
@@ -63,7 +64,7 @@ structures::Queue<T>::Queue(int size):
 {
 	assert(size > 0);
 	allocated_size_ = size;
-	content_ = new T[allocated_size_];
+	content_ = std::unique_ptr<T[]>(new T[allocated_size_]);
 }
 
 template <typename T>
@@ -73,9 +74,7 @@ structures::Queue<T>::Queue():
 
 template <typename T>
 structures::Queue<T>::~Queue()
-{
-	delete[] content_;
-}
+{}
 
 template <typename T>
 structures::Queue<T>::Queue(Queue&& other):

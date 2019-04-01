@@ -3,6 +3,7 @@
 
 #include <cstdint>  	// std::size_t
 #include <algorithm>	// std::swap, std::copy
+#include <memory>   	// unique_ptr
 
 #include <cassert>
 #include <stdexcept>	// C++ exceptions
@@ -34,7 +35,7 @@ class Stack {
  private:
 	static const auto DEFAULT_SIZE = 8u;
 
-	T *content_;
+	std::unique_ptr<T[]> content_;
 	std::size_t current_size_;
 	std::size_t allocated_size_;
 
@@ -59,7 +60,7 @@ structures::Stack<T>::Stack(int size):
 {
 	assert(size > 0);
 	allocated_size_ = size;
-	content_ = new T[allocated_size_];
+	content_ = std::unique_ptr<T[]>(new T[allocated_size_]);
 }
 
 template <typename T>
@@ -69,17 +70,15 @@ structures::Stack<T>::Stack():
 
 template <typename T>
 structures::Stack<T>::~Stack()
-{
-	delete[] content_;	// frees each individual object
-}
+{}
 
 template <typename T>
 structures::Stack<T>::Stack(const Stack& origin):
 	current_size_(origin.current_size_),
 	allocated_size_(origin.allocated_size_)
 {
-	content_ = new T[origin.allocated_size_];
-	std::copy(origin.content_, origin.content_ + origin.allocated_size_, content_);
+	content_ = std::unique_ptr<T[]>(new T[origin.allocated_size_]);
+	std::copy(origin.content_.get(), origin.content_.get() + origin.allocated_size_, content_.get());
 }
 
 template <typename T>

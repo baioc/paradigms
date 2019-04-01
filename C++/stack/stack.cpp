@@ -55,7 +55,7 @@ int main(int argc, char const *argv[])
 	std::cout << "before move, s has size " << s.size() << '\n';
 
 	// move with class methods
-	// auto t = std::move(s);
+	// auto t(std::move(s));
 
 	// move with hanoi
 	Stack<int> t(s.size());
