@@ -28,7 +28,7 @@ void hanoi(structures::Stack<T>& from, structures::Stack<T>& to)
 
 int main(int argc, char const *argv[])
 {
-	using namespace structures;
+	using structures::Stack;
 
 	constexpr auto n = 16u;
 
@@ -54,11 +54,12 @@ int main(int argc, char const *argv[])
 
 	std::cout << "before move, s has size " << s.size() << '\n';
 
+	Stack<int> t(s.size());
+
 	// move with class methods
-	// auto t(std::move(s));
+	// t = std::move(s);
 
 	// move with hanoi
-	Stack<int> t(s.size());
 	hanoi(s, t);
 
 	std::cout << "after move, s has size " << s.size() << '\n';

@@ -21,12 +21,12 @@ int main(int argc, char** argv)
         } else if (pid == 0) {
             printf("Processo filho %d criado\n", getpid());
             fflush(stdout);
-            return pid;
+            _exit(pid);
 
         } else {
             printf("Erro %d ao criar processo.\n", pid);
             fflush(stdout);
-            return pid;
+            exit(pid);
         }
     }
 

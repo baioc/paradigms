@@ -2,11 +2,12 @@
 #include <cassert>
 
 template <typename T>
+	// requires MoveConstructible<T> && MoveAssignable<T>
 void swap(T& a, T& b)
 {
 	T tmp(std::move(a));
-	a = b;
-	b = tmp;
+	a = std::move(b);
+	b = std::move(tmp);
 }
 
 int main(int argc, char const *argv[])

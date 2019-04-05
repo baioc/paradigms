@@ -51,7 +51,7 @@ static int branch(int *spawns, int depth)
         }
 
     } else if (depth == 0) { // last generation only
-        sleep(1); // @NOTE: sleep(k) para k > 2 gera um timeout no script de testes
+        sleep(1);
         return EXIT_SUCCESS;
 
     } else {

@@ -5,38 +5,40 @@
 #include <algorithm>	// std::swap, std::copy
 #include <memory>   	// unique_ptr
 
-#include <cassert>
-#include <stdexcept>	// C++ exceptions
-
-
 namespace structures {
 
 template <typename T>
+	// requires MoveAssignable<T>
 class Stack {
  public:
 	explicit Stack(int);
-	Stack(); // uses DEFAULT_SIZE
+	Stack(): Stack(DEFAULT_SIZE_) {}
 	// rule of three
-	~Stack();
-	Stack(const Stack&); // copy constructor
-	Stack& operator=(Stack); // copy assignment operator
+	~Stack() = default;
+	Stack(const Stack&);
+	Stack& operator=(const Stack&);
 	// rule of five
-	Stack(Stack&&); // move constructor
-	Stack& operator=(Stack&&) noexcept; // move assignment operator
+	Stack(Stack&&);
+	Stack& operator=(Stack&&);
 
-	void push(const T&);
+	void push(T);
 	T pop();
 	T& top(); //! returns ref to internal dinamically allocated memory
 	bool empty() const;
 	std::size_t size() const;
-	void clear(); //! DO NOT use if T is a raw pointer, memory WILL LEAK
 	void pick(int);
 
+	//! DO NOT use if T is a raw pointer, WILL LEAK MEMORY
+	void clear()
+	{
+		current_size_ = 0;
+	}
+
  private:
-	static const auto DEFAULT_SIZE = 8u;
+	static const auto DEFAULT_SIZE_ = 8u;
 
 	std::unique_ptr<T[]> content_;
-	std::size_t current_size_;
+	std::size_t current_size_{0};
 	std::size_t allocated_size_;
 
 	bool full() const;
@@ -54,9 +56,14 @@ class Stack {
 }	// namespace structures
 
 
+#include <cassert>
+#include <stdexcept>	// C++ exceptions
+
+
+namespace structures {
+
 template <typename T>
-structures::Stack<T>::Stack(int size):
-	current_size_(0)
+Stack<T>::Stack(int size)
 {
 	assert(size > 0);
 	allocated_size_ = size;
@@ -64,16 +71,7 @@ structures::Stack<T>::Stack(int size):
 }
 
 template <typename T>
-structures::Stack<T>::Stack():
-	Stack(DEFAULT_SIZE)
-{}
-
-template <typename T>
-structures::Stack<T>::~Stack()
-{}
-
-template <typename T>
-structures::Stack<T>::Stack(const Stack& origin):
+Stack<T>::Stack(const Stack<T>& origin):
 	current_size_(origin.current_size_),
 	allocated_size_(origin.allocated_size_)
 {
@@ -82,40 +80,41 @@ structures::Stack<T>::Stack(const Stack& origin):
 }
 
 template <typename T>
-structures::Stack<T>& structures::Stack<T>::operator=(Stack origin)
-// if you're going to make a copy of something in a function,
-// then let the compiler do it in the parameter list (uses copy constructor)
+Stack<T>& Stack<T>::operator=(const Stack<T>& origin)
 {
-	swap(*this, origin);
+	Stack temp(origin);
+	swap(*this, temp);
     return *this;
 }
 
 template <typename T>
-structures::Stack<T>::Stack(Stack&& other):
+Stack<T>::Stack(Stack<T>&& other):
 	Stack()
 {
 	swap(*this, other);
 }
 
 template <typename T>
-structures::Stack<T>& structures::Stack<T>::operator=(Stack&& other) noexcept
+Stack<T>& Stack<T>::operator=(Stack<T>&& other)
 {
 	swap(*this, other);
 	return *this;
 }
 
 template <typename T>
-// element may bind to either lvalue or rvalue reference
-void structures::Stack<T>::push(const T& element)
+void Stack<T>::push(T element)
+// if you're going to make a copy of something in a function,
+// then let the compiler do it in the parameter list.
+// element may bind to either lvalue (uses copy constructor) or rvalue reference
 {
 	if (full())
 		throw std::out_of_range("Stack overflow.");
 
-	content_[current_size_++] = element;
+	content_[current_size_++] = std::move(element);
 }
 
 template <typename T>
-T structures::Stack<T>::pop()
+T Stack<T>::pop()
 {
 	if (empty())
 		throw std::out_of_range("Stack underflow.");
@@ -124,7 +123,7 @@ T structures::Stack<T>::pop()
 }
 
 template <typename T>
-T& structures::Stack<T>::top()
+T& Stack<T>::top()
 {
 	if (empty())
 		throw std::out_of_range("Stack has nothing on top.");
@@ -133,31 +132,25 @@ T& structures::Stack<T>::top()
 }
 
 template <typename T>
-inline bool structures::Stack<T>::empty() const
+inline bool Stack<T>::empty() const
 {
 	return !(current_size_ > 0);
 }
 
 template <typename T>
-inline bool structures::Stack<T>::full() const
+inline bool Stack<T>::full() const
 {
 	return !(current_size_ < allocated_size_);
 }
 
 template <typename T>
-inline std::size_t structures::Stack<T>::size() const
+inline std::size_t Stack<T>::size() const
 {
 	return current_size_;
 }
 
 template <typename T>
-inline void structures::Stack<T>::clear()
-{
-	current_size_ = 0;
-}
-
-template <typename T>
-void structures::Stack<T>::pick(int offset)
+void Stack<T>::pick(int offset)
 {
 	assert(offset >= 0);
 	int access = current_size_ - offset - 1;
@@ -167,4 +160,6 @@ void structures::Stack<T>::pick(int offset)
 	push(content_[access]);
 }
 
-#endif	// STRUCTURES_STACK_HPP
+} // namespace structures
+
+#endif // STRUCTURES_STACK_HPP

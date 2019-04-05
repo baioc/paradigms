@@ -68,7 +68,7 @@ int user_command(structures::Queue<T>& q)
 
 int main(int argc, char const *argv[])
 {
-	using namespace structures;
+	using structures::Queue;
 
 	auto capacity = 0;
     std::cout << "Digite o tamanho do buffer:\n> ";
