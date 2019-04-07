@@ -9,7 +9,7 @@ void dump(structures::Queue<T>& q)
 {
 	std::cout << "[";
 	int max = q.size();
-	for (int i = 0; i < max; ++i) {
+	for (auto i = 0; i < max; ++i) {
 		auto aux = q.dequeue();
 		std::cout << (i == 0 ? "" : " ")
 		          << aux;

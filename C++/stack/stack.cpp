@@ -30,7 +30,7 @@ int main(int argc, char const *argv[])
 {
 	using structures::Stack;
 
-	constexpr auto n = 16u;
+	const auto n{16u};
 
 	// Stack<int> *stack = new Stack<int>(n+1); // unnecessary dynamic allocation
 	// Stack<int> s = *stack;
