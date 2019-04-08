@@ -47,7 +47,7 @@ main:
 	j end
 
 
-# P&H 5ed. 2.24) int fib(int n)
+# P&H 5ed. 2.31) int fib(int n)
 fib:
 	bne $a0, $zero, fib_1	# if n != 0, goto fib_1
 
