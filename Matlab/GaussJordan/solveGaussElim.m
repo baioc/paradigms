@@ -18,22 +18,23 @@ function [X, flops] = solveGaussElim(A, B)
 
     if A(n,n) == 0
         if A(n,n+1) == 0
-            X(n) = 1; % any value of x is a valid solution
-            "Undefined System"
+            X(n,1) = 1; % any value of x is a valid solution
+            printf("Underdetermined System, solving for x = 1\n");
         else
-            X(n) = NaN;
-            "Impossible System"
+            X(n,1) = NaN;
+            printf("Inconsistent System\n");
+            exit(-1);
         end
     end
 
-    X(n,1) = A(n,n+1) / A(n,n);  flops+=1;
+    X(n,1) = A(n,n+1) / A(n,n); flops+=1;
 
     for i = n-1:-1:1
         s = 0;
         for j = i+1 : n
-            s += A(i,j) * X(j,1);  flops+=2;
+            s += A(i,j) * X(j,1); flops+=2;
         end
-        X(i,1) = (A(i,n+1) - s) / A(i,i);  flops+=2;
+        X(i,1) = (A(i,n+1) - s) / A(i,i); flops+=2;
     end
 
 end

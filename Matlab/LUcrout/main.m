@@ -1,4 +1,6 @@
 
+printf("\nLU Crout Decomposition\n");
+
 A = [0   1   3;
      1  -1   3;
      2   2   2;]
@@ -9,8 +11,6 @@ B = [4;
 
 [x, flops] = solveLUcrout(A, B)
 
-res = A*x - B;
-MAR = max(abs(res))
+MAR = max(abs(A*x - B))
 
-solution = A\B;
-err = x - solution
+printf('\n');

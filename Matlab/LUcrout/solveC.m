@@ -1,11 +1,15 @@
 function [C, flops] = solveC(L, B)
 
-    % @TODO: treat impossible and undefined systems
-
     n = length(L);
     flops = 0;
 
-    C(1) = B(1) / L(1,1); flops+=1;
+    if abs(L(n,n)) < 1e-14
+        printf("Underdetermined or Inconsistent/Impossible System\n");
+        C(1) = NaN;
+        exit(-1);
+    else
+        C(1) = B(1) / L(1,1); flops+=1;
+    end
 
     for i = 2 : n
         s = 0;
