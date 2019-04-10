@@ -16,7 +16,6 @@ int main(int argc, char** argv)
         if ((pid = fork()) > 0) {
             printf("Processo pai criou %d\n", pid);
             fflush(stdout);
-            continue;
 
         } else if (pid == 0) {
             printf("Processo filho %d criado\n", getpid());
@@ -26,7 +25,7 @@ int main(int argc, char** argv)
         } else {
             printf("Erro %d ao criar processo.\n", pid);
             fflush(stdout);
-            exit(pid);
+            break;
         }
     }
 

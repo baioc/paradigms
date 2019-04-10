@@ -32,27 +32,21 @@ static int branch(int *spawns, int depth)
         for (int i = 0; i < children; ++i) {
             pid_t pid = fork();
 
-            if (pid > 0) {
-                int status;
-                wait(&status);
-                continue;
-
-            } else if (pid == 0) {
+            if (pid == 0) {
                 printf("Processo %d, filho de %d\n", getpid(), getppid());
                 fflush(stdout);
                 int status = branch(spawns + 1, depth - 1);
                 printf("Processo %d finalizado\n", getpid());
                 fflush(stdout);
                 _exit(status);
-
-            } else {
-                return EXIT_FAILURE;
             }
         }
 
+        // wait for all children
+        while (wait(NULL) > 0);
+
     } else if (depth == 0) { // last generation only
-        sleep(1);
-        return EXIT_SUCCESS;
+        sleep(5);
 
     } else {
         return EXIT_FAILURE;

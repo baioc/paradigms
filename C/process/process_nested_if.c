@@ -40,10 +40,9 @@ int main(int argc, char** argv)
         execlp("sed", "sed", "-i",
             "s/silver/axamantium/g;s/adamantium/silver/g;s/axamantium/adamantium/g",
             "text.txt", (char *)NULL);
-        return 0;
 
     } else if (pid > 0) {
-        wait(NULL);
+        waitpid(pid, NULL, 0);
 
         pid = fork();
 
@@ -51,7 +50,6 @@ int main(int argc, char** argv)
             printf("grep PID %d iniciado\n", getpid());
             fflush(stdout);
             execlp("grep", "grep", "adamantium", "text.txt", (char *)NULL);
-            return 0;
 
         } else if (pid > 0) {
             int status;
