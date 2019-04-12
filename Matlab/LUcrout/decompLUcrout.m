@@ -37,11 +37,11 @@ function [L, U, B, flops] = decompLUcrout(A, B)
         end
     end
 
-    % k = n, i = n
+    k = n; i = n;
     s = 0;
     for r = 1 : n-1
-        s += L(n,r) * U(r,n); flops+=2;
+        s += L(i,r) * U(r,k); flops+=2;
     end
-    L(n,n) = A(n,n) - s; flops+=1;
+    L(i,k) = A(i,k) - s; flops+=1;
 
 end
