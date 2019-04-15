@@ -59,7 +59,7 @@ void test_fib(void)
 	}
 }
 
-void test_sqrt()
+void test_sqrt(void)
 {
 	double x = 2;
 	double ss = sqrt(x);
