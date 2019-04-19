@@ -1,10 +1,11 @@
-#include "array_list.hpp"
-
 #include <iostream>
+
+#include "array_list.hpp"
+#include "list.h"
 
 
 template <typename T>
-void print(structures::ArrayList<T> list)
+void print(const structures::List<T>& list)
 {
 	std::cout << "(";
 	for (int i = 0; i < list.size(); ++i)

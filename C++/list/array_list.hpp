@@ -4,14 +4,14 @@
 #include <algorithm>       	// std::copy, swap
 #include <initializer_list>
 
+#include "list.h"
+
+
 namespace structures {
 
 template <typename T>
-	// requires MoveAssignable<T>
-	// && Sortable<T>
-	// && Equality_comparable<T>
-	// && CopyConstructible<T>
-class ArrayList {
+	// requires Sortable<T>
+class ArrayList : public structures::List<T> {
  public:
 	explicit ArrayList(int = DEFAULT_SIZE_);
 	ArrayList(std::initializer_list<T>);
@@ -28,6 +28,9 @@ class ArrayList {
 
 	void insert(int, T);
 	T pop(int);
+	int size() const;
+
+	using List<T>::empty;
 
 	void push_back(T);
 	T pop_back();
@@ -36,17 +39,8 @@ class ArrayList {
 	T pop_front();
 	T& front();
 
-	bool empty() const;
-	int size() const;
-
 	int insert(T); //! sorted insertion
 	void sort();
-
-	//! when find() fails, it returns a number equal to size()
-	int find(const T&, int=0) const;
-	int remove(const T&);
-    bool contains(const T&) const;
-	unsigned count(const T&) const;
 
  private:
 	static const auto DEFAULT_SIZE_ = 16;
@@ -74,7 +68,7 @@ ArrayList<T> operator+(ArrayList<T>, const ArrayList<T>&);
 
 
 #include <cassert>
-#include <iterator> 	// make_move_iterator
+#include <iterator>	// make_move_iterator
 
 namespace structures {
 
@@ -140,12 +134,6 @@ template <typename T>
 inline int ArrayList<T>::size() const
 {
 	return tail_ + 1;
-}
-
-template <typename T>
-inline bool ArrayList<T>::empty() const
-{
-	return tail_ < 0;
 }
 
 template <typename T>
@@ -263,6 +251,14 @@ int ArrayList<T>::insert(T element)
 }
 
 template <typename T>
+void ArrayList<T>::sort()
+{
+	// Insertion Sort
+	for (int i = 1; i < size(); ++i)
+		insertion(i - 1, content_[i]);
+}
+
+template <typename T>
 ArrayList<T>& ArrayList<T>::operator+=(const ArrayList<T>& rhs)
 {
 	const auto new_allocated_size = allocated_size_ + rhs.allocated_size_;
@@ -291,47 +287,6 @@ ArrayList<T> operator+(ArrayList<T> lhs, const ArrayList<T>& rhs)
 {
 	lhs += rhs;
 	return lhs;
-}
-
-template <typename T>
-void ArrayList<T>::sort()
-{
-	// Insertion Sort
-	for (int i = 1; i < size(); ++i)
-		insertion(i - 1, content_[i]);
-}
-
-template <typename T>
-int ArrayList<T>::find(const T& element, int from) const
-{
-	for (; from < size(); ++from) {
-		if (content_[from] == element)
-			break;
-	}
-	return from;
-}
-
-template <typename T>
-int ArrayList<T>::remove(const T& element)
-{
-	const auto index = find(element);
-	if (index < size())
-		pop(index);
-	return index;
-}
-
-template <typename T>
-bool ArrayList<T>::contains(const T& element) const
-{
-	return find(element) < size();
-}
-
-template <typename T>
-unsigned ArrayList<T>::count(const T& element) const
-{
-	unsigned count = 0;
-	for (int from = 0; (from = find(element, from) + 1) <= size(); ++count) {}
-	return count;
 }
 
 } // namespace structures
