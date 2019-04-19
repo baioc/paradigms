@@ -30,14 +30,14 @@ int main(int argc, char const *argv[])
 {
 	using structures::Stack;
 
-	const auto n{16u};
+	const int n{16};
 
-	// Stack<int> *stack = new Stack<int>(n+1); // unnecessary dynamic allocation
+	// Stack<int> *stack = new Stack<int>; // unnecessary dynamic allocation
 	// Stack<int> s = *stack;
 
-	// Stack<int> s = Stack<int>(n+1); // static initialization
-	// auto s = Stack<int>(n+1); // less verbose
-	Stack<int> s(n+1); // better static construction
+	// Stack<int> s = Stack<int>; // static initialization
+	// auto s = Stack<int>; // less verbose
+	Stack<int> s; // better static construction
 
 	// fibonacci seed
 	s.push(1);
@@ -67,7 +67,7 @@ int main(int argc, char const *argv[])
 	while (!t.empty())
 		std::cout << t.pop() << " < popped" << '\n';
 
-	Stack<int> u(n*2);
+	Stack<int> u;
 	u.push(n);
 
 	std::cout << "before copy, s has size " << s.size() << '\n';

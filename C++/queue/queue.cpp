@@ -9,7 +9,7 @@ void dump(structures::Queue<T>& q)
 {
 	std::cout << "[";
 	int max = q.size();
-	for (auto i = 0; i < max; ++i) {
+	for (int i = 0; i < max; ++i) {
 		auto aux = q.dequeue();
 		std::cout << (i == 0 ? "" : " ")
 		          << aux;
@@ -70,7 +70,7 @@ int main(int argc, char const *argv[])
 {
 	using structures::Queue;
 
-	auto capacity = 0;
+	int capacity = 0;
     std::cout << "Digite o tamanho do buffer:\n> ";
 	std::cin >> capacity;
 

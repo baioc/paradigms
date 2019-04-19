@@ -1,9 +1,10 @@
 #ifndef STRUCTURES_STACK_HPP
 #define STRUCTURES_STACK_HPP
 
-#include <cstdint>  	// std::size_t
 #include <algorithm>	// std::swap, std::copy
-#include <memory>   	// unique_ptr
+
+#include <cassert>
+
 
 namespace structures {
 
@@ -11,10 +12,9 @@ template <typename T>
 	// requires MoveAssignable<T>
 class Stack {
  public:
-	explicit Stack(int);
-	Stack(): Stack(DEFAULT_SIZE_) {}
+	explicit Stack(int = DEFAULT_SIZE_);
 	// rule of three
-	~Stack() = default;
+	~Stack();
 	Stack(const Stack&);
 	Stack& operator=(const Stack&);
 	// rule of five
@@ -25,7 +25,7 @@ class Stack {
 	T pop();
 	T& top(); //! returns ref to internal dinamically allocated memory
 	bool empty() const;
-	std::size_t size() const;
+	int size() const;
 	void pick(int);
 
 	//! DO NOT use if T is a raw pointer, WILL LEAK MEMORY
@@ -35,13 +35,13 @@ class Stack {
 	}
 
  private:
-	static const auto DEFAULT_SIZE_ = 8u;
+	static const auto DEFAULT_SIZE_ = 8;
 
-	std::unique_ptr<T[]> content_;
-	std::size_t current_size_{0};
-	std::size_t allocated_size_;
+	T *content_{nullptr};
+	int current_size_{0};
+	int allocated_size_{0};
 
-	bool full() const;
+	void grow(float = 2.0);
 
 	// rule of three/five and a half
 	friend void swap(Stack<T>& a, Stack<T>& b)
@@ -53,30 +53,30 @@ class Stack {
 	}
 };
 
-}	// namespace structures
-
-
-#include <cassert>
-#include <stdexcept>	// C++ exceptions
-
-
-namespace structures {
 
 template <typename T>
 Stack<T>::Stack(int size)
 {
 	assert(size > 0);
 	allocated_size_ = size;
-	content_ = std::unique_ptr<T[]>(new T[allocated_size_]);
+	content_ = static_cast<T*>(malloc(sizeof(T) * size));
+	assert(content_ != nullptr);
+}
+
+template <typename T>
+Stack<T>::~Stack()
+{
+	free(content_);
 }
 
 template <typename T>
 Stack<T>::Stack(const Stack<T>& origin):
-	current_size_(origin.current_size_),
-	allocated_size_(origin.allocated_size_)
+	current_size_{origin.current_size_},
+	allocated_size_{origin.allocated_size_}
 {
-	content_ = std::unique_ptr<T[]>(new T[origin.allocated_size_]);
-	std::copy(origin.content_.get(), origin.content_.get() + origin.allocated_size_, content_.get());
+	content_ = static_cast<T*>(malloc(sizeof(T) * origin.allocated_size_));
+	assert(content_ != nullptr);
+	std::copy(origin.content_, origin.content_ + origin.allocated_size_, content_);
 }
 
 template <typename T>
@@ -102,13 +102,22 @@ Stack<T>& Stack<T>::operator=(Stack<T>&& other)
 }
 
 template <typename T>
+void Stack<T>::grow(float scaling)
+{
+	assert(allocated_size_ * scaling >= 1);
+	allocated_size_ *= scaling;
+	content_ = static_cast<T*>(realloc(content_, sizeof(T) * allocated_size_));
+	assert(content_ != nullptr);
+}
+
+template <typename T>
 void Stack<T>::push(T element)
 // if you're going to make a copy of something in a function,
 // then let the compiler do it in the parameter list.
 // element may bind to either lvalue (uses copy constructor) or rvalue reference
 {
-	if (full())
-		throw std::out_of_range("Stack overflow.");
+	if (current_size_ >= allocated_size_)
+		grow();
 
 	content_[current_size_++] = std::move(element);
 }
@@ -116,35 +125,25 @@ void Stack<T>::push(T element)
 template <typename T>
 T Stack<T>::pop()
 {
-	if (empty())
-		throw std::out_of_range("Stack underflow.");
-
+	assert(!empty());
 	return content_[--current_size_];
 }
 
 template <typename T>
 T& Stack<T>::top()
 {
-	if (empty())
-		throw std::out_of_range("Stack has nothing on top.");
-
+	assert(!empty());
 	return content_[current_size_ - 1];
 }
 
 template <typename T>
 inline bool Stack<T>::empty() const
 {
-	return !(current_size_ > 0);
+	return current_size_ <= 0;
 }
 
 template <typename T>
-inline bool Stack<T>::full() const
-{
-	return !(current_size_ < allocated_size_);
-}
-
-template <typename T>
-inline std::size_t Stack<T>::size() const
+inline int Stack<T>::size() const
 {
 	return current_size_;
 }
@@ -154,9 +153,7 @@ void Stack<T>::pick(int offset)
 {
 	assert(offset >= 0);
 	int access = current_size_ - offset - 1;
-	if (access < 0)
-		throw std::out_of_range("Can't pick that far down the stack.");
-
+	assert(access >= 0);
 	push(content_[access]);
 }
 

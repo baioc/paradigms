@@ -1,10 +1,8 @@
 #ifndef STRUCTURES_ARRAY_LIST_HPP
 #define STRUCTURES_ARRAY_LIST_HPP
 
-#include <memory>          	// unique_ptr
-#include <initializer_list>
-#include <cstdint>         	// size_t
 #include <algorithm>       	// std::copy, swap
+#include <initializer_list>
 
 namespace structures {
 
@@ -15,9 +13,9 @@ template <typename T>
 	// && CopyConstructible<T>
 class ArrayList {
  public:
-	explicit ArrayList(int);
-	ArrayList(): ArrayList(DEFAULT_SIZE_) {}
+	explicit ArrayList(int = DEFAULT_SIZE_);
 	ArrayList(std::initializer_list<T>);
+	~ArrayList();
 
 	ArrayList(const ArrayList&);
 	ArrayList& operator=(const ArrayList&);
@@ -39,7 +37,7 @@ class ArrayList {
 	T& front();
 
 	bool empty() const;
-	std::size_t size() const;
+	int size() const;
 
 	int insert(T); //! sorted insertion
 	void sort();
@@ -51,14 +49,14 @@ class ArrayList {
 	unsigned count(const T&) const;
 
  private:
-	static const auto DEFAULT_SIZE_ = 16u;
+	static const auto DEFAULT_SIZE_ = 16;
 
-	std::unique_ptr<T[]> content_;
+	T* content_{nullptr};
 	int tail_{-1};
-	std::size_t allocated_size_;
+	int allocated_size_{0};
 
-	bool full() const;
 	int insertion(int, T);
+	void grow(float = 2.0);
 
 	friend void swap(ArrayList<T>& a, ArrayList<T>& b)
 	{
@@ -77,7 +75,6 @@ ArrayList<T> operator+(ArrayList<T>, const ArrayList<T>&);
 
 #include <cassert>
 #include <iterator> 	// make_move_iterator
-#include <stdexcept>	// C++ exceptions
 
 namespace structures {
 
@@ -86,30 +83,35 @@ ArrayList<T>::ArrayList(int size)
 {
 	assert(size > 0);
 	allocated_size_ = size;
-	content_ = std::unique_ptr<T[]>(new T[allocated_size_]);
+	content_ = static_cast<T*>(malloc(sizeof(T) * size));
+	assert(content_ != nullptr);
 }
 
 template <typename T>
-ArrayList<T>::ArrayList(std::initializer_list<T> init):
-	ArrayList(init.size())
+ArrayList<T>::~ArrayList()
 {
-	auto it = std::make_move_iterator(init.begin());
-	const auto ul = std::make_move_iterator(init.end());
-	auto data = content_.get();
+	free(content_);
+}
 
-	while (it != ul) {
-		*(data++) = *(it++);
+template <typename T>
+ArrayList<T>::ArrayList(std::initializer_list<T> initial):
+	ArrayList(initial.size())
+{
+	auto data = content_;
+	for (auto&& element : initial) {
+		*(data++) = element;
 		++tail_;
 	}
 }
 
 template <typename T>
 ArrayList<T>::ArrayList(const ArrayList<T>& origin):
-	tail_(origin.tail_),
-	allocated_size_(origin.allocated_size_)
+	tail_{origin.tail_},
+	allocated_size_{origin.allocated_size_}
 {
-	content_ = std::unique_ptr<T[]>(new T[origin.allocated_size_]);
-	std::copy(origin.content_.get(), origin.content_.get() + origin.allocated_size_, content_.get());
+	content_ = static_cast<T*>(malloc(sizeof(T) * origin.allocated_size_));
+	assert(content_ != nullptr);
+	std::copy(origin.content_, origin.content_ + origin.allocated_size_, content_);
 }
 
 template <typename T>
@@ -135,7 +137,7 @@ ArrayList<T>& ArrayList<T>::operator=(ArrayList<T>&& source)
 }
 
 template <typename T>
-inline std::size_t ArrayList<T>::size() const
+inline int ArrayList<T>::size() const
 {
 	return tail_ + 1;
 }
@@ -147,24 +149,16 @@ inline bool ArrayList<T>::empty() const
 }
 
 template <typename T>
-inline bool ArrayList<T>::full() const
-{
-	return tail_ >= static_cast<int>(allocated_size_) - 1;
-}
-
-template <typename T>
 T& ArrayList<T>::operator[](int index)
 {
-	if (index < 0 || index > tail_)
-		throw std::out_of_range("Invalid index.");
+	assert(index >= 0 && index < size());
 	return content_[index];
 }
 
 template <typename T>
 const T& ArrayList<T>::operator[](int index) const
 {
-	if (index < 0 || index > tail_)
-		throw std::out_of_range("Invalid index.");
+	assert(index >= 0 && index < size());
 	return content_[index];
 }
 
@@ -181,36 +175,40 @@ void ArrayList<T>::push_front(T element)
 }
 
 template <typename T>
+void ArrayList<T>::grow(float scaling)
+{
+	assert(allocated_size_ * scaling >= 1);
+	allocated_size_ *= scaling;
+	content_ = static_cast<T*>(realloc(content_, sizeof(T) * allocated_size_));
+	assert(content_ != nullptr);
+}
+
+template <typename T>
 void ArrayList<T>::insert(int position, T element)
 {
-	if (full())
-		throw std::out_of_range("Can't insert in a full list.");
-	else if (position < 0 || position > tail_+1)
-		throw std::out_of_range("Invalid index.");
+	assert(position >= 0 && position <= size());
+	if (size() >= allocated_size_)
+		grow();
 
 	using std::swap;
-	for (auto i = tail_ + 1; i > position; --i)
+	for (int i = size(); i > position; --i)
 		swap(content_[i], content_[i-1]);
 
-	tail_++;
 	content_[position] = std::move(element);
+	tail_++;
 }
 
 template <typename T>
 T& ArrayList<T>::back()
 {
-	if (empty())
-		throw std::out_of_range("List is empty.");
-
+	assert(!empty());
 	return content_[tail_];
 }
 
 template <typename T>
 T& ArrayList<T>::front()
 {
-	if (empty())
-		throw std::out_of_range("List is empty.");
-
+	assert(!empty());
 	return content_[0];
 }
 
@@ -229,15 +227,13 @@ T ArrayList<T>::pop_front()
 template <typename T>
 T ArrayList<T>::pop(int position)
 {
-	if (empty())
-		throw std::out_of_range("Can't remove from an empty list.");
-	else if (position < 0 || position > tail_)
-		throw std::out_of_range("Invalid index.");
+	assert(!empty());
+	assert(position >= 0 && position <= tail_);
 
-	auto target = std::move(content_[position]);
+	const auto target = std::move(content_[position]);
 
 	using std::swap;
-	for (auto i = position; i < tail_; ++i)
+	for (int i = position; i < tail_; ++i)
 		swap(content_[i], content_[i+1]);
 
 	tail_--;
@@ -248,12 +244,11 @@ template <typename T>
 int ArrayList<T>::insertion(int end, T element)
 {
 	int i = end;
-
 	using std::swap;
 	for (; i >= 0 && content_[i] > element; --i)
 		swap(content_[i+1], content_[i]);
 
-	int pos = i+1;
+	const int pos = i+1;
 	content_[pos] = std::move(element);
 	return pos;
 }
@@ -261,8 +256,8 @@ int ArrayList<T>::insertion(int end, T element)
 template <typename T>
 int ArrayList<T>::insert(T element)
 {
-	if (full())
-		throw std::out_of_range("Can't insert in a full list.");
+	if (size() >= allocated_size_)
+		grow();
 
 	return insertion(tail_++, element);
 }
@@ -270,19 +265,20 @@ int ArrayList<T>::insert(T element)
 template <typename T>
 ArrayList<T>& ArrayList<T>::operator+=(const ArrayList<T>& rhs)
 {
-	auto new_allocated_size = allocated_size_ + rhs.allocated_size_;
-	auto new_content = std::unique_ptr<T[]>(new T[new_allocated_size]);
+	const auto new_allocated_size = allocated_size_ + rhs.allocated_size_;
+	auto new_content = static_cast<T*>(malloc(sizeof(T) * new_allocated_size));
+	assert(new_content != nullptr);
 
-	for (auto i = 0; i <= tail_; ++i)
+	for (int i = 0; i < size(); ++i)
 		new_content[i] = std::move(content_[i]);
 
-	for (auto i = 0; i <= rhs.tail_; ++i) {
+	for (int i = 0; i < rhs.size(); ++i) {
 		T temp(rhs.content_[i]);
-		new_content[i + tail_ + 1] = std::move(temp);
+		new_content[i + size()] = std::move(temp);
 	}
 
-	using std::swap;
-	swap(content_, new_content);
+	std::swap(content_, new_content);
+	free(new_content);
 
 	tail_ += rhs.size();
 	allocated_size_ = new_allocated_size;
@@ -301,14 +297,14 @@ template <typename T>
 void ArrayList<T>::sort()
 {
 	// Insertion Sort
-	for (auto i = 1; i <= tail_; ++i)
-		insertion(i-1, content_[i]);
+	for (int i = 1; i < size(); ++i)
+		insertion(i - 1, content_[i]);
 }
 
 template <typename T>
 int ArrayList<T>::find(const T& element, int from) const
 {
-	for (; from <= tail_; ++from) {
+	for (; from < size(); ++from) {
 		if (content_[from] == element)
 			break;
 	}
@@ -318,7 +314,7 @@ int ArrayList<T>::find(const T& element, int from) const
 template <typename T>
 int ArrayList<T>::remove(const T& element)
 {
-	auto index = find(element);
+	const auto index = find(element);
 	if (index < size())
 		pop(index);
 	return index;
@@ -333,10 +329,8 @@ bool ArrayList<T>::contains(const T& element) const
 template <typename T>
 unsigned ArrayList<T>::count(const T& element) const
 {
-	auto count = 0u;
-	auto from = 0u;
-	while ((from = find(element, from) + 1) <= size())
-		++count;
+	unsigned count = 0;
+	for (int from = 0; (from = find(element, from) + 1) <= size(); ++count) {}
 	return count;
 }
 
