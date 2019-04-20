@@ -4,9 +4,10 @@
 #include <cstdlib>
 
 
+using baioc::Queue;
+
 template <typename T>
-void dump(structures::Queue<T>& q)
-{
+void dump(Queue<T>& q) {
 	std::cout << "[";
 	int max = q.size();
 	for (int i = 0; i < max; ++i) {
@@ -19,8 +20,7 @@ void dump(structures::Queue<T>& q)
 }
 
 template <typename T>
-int user_command(structures::Queue<T>& q)
-{
+int user_command(Queue<T>& q) {
 	std::cout << "Comandos:\n"
 	          << "r: retirar\n"
 			  << "c: colocar\n"
@@ -66,10 +66,7 @@ int user_command(structures::Queue<T>& q)
 }
 
 
-int main(int argc, char const *argv[])
-{
-	using structures::Queue;
-
+int main(int argc, char const *argv[]) {
 	int capacity = 0;
     std::cout << "Digite o tamanho do buffer:\n> ";
 	std::cin >> capacity;

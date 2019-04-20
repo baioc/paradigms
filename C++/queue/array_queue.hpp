@@ -1,19 +1,21 @@
-#ifndef STRUCTURES_QUEUE_HPP
-#define STRUCTURES_QUEUE_HPP
+#ifndef BAIOC_QUEUE_HPP
+#define BAIOC_QUEUE_HPP
 
 #include <memory>   	// unique_ptr
 
-namespace structures {
+#include <cassert>
+#include <stdexcept>	// exceptions
+
+
+namespace baioc {
 
 template <typename T>
 	// requires MoveAssignable<T>
 class Queue {
  public:
-	explicit Queue(int = DEFAULT_SIZE_);
+	explicit Queue(int size = 8);
 
-	// can't be copied because of the unique_ptr
-
-	void enqueue(T);
+	void enqueue(T element);
 	T dequeue();
 	T& front();
 	T& back();
@@ -21,15 +23,10 @@ class Queue {
 	int size() const;
 
 	//! DO NOT use if T is a raw pointer, WILL LEAK MEMORY
-	void clear()
-	{
-		current_size_ = 0;
-	}
+	void clear() { current_size_ = 0; }
 
  private:
-	static const auto DEFAULT_SIZE_ = 8;
-
-	std::unique_ptr<T[]> content_;
+	std::unique_ptr<T[]> content_; // does not allow copy
 	int current_size_{0};
 	int allocated_size_{0};
 	int front_{0};
@@ -38,25 +35,16 @@ class Queue {
 	bool full() const;
 };
 
-} // namespace structures
-
-
-#include <cassert>
-#include <stdexcept>	// exceptions
-
-namespace structures {
 
 template <typename T>
-Queue<T>::Queue(int size)
-{
+Queue<T>::Queue(int size) {
 	assert(size > 0);
 	allocated_size_ = size;
 	content_ = std::unique_ptr<T[]>(new T[allocated_size_]);
 }
 
 template <typename T>
-void Queue<T>::enqueue(T data)
-{
+void Queue<T>::enqueue(T data) {
 	if (full())
 		throw std::out_of_range("Queue overflow.");
 
@@ -66,8 +54,7 @@ void Queue<T>::enqueue(T data)
 }
 
 template <typename T>
-T Queue<T>::dequeue()
-{
+T Queue<T>::dequeue() {
 	if (empty())
 		throw std::out_of_range("Queue underflow.");
 
@@ -78,8 +65,7 @@ T Queue<T>::dequeue()
 }
 
 template <typename T>
-T& Queue<T>::front()
-{
+T& Queue<T>::front() {
 	if (empty())
 		throw std::out_of_range("Queue is empty.");
 
@@ -87,8 +73,7 @@ T& Queue<T>::front()
 }
 
 template <typename T>
-T& Queue<T>::back()
-{
+T& Queue<T>::back() {
 	if (empty())
 		throw std::out_of_range("Queue is empty.");
 
@@ -96,23 +81,20 @@ T& Queue<T>::back()
 }
 
 template <typename T>
-inline bool Queue<T>::empty() const
-{
+inline bool Queue<T>::empty() const {
 	return current_size_ <= 0;
 }
 
 template <typename T>
-inline bool Queue<T>::full() const
-{
+inline bool Queue<T>::full() const {
 	return current_size_ >= allocated_size_;
 }
 
 template <typename T>
-inline int Queue<T>::size() const
-{
+inline int Queue<T>::size() const {
 	return current_size_;
 }
 
-} // namespace structures
+} // baioc
 
-#endif // STRUCTURES_QUEUE_HPP
+#endif // BAIOC_QUEUE_HPP

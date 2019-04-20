@@ -1,23 +1,43 @@
+#include "list.hpp"
+
 #include <iostream>
 
 #include "array_list.hpp"
-#include "list.h"
+#include "linked_list.hpp"
 
+
+using baioc::List;
+
+class MyNode : public baioc::LinkedNode {
+ public:
+	void set(int value) { value_ = value; }
+	int get() const { return value_; }
+	bool operator==(const MyNode& rhs) const { return value_ == rhs.value_; }
+	bool operator<(const MyNode& rhs) const { return value_ < rhs.value_; }
+ private:
+	int value_{0};
+};
 
 template <typename T>
-void print(const structures::List<T>& list)
-{
+void print(const List<T>& list) {
 	std::cout << "(";
 	for (int i = 0; i < list.size(); ++i)
 		std::cout << (i == 0 ? "" : " ") << list[i];
 	std::cout << ")\n\n";
 }
 
-int main(int argc, char const *argv[])
-{
-	using structures::ArrayList;
+template <>
+void print(const List<MyNode>& list) {
+	std::cout << "(";
+	for (int i = 0; i < list.size(); ++i)
+		std::cout << (i == 0 ? "" : " ") << list[i].get();
+	std::cout << ")\n\n";
+}
 
-	ArrayList<int> l = {1, 0, 1, 1, 2, 3};
+void ArrayList_test() {
+	using TestedList = baioc::ArrayList<int>;
+
+	TestedList l = {1, 0, 1, 1, 2, 3};
 	print(l);
 
 	l.push_front(0);
@@ -59,7 +79,7 @@ int main(int argc, char const *argv[])
 	std::cout << "5 was inserted in index " << l.insert(5) <<'\n';
 	print(l);
 
-	ArrayList<int> m = {4, -1, 8};
+	TestedList m = {4, -1, 8};
 	l += m;
 	std::cout << "size: " << l.size() << '\n';
 	print(l);
@@ -85,6 +105,24 @@ int main(int argc, char const *argv[])
 			p.remove(e);
 	}
 	print(p);
+}
 
+void NodeList_test() {
+	constexpr int n = 10;
+	MyNode pool[n];
+
+	List<MyNode> my_list;
+	for (int i = 0; i < n; ++i) {
+		pool[i].set(i+1);
+		my_list.push_back(pool[i]);
+	}
+
+	print(my_list);
+}
+
+int main(int argc, char const *argv[])
+{
+	ArrayList_test();
+	NodeList_test();
 	return 0;
 }
