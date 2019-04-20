@@ -5,7 +5,7 @@
 
 #include <cassert>
 #include <initializer_list>
-#include <iostream>
+#include <iterator>
 
 
 namespace baioc {
@@ -24,7 +24,7 @@ class LinkedList : public baioc::List<T> {
 	LinkedList& operator+=(const LinkedList& rhs);
 
 	int insert(T element); //! sorted insertion
-	void sort();
+	void sort(); //! "For God’s sake, don’t try sorting a linked list."" — Steve Yegge
 
 	T& operator[](int index);
 	const T& operator[](int index) const;
@@ -35,8 +35,7 @@ class LinkedList : public baioc::List<T> {
 	int size() const;
 	using List<T>::empty;
 
-	void push_back(T element);
-	T& back();
+	using List<T>::push_back;
 	void push_front(T element);
 	T pop_front();
 	T& front();
@@ -52,17 +51,15 @@ class LinkedList : public baioc::List<T> {
 	};
 
 	LinkedNode* head_{nullptr};
-	LinkedNode* tail_{nullptr};
 	int size_{0};
 
-	void mergesort(LinkedNode* list, int size);
-	LinkedNode* merge(LinkedNode* lo, LinkedNode* hi) { return lo; }
+	LinkedNode* mergesort(LinkedNode* list, int size);
+	LinkedNode* merge(LinkedNode* lo, int lo_size, LinkedNode* hi, int hi_size);
 
 	friend void swap(LinkedList<T>& a, LinkedList<T>& b)
 	{
 		using std::swap;
 		swap(a.head_, b.head_);
-		swap(a.tail_, b.tail_);
 		swap(a.size_, b.size_);
 	}
 };
@@ -71,8 +68,8 @@ class LinkedList : public baioc::List<T> {
 template <typename T>
 LinkedList<T>::LinkedList(const std::initializer_list<T>& initial)
 {
-	for (auto&& value : initial)
-		push_back(value);
+	for (auto iter = std::rbegin(initial); iter != std::rend(initial); ++iter)
+		this->push_front(*iter);
 }
 
 template <typename T>
@@ -112,7 +109,8 @@ LinkedList<T>& LinkedList<T>::operator=(LinkedList<T>&& source)
 }
 
 template <typename T>
-int LinkedList<T>::size() const {
+int LinkedList<T>::size() const
+{
 	return size_;
 }
 
@@ -122,9 +120,7 @@ void LinkedList<T>::push_front(T element)
 	auto node = new LinkedNode;
 	node->data = std::move(element);
 
-	if (empty())
-		tail_ = node;
-	else
+	if (!empty())
 		node->next = head_;
 
 	head_ = node;
@@ -141,9 +137,6 @@ T LinkedList<T>::pop_front()
 	head_ = next;
 
 	--size_;
-	if (empty())
-		tail_ = nullptr;
-
 	return temp;
 }
 
@@ -155,28 +148,6 @@ T& LinkedList<T>::front()
 }
 
 template <typename T>
-void LinkedList<T>::push_back(T element)
-{
-	auto node = new LinkedNode;
-	node->data = std::move(element);
-
-	if (empty())
-		head_ = node;
-	else
-		tail_->next = node;
-
-	tail_ = node;
-	++size_;
-}
-
-template <typename T>
-T& LinkedList<T>::back()
-{
-	assert(!empty());
-	return tail_->data;
-}
-
-template <typename T>
 void LinkedList<T>::insert(int index, T element)
 {
 	assert(index >= 0);
@@ -184,9 +155,6 @@ void LinkedList<T>::insert(int index, T element)
 
 	if (index == 0) {
 		push_front(element);
-		return;
-	} else if (index == size_) {
-		push_back(element);
 		return;
 	}
 
@@ -219,9 +187,6 @@ T LinkedList<T>::pop(int index)
 		curr = curr->next;
 	}
 
-	if (curr == tail_)
-		tail_ = prev;
-
 	const auto temp = curr->data;
 	prev->next = curr->next;
 	delete curr;
@@ -231,12 +196,10 @@ T LinkedList<T>::pop(int index)
 }
 
 template <typename T>
-const T& LinkedList<T>::operator[](int index) const {
+const T& LinkedList<T>::operator[](int index) const
+{
 	assert(index >= 0);
 	assert(index < size_);
-
-	if (index == size_ - 1)
-		return tail_->data;
 
 	auto curr = head_;
 	for (int i = 0; i < index; ++i)
@@ -250,9 +213,6 @@ T& LinkedList<T>::operator[](int index)
 	assert(index >= 0);
 	assert(index < size_);
 
-	if (index == size_ - 1)
-		return tail_->data;
-
 	auto curr = head_;
 	for (int i = 0; i < index; ++i)
 		curr = curr->next;
@@ -260,7 +220,8 @@ T& LinkedList<T>::operator[](int index)
 }
 
 template <typename T>
-int LinkedList<T>::find(const T& element) const {
+int LinkedList<T>::find(const T& element) const
+{
 	int i = 0;
 	for (auto iter = head_; i < size_ && iter->data != element; ++i)
 		iter = iter->next;
@@ -287,8 +248,6 @@ int LinkedList<T>::remove(const T& element)
 
 	if (i >= size_)
 		return -i;
-	else if (curr == tail_)
-		tail_ = prev;
 
 	prev->next = curr->next;
 	delete curr;
@@ -298,7 +257,8 @@ int LinkedList<T>::remove(const T& element)
 }
 
 template <typename T>
-unsigned LinkedList<T>::count(const T& element) const {
+unsigned LinkedList<T>::count(const T& element) const
+{
 	unsigned k = 0;
 	int i = 0;
 	for (auto iter = head_; i < size_; ++i) {
@@ -322,11 +282,6 @@ int LinkedList<T>::insert(T element)
 	for (auto curr = head_->next; i < size_ && curr->data < element; ++i) {
 		prev = curr;
 		curr = curr->next;
-	}
-
-	if (i >= size_) {
-		push_back(element);
-		return size_;
 	}
 
 	auto node = new LinkedNode;
@@ -357,31 +312,50 @@ LinkedList<T> operator+(LinkedList<T> lhs, const LinkedList<T>& rhs)
 }
 
 template <typename T>
-void LinkedList<T>::sort() { mergesort(head_, size_); }
+void LinkedList<T>::sort()
+{
+	head_ = mergesort(head_, size_);
+	// @NOTE: last node probably does not point to nullptr after sort
+}
 
 template <typename T>
-void LinkedList<T>::mergesort(LinkedNode* list, int size)
+typename LinkedList<T>::LinkedNode* LinkedList<T>::mergesort(LinkedNode* list, int size)
 {
-	std::cout << "merging list @" << list->data << " of size " << size << std::endl;
 	if (size <= 1)
-		return;
+		return list;
 
 	const int mid = size / 2;
+	const int lim = mid + (size % 2);
 
 	auto high = list;
 	for (int i = 0; i < mid; ++i)
 		high = high->next;
 
-	mergesort(list, mid);
-	mergesort(high, mid + (size % 2));
-	list = merge(list, high);
+	list = mergesort(list, mid);
+	high = mergesort(high, lim);
+
+	return merge(list, mid, high, lim);
 }
 
-// template <typename T>
-// LinkedList<T>::LinkedNode* LinkedList<T>::merge(LinkedNode* lo, LinkedNode* hi)
-// {
-// 	return lo;
-// }
+template <typename T>
+typename LinkedList<T>::LinkedNode* LinkedList<T>::merge(LinkedNode* lo, int lo_size, LinkedNode* hi, int hi_size)
+{
+	LinkedNode* result = nullptr;
+
+	if (lo_size <= 0)
+		return hi;
+	else if (hi_size <= 0)
+		return lo;
+
+	if (lo->data <= hi->data) {
+		result = lo;
+		result->next = merge(lo->next, lo_size - 1, hi, hi_size);
+	} else {
+		result = hi;
+		result->next = merge(lo, lo_size, hi->next, hi_size - 1);
+	}
+	return result;
+}
 
 } // baioc
 

@@ -30,12 +30,15 @@ class List {
 	//! when find() fails, it returns a number equal to size()
 	virtual int find(const T& element, int from = 0) const;
 	virtual int remove(const T& element);
-    virtual bool contains(const T& element) const;
+	virtual bool contains(const T& element) const;
 	virtual unsigned count(const T& element) const;
 };
 
 template <typename T>
-void List<T>::push_back(T element) { insert(size() - 1, element); }
+void List<T>::push_back(T element)
+{
+	insert(size(), element);
+}
 
 template <typename T>
 T List<T>::pop_back()
@@ -52,7 +55,10 @@ T& List<T>::back()
 }
 
 template <typename T>
-void List<T>::push_front(T element) { insert(0, element); }
+void List<T>::push_front(T element)
+{
+	insert(0, element);
+}
 
 template <typename T>
 T List<T>::pop_front()
@@ -69,7 +75,8 @@ T& List<T>::front()
 }
 
 template <typename T>
-bool List<T>::empty() const {
+bool List<T>::empty() const
+{
 	return size() <= 0;
 }
 
@@ -93,13 +100,15 @@ int List<T>::remove(const T& element)
 }
 
 template <typename T>
-bool List<T>::contains(const T& element) const {
+bool List<T>::contains(const T& element) const
+{
 	int index = find(element);
 	return index < size();
 }
 
 template <typename T>
-unsigned List<T>::count(const T& element) const {
+unsigned List<T>::count(const T& element) const
+{
 	unsigned count = 0;
 	for (int from = 0;
 	     (from = find(element, from) + 1) <= size();

@@ -86,17 +86,20 @@ T& Queue<T>::back()
 }
 
 template <typename T>
-inline bool Queue<T>::empty() const {
+inline bool Queue<T>::empty() const
+{
 	return current_size_ <= 0;
 }
 
 template <typename T>
-inline bool Queue<T>::full() const {
+inline bool Queue<T>::full() const
+{
 	return current_size_ >= allocated_size_;
 }
 
 template <typename T>
-inline int Queue<T>::size() const {
+inline int Queue<T>::size() const
+{
 	return current_size_;
 }
 

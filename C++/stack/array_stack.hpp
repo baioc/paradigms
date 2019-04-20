@@ -59,7 +59,10 @@ Stack<T>::Stack(int size)
 }
 
 template <typename T>
-Stack<T>::~Stack() { free(content_); }
+Stack<T>::~Stack()
+{
+	free(content_);
+}
 
 template <typename T>
 Stack<T>::Stack(const Stack<T>& origin):
@@ -129,12 +132,14 @@ T& Stack<T>::top()
 }
 
 template <typename T>
-inline bool Stack<T>::empty() const {
+inline bool Stack<T>::empty() const
+{
 	return current_size_ <= 0;
 }
 
 template <typename T>
-inline int Stack<T>::size() const {
+inline int Stack<T>::size() const
+{
 	return current_size_;
 }
 

@@ -79,14 +79,14 @@ int main(int argc, char const *argv[])
 	auto p = o + n + m + l;
 	print(p);
 
-	// p.sort();
-	// print(p);
+	p.sort();
+	print(p);
 
-	// std::cout << "unique (requires sorted):\n";
-	// for (int i = 0; i < p.size(); ++i) {
-	// 	auto e = p[i];
-	// 	while (p.count(e) > 1)
-	// 		p.remove(e);
-	// }
-	// print(p);
+	std::cout << "unique (requires sorted):\n";
+	for (int i = 0; i < p.size(); ++i) {
+		auto e = p[i];
+		while (p.count(e) > 1)
+			p.remove(e);
+	}
+	print(p);
 }

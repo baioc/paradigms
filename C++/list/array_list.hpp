@@ -32,8 +32,21 @@ class ArrayList : public baioc::List<T> {
 	void insert(int index, T element);
 	T pop(int index);
 
+	using List<T>::push_back;
+	using List<T>::pop_back;
+	using List<T>::back;
+	using List<T>::push_front;
+	using List<T>::pop_front;
+	using List<T>::front;
+
 	int size() const;
 	using List<T>::empty;
+
+	//! when find() fails, it returns a number equal to size()
+	using List<T>::find;
+	using List<T>::remove;
+    using List<T>::contains;
+	using List<T>::count;
 
  private:
 	T* content_{nullptr};
@@ -77,7 +90,10 @@ ArrayList<T>::ArrayList(int size)
 }
 
 template <typename T>
-ArrayList<T>::~ArrayList() { free(content_); }
+ArrayList<T>::~ArrayList()
+{
+	free(content_);
+}
 
 template <typename T>
 ArrayList<T>::ArrayList(const std::initializer_list<T>& initial):
@@ -123,7 +139,8 @@ ArrayList<T>& ArrayList<T>::operator=(ArrayList<T>&& source)
 }
 
 template <typename T>
-inline int ArrayList<T>::size() const {
+inline int ArrayList<T>::size() const
+{
 	return tail_ + 1;
 }
 
@@ -136,7 +153,8 @@ T& ArrayList<T>::operator[](int index)
 }
 
 template <typename T>
-const T& ArrayList<T>::operator[](int index) const {
+const T& ArrayList<T>::operator[](int index) const
+{
 	assert(index >= 0);
 	assert(index < size());
 	return content_[index];
