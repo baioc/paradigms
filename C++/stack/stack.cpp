@@ -7,7 +7,8 @@ using baioc::Stack;
 
 template <typename T>
 void hanoi(int size, Stack<T>& from,
-           Stack<T>& to, Stack<T>& aux) {
+           Stack<T>& to, Stack<T>& aux)
+{
 	if (size > 1) {
 		hanoi(size - 1, from, aux, to);
 		hanoi(1, from, to, aux);
@@ -20,13 +21,15 @@ void hanoi(int size, Stack<T>& from,
 }
 
 template <typename T>
-void hanoi(Stack<T>& from, Stack<T>& to) {
+void hanoi(Stack<T>& from, Stack<T>& to)
+{
 	int n = from.size();
 	Stack<T> aux(n);
 	hanoi(n, from, to, aux);
 }
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char const *argv[])
+{
 	const int n{16};
 
 	// Stack<int> *stack = new Stack<int>; // unnecessary dynamic allocation

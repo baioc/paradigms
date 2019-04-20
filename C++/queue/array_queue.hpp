@@ -37,14 +37,16 @@ class Queue {
 
 
 template <typename T>
-Queue<T>::Queue(int size) {
+Queue<T>::Queue(int size)
+{
 	assert(size > 0);
 	allocated_size_ = size;
 	content_ = std::unique_ptr<T[]>(new T[allocated_size_]);
 }
 
 template <typename T>
-void Queue<T>::enqueue(T data) {
+void Queue<T>::enqueue(T data)
+{
 	if (full())
 		throw std::out_of_range("Queue overflow.");
 
@@ -54,7 +56,8 @@ void Queue<T>::enqueue(T data) {
 }
 
 template <typename T>
-T Queue<T>::dequeue() {
+T Queue<T>::dequeue()
+{
 	if (empty())
 		throw std::out_of_range("Queue underflow.");
 
@@ -65,7 +68,8 @@ T Queue<T>::dequeue() {
 }
 
 template <typename T>
-T& Queue<T>::front() {
+T& Queue<T>::front()
+{
 	if (empty())
 		throw std::out_of_range("Queue is empty.");
 
@@ -73,7 +77,8 @@ T& Queue<T>::front() {
 }
 
 template <typename T>
-T& Queue<T>::back() {
+T& Queue<T>::back()
+{
 	if (empty())
 		throw std::out_of_range("Queue is empty.");
 

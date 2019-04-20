@@ -214,8 +214,8 @@ double* load_vector(const char* filename, int* out_size)
 		if (sscanf(filename + 4, "%d", &size) <= 0)
 			return NULL;
 		vector = generate_vector(size, 10000);
-
-	} else {
+	}
+	else {
 		FILE* f = fopen(filename, "r");
 		if (!f)
 			return NULL;

@@ -44,11 +44,11 @@ static int branch(int *spawns, int depth)
 
         // wait for all children
         while (wait(NULL) > 0);
-
-    } else if (depth == 0) { // last generation only
+    }
+	else if (depth == 0) { // last generation only
         sleep(5);
-
-    } else {
+    }
+	else {
         return EXIT_FAILURE;
     }
 

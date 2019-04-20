@@ -39,7 +39,8 @@ class Stack {
 	void grow(float = 2.0);
 
 	// rule of three/five and a half
-	friend void swap(Stack<T>& a, Stack<T>& b) {
+	friend void swap(Stack<T>& a, Stack<T>& b)
+	{
 		using std::swap; // enables ADL
 		swap(a.content_, b.content_);
 		swap(a.current_size_, b.current_size_);
@@ -49,7 +50,8 @@ class Stack {
 
 
 template <typename T>
-Stack<T>::Stack(int size) {
+Stack<T>::Stack(int size)
+{
 	assert(size > 0);
 	allocated_size_ = size;
 	content_ = static_cast<T*>(malloc(sizeof(T) * size));
@@ -57,9 +59,7 @@ Stack<T>::Stack(int size) {
 }
 
 template <typename T>
-Stack<T>::~Stack() {
-	free(content_);
-}
+Stack<T>::~Stack() { free(content_); }
 
 template <typename T>
 Stack<T>::Stack(const Stack<T>& origin):
@@ -72,7 +72,8 @@ Stack<T>::Stack(const Stack<T>& origin):
 }
 
 template <typename T>
-Stack<T>& Stack<T>::operator=(const Stack<T>& origin) {
+Stack<T>& Stack<T>::operator=(const Stack<T>& origin)
+{
 	Stack temp(origin);
 	swap(*this, temp);
     return *this;
@@ -86,13 +87,15 @@ Stack<T>::Stack(Stack<T>&& other):
 }
 
 template <typename T>
-Stack<T>& Stack<T>::operator=(Stack<T>&& other) {
+Stack<T>& Stack<T>::operator=(Stack<T>&& other)
+{
 	swap(*this, other);
 	return *this;
 }
 
 template <typename T>
-void Stack<T>::grow(float scaling) {
+void Stack<T>::grow(float scaling)
+{
 	assert(allocated_size_ * scaling >= 1);
 	allocated_size_ *= scaling;
 	content_ = static_cast<T*>(realloc(content_, sizeof(T) * allocated_size_));
@@ -103,7 +106,8 @@ template <typename T>
 // if you're going to make a copy of something in a function,
 // then let the compiler do it in the parameter list.
 // element may bind to either lvalue (uses copy constructor) or rvalue reference
-void Stack<T>::push(T element) {
+void Stack<T>::push(T element)
+{
 	if (current_size_ >= allocated_size_)
 		grow();
 
@@ -111,13 +115,15 @@ void Stack<T>::push(T element) {
 }
 
 template <typename T>
-T Stack<T>::pop() {
+T Stack<T>::pop()
+{
 	assert(!empty());
 	return content_[--current_size_];
 }
 
 template <typename T>
-T& Stack<T>::top() {
+T& Stack<T>::top()
+{
 	assert(!empty());
 	return content_[current_size_ - 1];
 }
@@ -133,7 +139,8 @@ inline int Stack<T>::size() const {
 }
 
 template <typename T>
-void Stack<T>::pick(int offset) {
+void Stack<T>::pick(int offset)
+{
 	assert(offset >= 0);
 	int access = current_size_ - offset - 1;
 	assert(access >= 0);

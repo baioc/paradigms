@@ -1,10 +1,10 @@
 #ifndef BAIOC_ARRAY_LIST_HPP
 #define BAIOC_ARRAY_LIST_HPP
 
+#include "list.hpp"
+
 #include <algorithm>       	// std::copy, swap
 #include <initializer_list>
-
-#include "list.hpp"
 
 
 namespace baioc {
@@ -14,7 +14,7 @@ template <typename T>
 class ArrayList : public baioc::List<T> {
  public:
 	explicit ArrayList(int size = 16);
-	ArrayList(std::initializer_list<T> initial);
+	ArrayList(const std::initializer_list<T>& initial);
 	~ArrayList();
 
 	ArrayList(const ArrayList& origin);
@@ -29,7 +29,7 @@ class ArrayList : public baioc::List<T> {
 	T& operator[](int index);
 	const T& operator[](int index) const;
 
-	void insert(int index, T);
+	void insert(int index, T element);
 	T pop(int index);
 
 	int size() const;
@@ -43,7 +43,8 @@ class ArrayList : public baioc::List<T> {
 	int insertion(int, T);
 	void grow(float = 2.0);
 
-	friend void swap(ArrayList<T>& a, ArrayList<T>& b) {
+	friend void swap(ArrayList<T>& a, ArrayList<T>& b)
+	{
 		using std::swap;
 		swap(a.content_, b.content_);
 		swap(a.tail_, b.tail_);
@@ -52,7 +53,8 @@ class ArrayList : public baioc::List<T> {
 };
 
 template <typename T>
-ArrayList<T> operator+(ArrayList<T> lhs, const ArrayList<T>& rhs) {
+ArrayList<T> operator+(ArrayList<T> lhs, const ArrayList<T>& rhs)
+{
 	lhs += rhs;
 	return lhs;
 }
@@ -66,7 +68,8 @@ ArrayList<T> operator+(ArrayList<T> lhs, const ArrayList<T>& rhs) {
 namespace baioc {
 
 template <typename T>
-ArrayList<T>::ArrayList(int size) {
+ArrayList<T>::ArrayList(int size)
+{
 	assert(size > 0);
 	allocated_size_ = size;
 	content_ = static_cast<T*>(malloc(sizeof(T) * size));
@@ -74,12 +77,10 @@ ArrayList<T>::ArrayList(int size) {
 }
 
 template <typename T>
-ArrayList<T>::~ArrayList() {
-	free(content_);
-}
+ArrayList<T>::~ArrayList() { free(content_); }
 
 template <typename T>
-ArrayList<T>::ArrayList(std::initializer_list<T> initial):
+ArrayList<T>::ArrayList(const std::initializer_list<T>& initial):
 	ArrayList(initial.size())
 {
 	auto data = content_;
@@ -100,7 +101,8 @@ ArrayList<T>::ArrayList(const ArrayList<T>& origin):
 }
 
 template <typename T>
-ArrayList<T>& ArrayList<T>::operator=(const ArrayList<T>& origin) {
+ArrayList<T>& ArrayList<T>::operator=(const ArrayList<T>& origin)
+{
 	ArrayList temp(origin);
 	swap(*this, temp);
 	return *this;
@@ -114,7 +116,8 @@ ArrayList<T>::ArrayList(ArrayList<T>&& source):
 }
 
 template <typename T>
-ArrayList<T>& ArrayList<T>::operator=(ArrayList<T>&& source) {
+ArrayList<T>& ArrayList<T>::operator=(ArrayList<T>&& source)
+{
 	swap(*this, source);
 	return *this;
 }
@@ -125,7 +128,8 @@ inline int ArrayList<T>::size() const {
 }
 
 template <typename T>
-T& ArrayList<T>::operator[](int index) {
+T& ArrayList<T>::operator[](int index)
+{
 	assert(index >= 0);
 	assert(index < size());
 	return content_[index];
@@ -139,7 +143,8 @@ const T& ArrayList<T>::operator[](int index) const {
 }
 
 template <typename T>
-void ArrayList<T>::grow(float scaling) {
+void ArrayList<T>::grow(float scaling)
+{
 	assert(allocated_size_ * scaling >= 1);
 	allocated_size_ *= scaling;
 	content_ = static_cast<T*>(realloc(content_, sizeof(T) * allocated_size_));
@@ -147,7 +152,8 @@ void ArrayList<T>::grow(float scaling) {
 }
 
 template <typename T>
-void ArrayList<T>::insert(int position, T element) {
+void ArrayList<T>::insert(int position, T element)
+{
 	assert(position >= 0);
 	assert(position <= size());
 	if (size() >= allocated_size_)
@@ -162,7 +168,8 @@ void ArrayList<T>::insert(int position, T element) {
 }
 
 template <typename T>
-T ArrayList<T>::pop(int position) {
+T ArrayList<T>::pop(int position)
+{
 	assert(position >= 0);
 	assert(position < size());
 
@@ -177,7 +184,8 @@ T ArrayList<T>::pop(int position) {
 }
 
 template <typename T>
-int ArrayList<T>::insertion(int end, T element) {
+int ArrayList<T>::insertion(int end, T element)
+{
 	int i = end;
 	using std::swap;
 	for (; i >= 0 && content_[i] > element; --i)
@@ -189,7 +197,8 @@ int ArrayList<T>::insertion(int end, T element) {
 }
 
 template <typename T>
-int ArrayList<T>::insert(T element) {
+int ArrayList<T>::insert(T element)
+{
 	if (size() >= allocated_size_)
 		grow();
 
@@ -197,14 +206,16 @@ int ArrayList<T>::insert(T element) {
 }
 
 template <typename T>
-void ArrayList<T>::sort() {
+void ArrayList<T>::sort()
+{
 	// Insertion Sort
 	for (int i = 1; i < size(); ++i)
 		insertion(i - 1, content_[i]);
 }
 
 template <typename T>
-ArrayList<T>& ArrayList<T>::operator+=(const ArrayList<T>& rhs) {
+ArrayList<T>& ArrayList<T>::operator+=(const ArrayList<T>& rhs)
+{
 	const auto new_allocated_size = allocated_size_ + rhs.allocated_size_;
 	auto new_content = static_cast<T*>(malloc(sizeof(T) * new_allocated_size));
 	assert(new_content != nullptr);

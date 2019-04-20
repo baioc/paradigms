@@ -8,34 +8,18 @@
 
 using baioc::List;
 
-class MyNode : public baioc::LinkedNode {
- public:
-	void set(int value) { value_ = value; }
-	int get() const { return value_; }
-	bool operator==(const MyNode& rhs) const { return value_ == rhs.value_; }
-	bool operator<(const MyNode& rhs) const { return value_ < rhs.value_; }
- private:
-	int value_{0};
-};
-
 template <typename T>
-void print(const List<T>& list) {
+void print(const List<T>& list)
+{
 	std::cout << "(";
 	for (int i = 0; i < list.size(); ++i)
 		std::cout << (i == 0 ? "" : " ") << list[i];
 	std::cout << ")\n\n";
 }
 
-template <>
-void print(const List<MyNode>& list) {
-	std::cout << "(";
-	for (int i = 0; i < list.size(); ++i)
-		std::cout << (i == 0 ? "" : " ") << list[i].get();
-	std::cout << ")\n\n";
-}
-
-void ArrayList_test() {
-	using TestedList = baioc::ArrayList<int>;
+int main(int argc, char const *argv[])
+{
+	using TestedList = baioc::LinkedList<int>;
 
 	TestedList l = {1, 0, 1, 1, 2, 3};
 	print(l);
@@ -95,34 +79,14 @@ void ArrayList_test() {
 	auto p = o + n + m + l;
 	print(p);
 
-	p.sort();
-	print(p);
+	// p.sort();
+	// print(p);
 
-	std::cout << "unique (requires sorted):\n";
-	for (int i = 0; i < p.size(); ++i) {
-		auto e = p[i];
-		while (p.count(e) > 1)
-			p.remove(e);
-	}
-	print(p);
-}
-
-void NodeList_test() {
-	constexpr int n = 10;
-	MyNode pool[n];
-
-	List<MyNode> my_list;
-	for (int i = 0; i < n; ++i) {
-		pool[i].set(i+1);
-		my_list.push_back(pool[i]);
-	}
-
-	print(my_list);
-}
-
-int main(int argc, char const *argv[])
-{
-	ArrayList_test();
-	NodeList_test();
-	return 0;
+	// std::cout << "unique (requires sorted):\n";
+	// for (int i = 0; i < p.size(); ++i) {
+	// 	auto e = p[i];
+	// 	while (p.count(e) > 1)
+	// 		p.remove(e);
+	// }
+	// print(p);
 }

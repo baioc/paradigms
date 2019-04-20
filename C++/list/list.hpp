@@ -11,11 +11,11 @@ template <typename T>
 	// requires Equality_comparable<T>
 class List {
  public:
-	virtual T& operator[](int index);
-	const virtual T& operator[](int index) const;
+	virtual T& operator[](int index) = 0;
+	virtual const T& operator[](int index) const = 0;
 
-	virtual void insert(int index, T element);
-	virtual T pop(int index);
+	virtual void insert(int index, T element) = 0;
+	virtual T pop(int index) = 0;
 
 	virtual void push_back(T element);
 	virtual T pop_back();
@@ -24,7 +24,7 @@ class List {
 	virtual T pop_front();
 	virtual T& front();
 
-	virtual int size() const;
+	virtual int size() const = 0;
 	virtual bool empty() const;
 
 	//! when find() fails, it returns a number equal to size()
@@ -35,35 +35,35 @@ class List {
 };
 
 template <typename T>
-void List<T>::push_back(T element) {
-	insert(size() - 1, element);
-}
+void List<T>::push_back(T element) { insert(size() - 1, element); }
 
 template <typename T>
-T List<T>::pop_back() {
+T List<T>::pop_back()
+{
 	assert(!empty());
 	return pop(size() - 1);
 }
 
 template <typename T>
-T& List<T>::back() {
+T& List<T>::back()
+{
 	assert(!empty());
 	return (*this)[size() - 1];
 }
 
 template <typename T>
-void List<T>::push_front(T element) {
-	insert(0, element);
-}
+void List<T>::push_front(T element) { insert(0, element); }
 
 template <typename T>
-T List<T>::pop_front() {
+T List<T>::pop_front()
+{
 	assert(!empty());
 	return pop(0);
 }
 
 template <typename T>
-T& List<T>::front() {
+T& List<T>::front()
+{
 	assert(!empty());
 	return (*this)[0];
 }
@@ -74,7 +74,8 @@ bool List<T>::empty() const {
 }
 
 template <typename T>
-int List<T>::find(const T& element, int from) const {
+int List<T>::find(const T& element, int from) const
+{
 	for (; from < size(); ++from) {
 		if ((*this)[from] == element)
 			break;
@@ -83,7 +84,8 @@ int List<T>::find(const T& element, int from) const {
 }
 
 template <typename T>
-int List<T>::remove(const T& element) {
+int List<T>::remove(const T& element)
+{
 	int index = find(element);
 	if (index < size())
 		pop(index);

@@ -3,13 +3,15 @@
 
 template <typename T>
 	// requires MoveConstructible<T> && MoveAssignable<T>
-void swap(T& a, T& b) {
+void swap(T& a, T& b)
+{
 	T tmp(std::move(a));
 	a = std::move(b);
 	b = std::move(tmp);
 }
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char const *argv[])
+{
 	int x = 5, y = 7;
 	swap(x, y);
 	assert(x == 7 && y == 5);

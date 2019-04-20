@@ -89,12 +89,12 @@ bool balanced(const char *string)
 
 		if (c == '(' || c == '[' || c == '{') {
 			stack_push(&brackets, &c);
-
-		} else if (c == ')' || c == ']' || c == '}') {
+		}
+		else if (c == ')' || c == ']' || c == '}') {
 			if (stack_empty(&brackets)) {
 				goto FAIL;
-
-			} else {
+			}
+			else {
 				char last_open;
 				stack_pop(&brackets, &last_open);
 
