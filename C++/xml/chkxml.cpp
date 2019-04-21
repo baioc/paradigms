@@ -25,6 +25,7 @@ int main(int argc, char const *argv[])
 
 		std::stringstream buffer;
 		buffer << xml.rdbuf();
+		xml.close();
 
 		const bool ok = balanced(buffer.str());
 		err += !ok;
