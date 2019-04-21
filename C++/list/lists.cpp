@@ -4,6 +4,7 @@
 
 #include "array_list.hpp"
 #include "linked_list.hpp"
+#include "doubly_linked_list.hpp"
 
 
 using baioc::List;
@@ -19,7 +20,7 @@ void print(const List<T>& list)
 
 int main(int argc, char const *argv[])
 {
-	using TestedList = baioc::LinkedList<int>;
+	using TestedList = baioc::DoublyLinkedList<int>;
 
 	TestedList l = {1, 0, 1, 1, 2, 3};
 	print(l);

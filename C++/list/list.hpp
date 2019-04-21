@@ -35,47 +35,47 @@ class List {
 };
 
 template <typename T>
-void List<T>::push_back(T element)
+inline void List<T>::push_back(T element)
 {
 	insert(size(), element);
 }
 
 template <typename T>
-T List<T>::pop_back()
+inline T List<T>::pop_back()
 {
 	assert(!empty());
 	return pop(size() - 1);
 }
 
 template <typename T>
-T& List<T>::back()
+inline T& List<T>::back()
 {
 	assert(!empty());
 	return (*this)[size() - 1];
 }
 
 template <typename T>
-void List<T>::push_front(T element)
+inline void List<T>::push_front(T element)
 {
 	insert(0, element);
 }
 
 template <typename T>
-T List<T>::pop_front()
+inline T List<T>::pop_front()
 {
 	assert(!empty());
 	return pop(0);
 }
 
 template <typename T>
-T& List<T>::front()
+inline T& List<T>::front()
 {
 	assert(!empty());
 	return (*this)[0];
 }
 
 template <typename T>
-bool List<T>::empty() const
+inline bool List<T>::empty() const
 {
 	return size() <= 0;
 }
@@ -100,10 +100,9 @@ int List<T>::remove(const T& element)
 }
 
 template <typename T>
-bool List<T>::contains(const T& element) const
+inline bool List<T>::contains(const T& element) const
 {
-	int index = find(element);
-	return index < size();
+	return find(element) < size();
 }
 
 template <typename T>

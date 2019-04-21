@@ -145,7 +145,7 @@ inline int ArrayList<T>::size() const
 }
 
 template <typename T>
-T& ArrayList<T>::operator[](int index)
+inline T& ArrayList<T>::operator[](int index)
 {
 	assert(index >= 0);
 	assert(index < size());
@@ -153,7 +153,7 @@ T& ArrayList<T>::operator[](int index)
 }
 
 template <typename T>
-const T& ArrayList<T>::operator[](int index) const
+inline const T& ArrayList<T>::operator[](int index) const
 {
 	assert(index >= 0);
 	assert(index < size());
