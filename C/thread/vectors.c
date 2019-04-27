@@ -36,7 +36,7 @@ struct vector_tuple {
 };
 
 // Sums the first two vectors in a vector_tuple and fills the third with result.
-void *threaded_vectorial_sum(void *vtuple)
+void *vectorial_sum(void *vtuple)
 {
 	const double *a = ((struct vector_tuple *)vtuple)->first;
 	const double *b = ((struct vector_tuple *)vtuple)->second;
@@ -46,11 +46,11 @@ void *threaded_vectorial_sum(void *vtuple)
 	for (int i = 0; i < size; ++i)
 		*(c++) = *(a++) + *(b++);
 
-	pthread_exit(NULL);
+	return NULL;
 }
 
 // Returns the dot product between two vectors as a malloc()ed double *.
-void *threaded_dot_product(void *vtuple)
+void *dot_product(void *vtuple)
 {
 	const double *a = ((struct vector_tuple *)vtuple)->first;
 	const double *b = ((struct vector_tuple *)vtuple)->second;
@@ -60,7 +60,7 @@ void *threaded_dot_product(void *vtuple)
 	for (int i = 0; i < size; ++i)
 		*result += *(a++) * *(b++);
 
-	pthread_exit(result);
+	return result;
 }
 
 
@@ -133,7 +133,7 @@ int main(int argc, const char* argv[])
 			sub_vector[i].size = (i == last)
 									? batch_size + remainders
 			                        : batch_size;
-			pthread_create(&thread[i], NULL, threaded_vectorial_sum, &sub_vector[i]);
+			pthread_create(&thread[i], NULL, vectorial_sum, &sub_vector[i]);
 		}
 
 		// join threads
@@ -167,7 +167,7 @@ int main(int argc, const char* argv[])
 			sub_vector[i].size = (i == last)
 									? batch_size + remainders
 			                        : batch_size;
-			pthread_create(&thread[i], NULL, threaded_dot_product, &sub_vector[i]);
+			pthread_create(&thread[i], NULL, dot_product, &sub_vector[i]);
 		}
 
 		// join threads
