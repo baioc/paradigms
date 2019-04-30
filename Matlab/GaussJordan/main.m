@@ -1,17 +1,17 @@
 
 printf("\nGaussian Elimination\n");
 
-A = [1   2   0   0   0;
-     3   4   5   0   0;
-     0   6   7   8   0;
-     0   0   9   10  11;
-     0   0   0   12  13;]
+A = [1   1   0   0   0;
+     1   4   1   0   0;
+     0   1   5   1   0;
+     0   0   1   5   1;
+     0   0   0   1   1;]
 
-B = [14;
-     15;
-     16;
-     17;
-     18;]
+B = [1.5;
+     1.0;
+     2.0;
+     2.0;
+     3.0;]
 
 solution = A\B;
 
@@ -40,11 +40,11 @@ maximum_absolute_residue = max(abs(A*x - B))
 printf("\nGauss-Seidel Iterative Method (for Tridiagonal)\n");
 
 initialGuess(1:n,1) = 0;
-maxIter = 1597;
-tolerance = 1;
 relaxation = 1;
+tolerance = 1e-14;
+maxIter = 1597;
 
-[x, iterations, flops] = solveGaussSeidelTRID(t, r, d, B, initialGuess, tolerance, maxIter, relaxation)
+[x, iterations, flops] = solveGaussSeidelTRID(t, r, d, B, initialGuess, relaxation, tolerance, maxIter)
 maximum_absolute_residue = max(abs(A*x - B))
 
 printf('\n');

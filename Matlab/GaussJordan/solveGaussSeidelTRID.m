@@ -1,4 +1,4 @@
-function [X, iterations, flops] = solveGaussSeidelTRID(T, R, D, B, Xo, tolerance, maxIterations, lambda)
+function [X, iterations, flops] = solveGaussSeidelTRID(T, R, D, B, Xo, lambda=1, tolerance=1e-5, maxiter=1e2)
 
     n = length(R);
     flops = 0;
@@ -9,7 +9,7 @@ function [X, iterations, flops] = solveGaussSeidelTRID(T, R, D, B, Xo, tolerance
     kappa = 1 - lambda; flops += 1;
 
     X = Xo;
-    while dif > tolerance && iterations < maxIterations
+    while dif > tolerance && iterations < maxiter
         % flops += 1;
 
         i = 1;
