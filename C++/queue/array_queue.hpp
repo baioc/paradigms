@@ -41,7 +41,7 @@ Queue<T>::Queue(int size)
 {
 	assert(size > 0);
 	allocated_size_ = size;
-	content_ = std::unique_ptr<T[]>(new T[allocated_size_]);
+	content_ = std::make_unique<T[]>(allocated_size_);
 }
 
 template <typename T>
