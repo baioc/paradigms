@@ -1,4 +1,4 @@
-function [X M] = rootsNewtonPolynomial(Pn, tolerance=1e-14, step=1e-2)
+function [X, M] = rootsNewtonPolynomial(Pn, tolerance=1e-5, step=1e-2)
 
 	% remove leading zero coefficients
     nez = find(Pn, 1); % list with index of first non-zero coefficient
@@ -13,7 +13,7 @@ function [X M] = rootsNewtonPolynomial(Pn, tolerance=1e-14, step=1e-2)
 	r = 0;
 	do
 		r++;
-		[X(r), M(r)] = iterateNewtonPolynomial(Pn, X(r), tolerance);
+		[X(r), M(r,1)] = iterateNewtonPolynomial(Pn, X(r), tolerance);
 		for i = 1 : M(r)
 			[y Pn] = BriotRuffini(Pn, X(r));
 		end

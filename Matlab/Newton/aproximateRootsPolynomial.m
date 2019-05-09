@@ -20,13 +20,13 @@ function X = aproximateRootsPolynomial(Pn, step=1e-2)
 
         if ya * yb <= 0
             root_count++;
-            X(root_count) = (x(i-1) + x(i)) / 2;
+            X(root_count,1) = (x(i-1) + x(i)) / 2;
         end
 
         ya = yb;
     end
 
     % Complex roots (a controlled guess)
-    X(root_count+1 : n) = complex(0, r);
+    X(root_count+1 : n, 1) = complex(0, r);
 
 end

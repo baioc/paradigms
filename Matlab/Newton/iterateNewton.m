@@ -1,4 +1,4 @@
-function x = iterateNewton(f, x, tolerance=1e-14)
+function x = iterateNewton(f, x, tolerance=1e-5)
 
     dx = tolerance;
     do

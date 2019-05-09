@@ -1,5 +1,5 @@
-% Finds aproximate roots inside interval [from : step : to] for a function f
-% that is continuous in this interval using Bolzano's Intermediate Value Theorem
+% Finds aproximate roots R inside [from : step : to] for a function f that is
+% (mostly) continuous in this interval using Bolzano's Intermediate Value Theorem
 function R = aproximateRoots(f, from, to, step=1e-2)
 
     x = [from : step : to];
@@ -12,7 +12,7 @@ function R = aproximateRoots(f, from, to, step=1e-2)
 
         if ya * yb <= 0 && abs(ya) < 1 && abs(yb) < 1
             root_count++;
-            R(root_count) = (x(i-1) + x(i)) / 2;
+            R(root_count,1) = (x(i-1) + x(i)) / 2;
         end
 
         ya = yb;
