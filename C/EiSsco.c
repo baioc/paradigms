@@ -29,7 +29,7 @@ double my_sqrt(double x)
 {
 	double guess = 1.0;
 	while (true) {
-		double new_guess = (x/guess + guess) / 2;
+		const double new_guess = (x/guess + guess) / 2;
 		if (guess == new_guess)
 			return guess;
 		guess = new_guess;
