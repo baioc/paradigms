@@ -11,6 +11,8 @@ template <typename T>
 	// requires Equality_comparable<T>
 class List {
  public:
+	virtual ~List() = default;
+
 	virtual T& operator[](int index) = 0;
 	virtual const T& operator[](int index) const = 0;
 

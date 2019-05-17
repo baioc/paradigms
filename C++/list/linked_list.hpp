@@ -13,7 +13,7 @@ namespace baioc {
 template <typename T>
 class LinkedList : public baioc::List<T> {
  public:
-	~LinkedList();
+	virtual ~LinkedList();
  	LinkedList() = default;
 	LinkedList(const std::initializer_list<T>& initial);
 	LinkedList(const LinkedList& origin);
