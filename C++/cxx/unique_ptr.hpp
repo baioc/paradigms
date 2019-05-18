@@ -1,9 +1,9 @@
-#ifndef BAIOC_UNIQUE_PTR_HPP
-#define BAIOC_UNIQUE_PTR_HPP
+#ifndef UTIL_UNIQUE_PTR_HPP
+#define UTIL_UNIQUE_PTR_HPP
 
 #include <utility>
 
-namespace baioc {
+namespace util {
 
 template <typename T>
 class unique_ptr {
@@ -16,20 +16,13 @@ class unique_ptr {
 		ptr{ptr}
 	{}
 
-	~unique_ptr()
-	{
-		delete ptr; // no errors with nullptr
-	}
+	~unique_ptr() { delete ptr; }
 
-	T& operator*()
-	{
-		return *ptr;
-	}
+	T& operator*() { return *ptr; }
+	const T& operator*() const { return *ptr; }
 
-	T* operator->()
-	{
-		return ptr;
-	}
+	T* operator->() { return ptr; }
+	const T* operator->() const { return ptr; }
 
 	// no copies allowed
 	unique_ptr(const unique_ptr& ptr) = delete;
@@ -95,6 +88,6 @@ unique_ptr<T> make_unique(Args&& ...args)
 	return unique_ptr<T>{ new T{std::forward<Args>(args)...} };
 }
 
-} // namespace baioc
+} // namespace util
 
-#endif // BAIOC_UNIQUE_PTR_HPP
+#endif // UTIL_UNIQUE_PTR_HPP
