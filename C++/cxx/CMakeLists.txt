@@ -1,37 +1,15 @@
-cmake_minimum_required(VERSION 3.0)
-project(renderer CXX)
+cmake_minimum_required( VERSION 3.0 )
+project( magic CXX )
 
-add_executable(evil_renderer
-	inheritance.cpp
-)
+add_executable( magic client.cpp )
 
-target_sources(evil_renderer
+target_sources(magic
 	PRIVATE
-		inheritance.cpp
-		renderer.h
-		renderer.cpp
+		client.cpp
+		library.hpp
 		unique_ptr.hpp
 )
 
-target_compile_features(evil_renderer
-	PRIVATE
-		cxx_std_17
-)
+find_package ( Threads REQUIRED )
 
-
-add_executable(nice_renderer
-	polymorphism.cpp
-)
-
-target_sources(nice_renderer
-	PRIVATE
-		polymorphism.cpp
-		renderer.h
-		renderer.cpp
-		unique_ptr.hpp
-)
-
-target_compile_features(nice_renderer
-	PRIVATE
-		cxx_std_17
-)
+target_link_libraries ( magic ${CMAKE_THREAD_LIBS_INIT} )
