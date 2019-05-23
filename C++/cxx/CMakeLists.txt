@@ -8,6 +8,7 @@ target_sources(magic
 		client.cpp
 		library.hpp
 		unique_ptr.hpp
+		algorithm.hpp
 )
 
 find_package ( Threads REQUIRED )

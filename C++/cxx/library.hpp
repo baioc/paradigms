@@ -1,5 +1,5 @@
-#ifndef LIBRARY_HPP
-#define LIBRARY_HPP
+#ifndef LIB_LIBRARY_HPP_
+#define LIB_LIBRARY_HPP_
 
 #include <vector>
 #include <iostream>
@@ -84,4 +84,4 @@ void undo(history& h)
 
 } // namespace lib
 
-#endif // LIBRARY_HPP
+#endif // LIB_LIBRARY_HPP_
