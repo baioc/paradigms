@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>\
 
 
 // Le o conteudo do arquivo filename e retorna um vetor E o tamanho dele
@@ -63,6 +64,23 @@ void *dot_product(void *vtuple)
 	return result;
 }
 
+// Calculates standard deviation for elements in a given vector.
+double standard_deviation(double* data, int size) {
+	double avg = 0;
+	#pragma omp parallel for reduction(+:avg) schedule(static)
+	for (int i = 0; i < size; ++i)
+		avg += data[i];
+
+	avg /= size;
+
+	double sd = 0;
+	#pragma omp parallel for reduction(+:sd)
+	for (int i = 0; i < size; ++i)
+		sd += pow(data[i] - avg, 2);
+
+	return sqrt(sd / (size-1));
+}
+
 
 int main(int argc, const char* argv[])
 {
@@ -111,8 +129,8 @@ int main(int argc, const char* argv[])
 	double *c = malloc(a_size * sizeof(double));
 	assert(c != NULL);
 
-
-	{ // ex2: vectorial sum
+	// vectorial sum
+	{
 		// make threads
 		if (n_threads > a_size) {
 			n_threads = a_size;
@@ -140,14 +158,18 @@ int main(int argc, const char* argv[])
 		for(int i = 0; i < n_threads; ++i)
 			pthread_join(thread[i], NULL);
 
-		//    +---------------------------------+
-		// ** | IMPORTANTE: avalia o resultado! | **
-		//    +---------------------------------+
+		// check result
 		test_vectorial_sum(a, b, c, a_size);
+
+		// standard deviation
+		printf("sd_a: %g\n", standard_deviation(a, a_size));
+		printf("sd_b: %g\n", standard_deviation(b, b_size));
+		printf("sd_(a+b): %g\n", standard_deviation(c, a_size));
 	}
 	printf("\n");
 
-	{ // ex3: dot product
+	// dot product
+	{
 		// make threads
 		if (n_threads > a_size) {
 			n_threads = a_size;
@@ -179,14 +201,11 @@ int main(int argc, const char* argv[])
 			free(partial);
 		}
 
-		//    +---------------------------------+
-		// ** | IMPORTANTE: avalia o resultado! | **
-		//    +---------------------------------+
+		// check result
 		test_dot_product(a, b, a_size, result);
 	}
 
-
-	// IMPORTANTE: libera memoria
+	// deallocate vectors
 	free(c);
 	free(b);
 	free(a);
