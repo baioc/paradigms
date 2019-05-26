@@ -23,9 +23,9 @@ printf("\nGaussian Elimination Optimized for Tridiagonal\n");
 
 n = length(A);
 for i = 1 : n-1
-    t(i) = A(i+1,i);
-    r(i) = A(i,i);
-    d(i) = A(i,i+1);
+	t(i) = A(i+1,i);
+	r(i) = A(i,i);
+	d(i) = A(i,i+1);
 end
 r(n) = A(n,n);
 

@@ -28,7 +28,7 @@ printf("  \n2.b) Metodo de Newton com multiplicidade\n");
 
 [x, M] = rootsNewtonPolynomial(a, 1e-9)
 for i = 1 : length(x)
-    residuos(i,1) = Horner(a, x(i));
+	residuos(i,1) = Horner(a, x(i));
 end
 residuos
 
@@ -37,10 +37,10 @@ printf("  \n2.c) Polinomio fatorado em Binomios\n");
 
 printf("Pn(x) = ");
 for i = 1 : length(x)
-    printf("(x - %.1f)^%d", x(i), M(i));
-    if i < length(x)
-        printf(" * ");
-    end
+	printf("(x - %.1f)^%d", x(i), M(i));
+	if i < length(x)
+		printf(" * ");
+	end
 end
 printf("\n");
 
@@ -49,7 +49,7 @@ printf("  \n2.d) Resultados do Octave e WolframAlpha\n");
 
 Octave = roots(a)
 for i = 1 : length(Octave)
-    residuos_Octave(i,1) = Horner(a, Octave(i));
+	residuos_Octave(i,1) = Horner(a, Octave(i));
 end
 residuos_Octave
 
@@ -61,7 +61,7 @@ WolframAlpha = [1.2;
                 0.9;
                 0.8;]
 for i = 1 : length(WolframAlpha)
-    residuos_WolframAlpha(i,1) = Horner(a, WolframAlpha(i));
+	residuos_WolframAlpha(i,1) = Horner(a, WolframAlpha(i));
 end
 residuos_WolframAlpha
 
