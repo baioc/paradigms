@@ -31,7 +31,7 @@ Polymorphism is an implementation detail that should not complicate the client c
 
 ### Inheritance
 
-Inheritance is a mechanism to implement runtime polymorphism where one class is derived from another and overrides some part of it's parent's implementation.
+Inheritance is a mechanism to implement runtime polymorphism where one class is derived from another and overrides some part of its parent's implementation.
 But since classes with a common inheritance may have different sizes in memory, we can only use them as "polymorphic types" by pointers to that common parent, adding heap allocations and an extra layer of indirection over the already existing virtual calls.
 In this we either use raw pointers and are forced to have to deal with all their problems, or we encapsulate them in smart pointers and end up losing some standard semantics (`unique_ptr`s can't be copied, `shared_ptr`s perform shallow copying, etc),  and transform our types into *non-regular* ones.
 
