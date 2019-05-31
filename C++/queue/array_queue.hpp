@@ -1,5 +1,5 @@
-#ifndef BAIOC_QUEUE_HPP
-#define BAIOC_QUEUE_HPP
+#ifndef STRUCTURES_QUEUE_HPP
+#define STRUCTURES_QUEUE_HPP
 
 #include <memory>   	// unique_ptr
 
@@ -7,7 +7,7 @@
 #include <stdexcept>	// exceptions
 
 
-namespace baioc {
+namespace structures {
 
 template <typename T>
 	// requires MoveAssignable<T>
@@ -103,6 +103,6 @@ inline int Queue<T>::size() const
 	return current_size_;
 }
 
-} // baioc
+} // structures
 
-#endif // BAIOC_QUEUE_HPP
+#endif // STRUCTURES_QUEUE_HPP

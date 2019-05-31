@@ -7,7 +7,7 @@
 #include "doubly_linked_list.hpp"
 
 
-using baioc::List;
+using structures::List;
 
 template <typename T>
 void print(const List<T>& list)
@@ -20,7 +20,7 @@ void print(const List<T>& list)
 
 int main(int argc, char const *argv[])
 {
-	using TestedList = baioc::DoublyLinkedList<int>;
+	using TestedList = structures::DoublyLinkedList<int>;
 
 	TestedList l = {1, 0, 1, 1, 2, 3};
 	print(l);

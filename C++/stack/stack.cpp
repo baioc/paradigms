@@ -3,7 +3,7 @@
 #include <iostream>
 
 
-using baioc::Stack;
+using structures::Stack;
 
 template <typename T>
 void hanoi(int size, Stack<T>& from,

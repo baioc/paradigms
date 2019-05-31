@@ -1,11 +1,11 @@
-#ifndef BAIOC_LIST_HPP
-#define BAIOC_LIST_HPP
+#ifndef STRUCTURES_LIST_HPP
+#define STRUCTURES_LIST_HPP
 
 #include <algorithm>	// std::swap
 #include <initializer_list>
 #include <cassert>
 
-namespace baioc {
+namespace structures {
 
 template <typename T>
 	// requires Equality_comparable<T>
@@ -117,6 +117,6 @@ unsigned List<T>::count(const T& element) const
 	return count;
 }
 
-} // baioc
+} // structures
 
-#endif // BAIOC_LIST_HPP
+#endif // STRUCTURES_LIST_HPP

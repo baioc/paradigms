@@ -1,12 +1,12 @@
-#ifndef BAIOC_STACK_HPP
-#define BAIOC_STACK_HPP
+#ifndef STRUCTURES_STACK_HPP
+#define STRUCTURES_STACK_HPP
 
 #include <algorithm>	// std::swap, std::copy
 
 #include <cassert>
 
 
-namespace baioc {
+namespace structures {
 
 template <typename T>
 	// requires MoveAssignable<T>
@@ -152,6 +152,6 @@ void Stack<T>::pick(int offset)
 	push(content_[access]);
 }
 
-} // baioc
+} // structures
 
-#endif // BAIOC_STACK_HPP
+#endif // STRUCTURES_STACK_HPP

@@ -1,5 +1,5 @@
-#ifndef BAIOC_LINKED_LIST_HPP
-#define BAIOC_LINKED_LIST_HPP
+#ifndef STRUCTURES_LINKED_LIST_HPP
+#define STRUCTURES_LINKED_LIST_HPP
 
 #include "list.hpp"
 
@@ -8,10 +8,10 @@
 #include <iterator>
 
 
-namespace baioc {
+namespace structures {
 
 template <typename T>
-class LinkedList : public baioc::List<T> {
+class LinkedList : public structures::List<T> {
  public:
 	virtual ~LinkedList();
  	LinkedList() = default;
@@ -352,6 +352,6 @@ typename LinkedList<T>::LinkedNode* LinkedList<T>::merge(LinkedNode* lo, int lo_
 	return result;
 }
 
-} // baioc
+} // structures
 
-#endif // BAIOC_LINKED_LIST_HPP
+#endif // STRUCTURES_LINKED_LIST_HPP

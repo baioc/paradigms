@@ -1,5 +1,5 @@
-#ifndef BAIOC_ARRAY_LIST_HPP
-#define BAIOC_ARRAY_LIST_HPP
+#ifndef STRUCTURES_ARRAY_LIST_HPP
+#define STRUCTURES_ARRAY_LIST_HPP
 
 #include "list.hpp"
 
@@ -7,11 +7,11 @@
 #include <initializer_list>
 
 
-namespace baioc {
+namespace structures {
 
 template <typename T>
 	// requires Sortable<T>
-class ArrayList : public baioc::List<T> {
+class ArrayList : public structures::List<T> {
  public:
 	explicit ArrayList(int size = 16);
 	ArrayList(const std::initializer_list<T>& initial);
@@ -72,13 +72,13 @@ ArrayList<T> operator+(ArrayList<T> lhs, const ArrayList<T>& rhs)
 	return lhs;
 }
 
-} // baioc
+} // structures
 
 
 #include <cassert>
 #include <iterator>	// make_move_iterator
 
-namespace baioc {
+namespace structures {
 
 template <typename T>
 ArrayList<T>::ArrayList(int size)
@@ -255,6 +255,6 @@ ArrayList<T>& ArrayList<T>::operator+=(const ArrayList<T>& rhs)
 	return *this;
 }
 
-} // baioc
+} // structures
 
-#endif // BAIOC_ARRAY_LIST_HPP
+#endif // STRUCTURES_ARRAY_LIST_HPP

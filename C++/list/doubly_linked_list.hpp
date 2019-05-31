@@ -1,5 +1,5 @@
-#ifndef BAIOC_DOUBLY_LINKED_LIST_HPP
-#define BAIOC_DOUBLY_LINKED_LIST_HPP
+#ifndef STRUCTURES_DOUBLY_LINKED_LIST_HPP
+#define STRUCTURES_DOUBLY_LINKED_LIST_HPP
 
 #include "list.hpp"
 
@@ -7,10 +7,10 @@
 #include <cassert>
 
 
-namespace baioc {
+namespace structures {
 
 template <typename T>
-class DoublyLinkedList : public baioc::List<T> {
+class DoublyLinkedList : public structures::List<T> {
  public:
 	~DoublyLinkedList();
  	DoublyLinkedList() = default;
@@ -399,6 +399,6 @@ void DoublyLinkedList<T>::sort()
 		insert(aux.pop_back());
 }
 
-} // baioc
+} // structures
 
-#endif // BAIOC_DOUBLY_LINKED_LIST_HPP
+#endif // STRUCTURES_DOUBLY_LINKED_LIST_HPP

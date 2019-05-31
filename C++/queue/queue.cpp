@@ -4,7 +4,7 @@
 #include <cstdlib>
 
 
-using baioc::Queue;
+using structures::Queue;
 
 template <typename T>
 void dump(Queue<T>& q)

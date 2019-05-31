@@ -1,12 +1,12 @@
-#ifndef BAIOC_BINARY_TREE_HPP
-#define BAIOC_BINARY_TREE_HPP
+#ifndef STRUCTURES_BINARY_TREE_HPP
+#define STRUCTURES_BINARY_TREE_HPP
 
 #include <memory>
 #include <algorithm>
 #include <deque>
 
 
-namespace baioc {
+namespace structures {
 
 template <typename T>
 class BinaryTree {
@@ -16,36 +16,56 @@ class BinaryTree {
 	bool contains(const T& element) const;
 	int size() const;
 	bool empty() const;
+	int height() const;
 
 	std::deque<T> pre_order() const;
 	std::deque<T> in_order() const;
 	std::deque<T> post_order() const;
 
  private:
-	class TreeNode {
-	 public:
-		explicit TreeNode(T data): data_(std::move(data)) {}
+	struct TreeNode {
+		T data_;
+		int height_{-1};
+		std::unique_ptr<TreeNode> left_{nullptr};
+		std::unique_ptr<TreeNode> right_{nullptr};
+
+		explicit TreeNode(T data);
 
 		void insert(T element);
-		bool remove(std::unique_ptr<TreeNode>& root, const T& element);
 		bool contains(const T& element) const;
 		int size() const;
+		int height() const;
 
 		std::deque<T> pre_order() const;
 		std::deque<T> in_order() const;
 		std::deque<T> post_order() const;
 
 		T min() const;
-
-	 private:
-		T data_;
-		std::unique_ptr<TreeNode> left_{nullptr};
-		std::unique_ptr<TreeNode> right_{nullptr};
 	};
+
+	static bool remove(std::unique_ptr<TreeNode>& node, const T& element);
 
 	std::unique_ptr<TreeNode> root_{nullptr};
 };
 
+
+template <typename T>
+BinaryTree<T>::TreeNode::TreeNode(T data):
+	data_(std::move(data)), height_(0),
+	left_(nullptr), right_(nullptr)
+{}
+
+template <typename T>
+int BinaryTree<T>::height() const
+{
+	return root_ ? root_->height() : -1;
+}
+
+template <typename T>
+int BinaryTree<T>::TreeNode::height() const
+{
+	return height_;
+}
 
 template <typename T>
 void BinaryTree<T>::insert(T element)
@@ -67,10 +87,15 @@ void BinaryTree<T>::TreeNode::insert(T element)
 	}
 	else if (data_ < element) {
 		if (!right_)
-			right_ =std::make_unique<TreeNode>(std::move(element));
+			right_ = std::make_unique<TreeNode>(std::move(element));
 		else
 			right_->insert(std::move(element));
 	}
+
+	const auto l = left_ ? left_->height() : -1;
+	const auto r = right_ ? right_->height() : -1;
+	height_ = std::max(l, r) + 1;
+	// @TODO AVL
 }
 
 template <typename T>
@@ -93,9 +118,7 @@ bool BinaryTree<T>::TreeNode::contains(const T& element) const
 template <typename T>
 int BinaryTree<T>::size() const
 {
-	if (root_)
-		return root_->size();
-	return 0;
+	return root_ ? root_->size() : 0;
 }
 
 template <typename T>
@@ -121,9 +144,7 @@ bool BinaryTree<T>::empty() const
 template <typename T>
 std::deque<T> BinaryTree<T>::pre_order() const
 {
-	if (root_)
-		return root_->pre_order();
-	return std::deque<T>();
+	return root_ ? root_->pre_order() : std::deque<T>();
 }
 
 template <typename T>
@@ -157,9 +178,7 @@ std::deque<T> BinaryTree<T>::TreeNode::pre_order() const
 template <typename T>
 std::deque<T> BinaryTree<T>::in_order() const
 {
-	if (root_)
-		return root_->in_order();
-	return std::deque<T>();
+	return root_ ? root_->in_order() : std::deque<T>();
 }
 
 template <typename T>
@@ -193,9 +212,7 @@ std::deque<T> BinaryTree<T>::TreeNode::in_order() const
 template <typename T>
 std::deque<T> BinaryTree<T>::post_order() const
 {
-	if (root_)
-		return root_->post_order();
-	return std::deque<T>();
+	return root_ ? root_->post_order() : std::deque<T>();
 }
 
 template <typename T>
@@ -229,43 +246,54 @@ std::deque<T> BinaryTree<T>::TreeNode::post_order() const
 template <typename T>
 bool BinaryTree<T>::remove(const T& element)
 {
-	return root_ && root_->remove(root_, element);
+	return remove(root_, element);
 }
 
 template <typename T>
 T BinaryTree<T>::TreeNode::min() const
 {
-	if (left_)
-		return left_->min();
-	return data_;
+	return left_ ? left_->min() : data_;
 }
 
 template <typename T>
-bool BinaryTree<T>::TreeNode::remove(
-	std::unique_ptr<TreeNode>& root, const T& element)
+bool BinaryTree<T>::remove(std::unique_ptr<TreeNode>& node, const T& element)
 {
-	if (!root)
+	if (!node)
 		return false;
 
-	if (element < root->data_)
-		return remove(root->left_, element);
-	else if (root->data_ < element)
-		return remove(root->right_, element);
+	bool found = false;
 
-	if (root->left_ && root->right_) {
-		root->data_ = root->right_->min();
-		return remove(root->right_, root->data_);
+	if (element < node->data_) {
+		found = remove(node->left_, element);
+	}
+	else if (node->data_ < element) {
+		found = remove(node->right_, element);
+	}
+	else if (node->left_ && node->right_) {
+		found = true;
+		node->data_ = node->right_->min();
+		remove(node->right_, node->data_);
+	}
+	else {
+		std::unique_ptr<BinaryTree<T>::TreeNode> tmp{
+			node->left_ ? std::move(node->left_)
+			            : node->right_ ? std::move(node->right_)
+			                           : nullptr
+		};
+		std::swap(node, tmp);
+		return true;
 	}
 
-	std::unique_ptr<BinaryTree<T>::TreeNode> tmp{
-		root->left_ ? std::move(root->left_)
-		            : root->right_ ? std::move(root->right_)
-		                           : nullptr
-	};
-	std::swap(root, tmp);
-	return true;
+	if (found) {
+		const auto l = node->left_ ? node->left_->height() : -1;
+		const auto r = node->right_ ? node->right_->height() : -1;
+		node->height_ = std::max(l, r) + 1;
+		// @TODO AVL
+	}
+
+	return found;
 }
 
-} // namespace baioc
+} // namespace structures
 
-#endif // BAIOC_BINARY_TREE_HPP
+#endif // STRUCTURES_BINARY_TREE_HPP

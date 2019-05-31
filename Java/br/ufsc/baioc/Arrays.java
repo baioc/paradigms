@@ -26,7 +26,7 @@ public class Arrays {
 	public static <T extends Comparable<T>> void bubbleSort(T[] array) {
 		boolean done = false; //early out
 
-		// each iteration puts the highest element of the unsorted subarray on it's final place at the sorted subarray
+		// each iteration puts the highest element of the unsorted subarray on its final place at the sorted subarray
 		for (int sorted = 0; sorted < array.length - 1 && !done; ++sorted) {
 			done = true;
 
@@ -53,7 +53,7 @@ public class Arrays {
 	 * Space: O(1).
 	 */
 	public static <T extends Comparable<T>> void selectionSort(T[] array) {
-		// each iteration puts the lowest element of the unsorted subarray on it's final place at the sorted subarray
+		// each iteration puts the lowest element of the unsorted subarray on its final place at the sorted subarray
 		for (int j = 0; j < array.length - 1; ++j) {
 			int iMin = indexOfMinimum(array, j);
 			if (iMin != j) {
@@ -180,7 +180,7 @@ public class Arrays {
 
 	// PRIVATE
 	/**
-	 * Inserts an element at it's correct position on a previously sorted subarray going from zero to rightIndex.
+	 * Inserts an element at its correct position on a previously sorted subarray going from zero to rightIndex.
 	 *
 	 * @param array The whole array.
 	 * @param rightIndex Limits the sorted subarray to be iterated on.
@@ -274,7 +274,7 @@ public class Arrays {
 	}
 
 	/**
-	 * Partitions a subarray around a pivot and returns it's index. Takes linear time.
+	 * Partitions a subarray around a pivot and returns its index. Takes linear time.
 	 *
 	 * @return pivot index/position on the array.
 	 *
