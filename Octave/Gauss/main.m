@@ -1,4 +1,4 @@
-
+clear;
 printf("\nGaussian Elimination\n");
 
 A = [1   1   0   0   0;

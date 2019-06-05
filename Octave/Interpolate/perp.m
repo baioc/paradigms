@@ -12,6 +12,6 @@ function Pn = perp(X, Y)
 		end
 	end
 
-	Pn = V \ Y;
+	Pn = transpose(V \ transpose(Y));
 
 end

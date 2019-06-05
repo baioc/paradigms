@@ -1,4 +1,4 @@
-
+clear;
 printf("\nLU Crout Decomposition\n");
 
 A = [0   1   3;

@@ -1,4 +1,5 @@
-format long
+format long;
+clear;
 printf("\n** Trabalho 2: Metodo de Newton para Raizes de Polinomios e outras Funcoes **\n");
 
 printf("\n1) Zeros Reais de Funcoes Gerais\n");
