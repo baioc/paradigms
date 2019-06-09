@@ -33,7 +33,7 @@ figure; plot(x,y,'rx', Xp,Ye,'g', Xp,Yp_C,'--b'); % interpolated polynomial
 figure; plot(Xp, abs(Yp_C .- Ye), 'or'); % error
 
 
-clear
+clear;
 % Drawing (a duck's back) with Splines
 x = [0.9 1.3 1.95 2.15 2.65 3.0 3.90 4.4 4.70 5.00 6.00 7.0 8.0 9.20 10.5 11.3 11.6 12.0 12.7 13.0 13.4];
 y = [1.2 1.4 1.85 2.10 2.60 2.7 2.35 2.2 2.05 2.15 2.25 2.3 2.3 1.95 1.40 0.85  0.7  0.6  0.5  0.4  0.3];
@@ -51,11 +51,16 @@ ylim([-4 8]);
 
 
 clear;
-% Bezier Curves
+% Bezier Curves (cubic)
 % x = [0 4 4 0]; y = [0 0 4 4]; % horizontal parabola
-x = [0 6 -1 5]; y = [0 4 4 0]; % cuspid
+% x = [0 6 -1 5]; y = [0 4 4 0]; % cuspid
+x = [0 0 9 0]; y = [8 16 8 0];
+x2 = [0 4 2 4]; y2 = [0 2 2 0];
 
-[xx, yy] = Bezier3(x, y, 100); % draw with 100 points
+[xx, yy] = Bezier3(x, y, 100); % draw path with 100 points
+[xx2, yy2] = Bezier3(x2, y2, 100);
+xx = [xx xx2]; yy = [yy yy2];
+x = [x x2]; y = [y y2];
 
 figure; plot(x,y,'x', x,y,'.-k','linewidth',1, xx,yy,'-k','linewidth',4);
 

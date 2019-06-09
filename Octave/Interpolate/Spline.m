@@ -12,7 +12,7 @@ function [a b c d] = Spline(x, y)
 		B(i,1) = 6 * ((y(i+1) - y(i))/h(i) - (y(i) - y(i-1))/h(i-1));
 	end
 
-	% quadratic behaviour on both ends => S(1)=S(2) && S(m+1)=S(m)
+	% assuming quadratic behaviour on both ends => S(1)=S(2) && S(m+1)=S(m)
 	T(2) = 0;
 	R(2) = 3*h(1) + 2*h(2);
 	D(2) = h(2);
