@@ -1,20 +1,11 @@
-% Plots np points for each Spline defined by its coefficients a, b, c and d, plus
-% the know point xi used during interpolation. Returns the full drawing (Xp, Yp).
-function [Xp, Yp] = spval(A, B, C, D, Xi, np=4)
+function Y = spval(A, B, C, D, Xi, X)
 
-	Xp = [];
-	Yp = [];
-
-	for i = 1 : length(Xi) - 1
-
-		Xs = Xi(i) : (Xi(i+1) - Xi(i)) / np : Xi(i+1);
-
-		for j = 1 : length(Xs)
-			Ys(j) = A(i)*(Xs(j) - Xi(i))^3 + B(i)*(Xs(j) - Xi(i))^2 + C(i)*(Xs(j) - Xi(i)) + D(i);
+	k = 1;
+	for i = 1 : length(D)
+		while k <= length(X) && X(i) <= X(k) && X(k) <= Xi(i+1)
+			Y(k) = A(i)*(X(k) - Xi(i))^3 + B(i)*(X(k) - Xi(i))^2 + C(i)*(X(k) - Xi(i)) + D(i);
+			k++;
 		end
-
-		Xp = [Xp Xs];
-		Yp = [Yp Ys];
 	end
 
 end

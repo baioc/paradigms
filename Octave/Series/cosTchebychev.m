@@ -1,4 +1,4 @@
-function b = cosTchebychev(n, l, u, m=1e2)
+function b = cosTchebychev(n, l, u, m=1e1)
 
 	% using m Chebyshev nodes
 	j = 1 : m;

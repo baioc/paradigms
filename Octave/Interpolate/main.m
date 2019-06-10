@@ -37,16 +37,15 @@ clear;
 % Drawing (a duck's back) with Splines
 x = [0.9 1.3 1.95 2.15 2.65 3.0 3.90 4.4 4.70 5.00 6.00 7.0 8.0 9.20 10.5 11.3 11.6 12.0 12.7 13.0 13.4];
 y = [1.2 1.4 1.85 2.10 2.60 2.7 2.35 2.2 2.05 2.15 2.25 2.3 2.3 1.95 1.40 0.85  0.7  0.6  0.5  0.4  0.3];
+
+xp = x(1) : (x(end) - x(1)) / 500 : x(end);
+
 [a b c d] = Spline(x, y);
+ysp = spval(a, b, c, d, x, xp); % evaluate each spline in its own interval
 
-% evaluate each spline in its own interval (split into 4 for ploting)
-[xsp, ysp] = spval(a, b, c, d, x);
+yip = GregoryNewton(newperp(x, y), x, xp); % for comparison, a Gregory Newton for the same known points
 
-% for comparison, a Gregory Newton interpolation for the same known points
-xip = x(1) : (x(end) - x(1)) / 500 : x(end);
-yip = GregoryNewton(newperp(x, y), x, xip);
-
-figure; plot(x,y,'*k', xip,yip,'--k', xsp,ysp,'-k','LineWidth', 2);
+figure; plot(x,y,'*k', xp,yip,'--k', xp,ysp,'-k','LineWidth', 2);
 ylim([-4 8]);
 
 
