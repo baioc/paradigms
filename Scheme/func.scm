@@ -14,7 +14,7 @@
 			(sorted? (cdr seq) cmpfn))))
 
 ;; tighter recursion with map and apply
-;; function overwrite: the other 'flatten' can't be called now
+;; function override: the other 'flatten' can't be called now
 (define (flatten seq)
 	(if (not (list? seq)) (list seq)
 		(apply append (map flatten seq))))
@@ -39,7 +39,7 @@
 (define (permute items)
 	(if (null? items) '(())
 	(apply append
-		(map (lambda (elem)	;; for each elem in items
+		(map (lambda (elem) ;; for each elem in items
 				(map (lambda (permutation)
 						;; for each "rest" permutation, add in the removed elem
 						(cons elem permutation))
