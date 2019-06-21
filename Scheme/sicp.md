@@ -33,3 +33,9 @@ Every powerful language has three mechanisms for accomplishing this:
 In programming, we deal with two kinds of elements: procedures and data (later we will discover that they are really not so distinct.).
 Informally, data is "stuff" that we want to manipulate, and procedures are descriptions of the rules for manipulating the data.
 Thus, any powerful programming language should be able to describe primitive data and primitive procedures and should have methods for combining and abstracting procedures and data.
+
+### Definitions
+
+> In the defining statement “A lake is a naturally occurring stretch of water”:
+> “naturally occurring stretch of water” is the *definiens* and
+> "lake" is the *definiendum*.
