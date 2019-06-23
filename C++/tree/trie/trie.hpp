@@ -1,3 +1,12 @@
+/*!
+ * @file trie.hpp
+ * @author Gabriel B. Sant'Anna
+ * @brief Declarações e implementações do template da estrutura de dados Trie.
+ * @version 1.0
+ * @date 2019-06-23
+ *
+ * @copyright Copyright (c) 2019
+ */
 #ifndef STRUCTURES_TRIE_HPP
 #define STRUCTURES_TRIE_HPP
 
@@ -6,57 +15,199 @@
 #include <string>
 #include <ostream>
 
+//! Estruturas de Dados.
 namespace structures {
 
-template <typename T, unsigned R=26, char C='a'>
 /**
- * @brief A retrieval data structure using C-style strings as keys which must be
- * null-terminated, ASCII encoded and in lower-case only.
+ * @brief Árvore de Prefixos.
  *
- * Stores values of type T, where T must be a regular type (copy-and-move-constructible).
+ * Esta estrutura se comporta como um dicionário que utiliza como chaves strings
+ * codificadas em ASCII, por padrão com letras de 'a' a 'z', por padrão em caixa
+ * baixa (minúsculas) e sempre terminadas com o caractere nulo ('\0').
+ * São aceitas como parâmetros tanto strings no estilo C (`const char *`), como
+ * também as strings de C++ (`std::string` da STL).
+ *
+ * @tparam T Tipo de valores armazenados pela Trie, deve ser um tipo regular
+ * (possuir construtores de cópia e de move).
+ * @tparam R=26 Tamanho do alfabeto de indexação (são 26 letras entre 'a' e 'z').
+ * @tparam C='a' Caractere para codificação de índices, alterar 'a' para 'A' faz
+ * com que chaves válidas contenham apenas letras em caixa alta (maiúsculas).
  */
+template <typename T, unsigned R=26, char C='a'>
 class Trie {
  public:
+	/**
+	 * @brief Armazena um valor na estrutura associando-o à chave dada.
+	 * Se já existir um valor associado a esta chave, ele será sobrescrito.
+	 *
+	 * @param key Chave.
+	 * @param val Valor.
+	 */
 	void put(const char* key, T val);
+
+	/**
+	 * @brief Armazena um valor na estrutura associando-o à chave dada.
+	 * Se já existir um valor associado a esta chave, ele será sobrescrito.
+	 *
+	 * @param key Chave.
+	 * @param val Valor.
+	 */
 	void put(const std::string& key, T val);
+
+	/**
+	 * @brief Acessa (constante) o elemento associado à chave fornecida.
+	 *
+	 * @param key Chave.
+	 * @return const T* Ponteiro para o valor associado, `nullptr` quando a
+	 * chave não existir na Trie.
+	 */
 	const T* get(const char* key) const;
+
+	/**
+	 * @brief Acessa (constante) o elemento associado à chave fornecida.
+	 *
+	 * @param key Chave.
+	 * @return const T* Ponteiro para o valor associado, `nullptr` quando a
+	 * chave não existir na Trie.
+	 */
 	const T* get(const std::string& key) const;
+
+	/**
+	 * @brief Acessa o elemento associado à chave fornecida.
+	 *
+	 * @param key Chave.
+	 * @return T* Ponteiro para o valor associado, `nullptr` quando a chave não
+	 * existir na Trie.
+	 */
 	T* get(const char* key);
+
+	/**
+	 * @brief Acessa o elemento associado à chave fornecida.
+	 *
+	 * @param key Chave.
+	 * @return T* Ponteiro para o valor associado, `nullptr` quando a chave não
+	 * existir na Trie.
+	 */
 	T* get(const std::string& key);
+
+	/**
+	 * @brief Remove da Trie o elemento associado à chave dada.
+	 *
+	 * @param key Chave.
+	 * @return true Se e somente se a chave era válida.
+	 * @return false Quando, sem haver o que remover, não houveram alterações.
+	 */
 	bool remove(const char* key);
+
+	/**
+	 * @brief Remove da Trie o elemento associado à chave dada.
+	 *
+	 * @param key Chave.
+	 * @return true Se e somente se a chave era válida.
+	 * @return false Quando, sem haver o que remover, não houveram alterações.
+	 */
 	bool remove(const std::string& key);
+
+	/**
+	 * @brief Confere se a árvore contém a chave especificada.
+	 *
+	 * @param key Chave.
+	 * @return true Se e somente se houver algum valor associado à chave.
+	 * @return false Quando a chave não existir nesta Trie.
+	 */
 	bool contains(const char* key) const;
+
+	/**
+	 * @brief Confere se a árvore contém a chave especificada.
+	 *
+	 * @param key Chave.
+	 * @return true Se e somente se houver algum valor associado à chave.
+	 * @return false Quando a chave não existir nesta Trie.
+	 */
 	bool contains(const std::string& key) const;
+
+	/**
+	 * @brief Confere se a estrutura encontra-se vazia.
+	 *
+	 * @return true Quando `size() == 0`.
+	 * @return false Quando houver ao menos um par chave-valor.
+	 */
 	bool empty() const;
+
+	/**
+	 * @brief Acessa o tamanho da árvore.
+	 *
+	 * @return int Número de associações chave-valor contidas na Trie.
+	 */
 	int size() const;
-	std::vector<std::string> keys(const char* prefix = "") const;
+
+	/**
+	 * @brief Adquire a lista de chaves válidas nesse dicionário a partir de um
+	 * dado prefixo.
+	 * Todas as chaves na estrutura são prefixadas pela string vazia: "".
+	 *
+	 * @param prefix String utilizada para prefixar as chaves, por padrão uma
+	 * string vazia.
+	 * @return std::vector<std::string> Vetor de chaves válidas na Trie que
+	 * iniciam com o prefixo fornecido.
+	 */
+	std::vector<std::string> keys(const char* prefix="") const;
+
+	/**
+	 * @brief Adquire a lista de chaves válidas nesse dicionário a partir de um
+	 * dado prefixo.
+	 * Todas as chaves na estrutura são prefixadas pela string vazia: "".
+	 *
+	 * @param prefix String utilizada para prefixar as chaves, por padrão uma
+	 * string vazia.
+	 * @return std::vector<std::string> Vetor de chaves válidas na Trie que
+	 * iniciam com o prefixo fornecido.
+	 */
 	std::vector<std::string> keys(const std::string& key) const;
+
+	/**
+	 * @brief Limpa a estrutura, tornando-a equivalente a uma recém criada.
+	 */
 	void clear();
 
  private:
+	//! Nodo da Trie.
 	struct TrieNode {
-		std::unique_ptr<TrieNode> next_[R];
-		std::unique_ptr<T> data_{nullptr};
+		std::unique_ptr<TrieNode> next_[R]; //!< Arranjo com os próximos nodos.
+		std::unique_ptr<T> data_{nullptr}; //!< Valor (dinâmico) contido no nodo.
 
+		//! Adiciona uma entrada à sub-árvore.
 		void put(const char* key, T val);
+		//! Acessa o valor associado à chave na sub-árvore.
 		const T* get(const char* key) const;
+		//! Confere se uma chave possui associação nesta sub-árvore.
 		bool contains(const char* key) const;
+		//! Adquire a lista de chaves válidas nesta sub-árvore.
 		std::vector<std::string> keys(const char* prefix, int pos) const;
 	};
 
+	//! Remove uma entrada da sub-árvore referenciada.
 	static bool remove(std::unique_ptr<TrieNode>& node, const char* key);
+	//! Acumula todas as chaves "boas" da sub-árvore em um vetor.
 	static void collect(
 		const std::unique_ptr<TrieNode>& node,
 		const std::string& prefix,
 		std::vector<std::string>& keys
 	);
 
-	std::unique_ptr<TrieNode> root_{nullptr};
-	int size_{0};
+	std::unique_ptr<TrieNode> root_{nullptr}; //!< Nodo raíz.
+	int size_{0}; //!< Contador de tamanho.
 };
 
 
 template <typename T, unsigned R, char C>
+/**
+ * @brief Direciona uma Trie à uma stream, exibindo todos os seus pares chave-valor.
+ *
+ * @param out Stream de saída.
+ * @param trie Árvore Digital sendo representada.
+ * @return std::ostream& Stream modificada.
+ */
 std::ostream& operator<<(std::ostream& out, const Trie<T,R,C>& trie) {
 	out << "{";
 	const auto keys = trie.keys();
