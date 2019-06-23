@@ -2,61 +2,41 @@
 
 #include <iostream>
 #include <string>
+#include <fstream>
 
 int main()
 {
 	using namespace std;
 	using namespace structures;
 
-	// string filename;
-	// string word;
+	Trie<pair<size_t,size_t>> dict;
 
-	// cin >> filename;
-	// cout << filename << endl; // esta linha deve ser removida
+	string filename;
+	cin >> filename;
 
-	// while (true) { // leitura das palavras ate encontrar "0"
-	// 	cin >> word;
-	// 	if (word == "0")
-	// 		break;
-	// 	cout << word << endl;
-	// }
+	ifstream file{filename};
+	if (!file.is_open()) return 1;
 
-	Trie<string> trie;
+	size_t cursor = 0;
+	for (string line; getline(file, line); cursor += line.length() + 1) {
+		const auto open_pos = line.find('[', 0);
+		const auto close_pos = line.find(']', open_pos);
+		if (open_pos == string::npos || close_pos == string::npos) continue;
+		const auto word = line.substr(open_pos + 1, close_pos - open_pos - 1);
+		dict.put(word, {cursor, line.length()});
+	}
 
-	cout << trie.empty() << endl;
-	cout << trie.size() << endl;
+	file.close();
 
-	trie.put("batata", "alimento");
-	trie.put("batatata", "alimentoento");
-	trie.put("banana", "alimento, fruta");
-	trie.put("batman", "heroi, morcego");
-
-	cout << trie << endl;
-
-	cout << trie.empty() << endl;
-	cout << trie.size() << endl;
-
-	cout << trie.contains("") << endl;
-	cout << trie.contains("batata") << endl;
-	cout << trie.contains("batatata") << endl;
-	cout << trie.contains("banana") << endl;
-	cout << trie.contains("batman") << endl;
-
-	cout << *trie.get("batata") << endl;
-	trie.remove("batata");
-	cout << *trie.get("batatata") << endl;
-	cout << *trie.get("banana") << endl;
-	cout << *trie.get("batman") << endl;
-
-	trie.remove("batatata");
-	trie.remove("banana");
-	trie.remove("batman");
-
-	cout << trie.contains("batata") << endl;
-	cout << trie.contains("batatata") << endl;
-	cout << trie.contains("banana") << endl;
-	cout << trie.contains("batman") << endl;
-
-	cout << trie.empty() << endl;
-	cout << trie.size() << endl;
+	for (string word; word != "0"; ) {
+		cin >> word;
+		if (word == "0") {
+			break;
+		} else if (dict.contains(word)) {
+			const auto idx = dict.get(word);
+			cout << idx->first << ' ' << idx->second << endl;
+		} else {
+			cout << (dict.keys(word).empty() ? "is not prefix" : "is prefix") << endl;
+		}
+	}
 }

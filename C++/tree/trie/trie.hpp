@@ -18,13 +18,20 @@ template <typename T, unsigned R=26, char C='a'>
 class Trie {
  public:
 	void put(const char* key, T val);
+	void put(const std::string& key, T val);
 	const T* get(const char* key) const;
+	const T* get(const std::string& key) const;
 	T* get(const char* key);
+	T* get(const std::string& key);
 	bool remove(const char* key);
+	bool remove(const std::string& key);
 	bool contains(const char* key) const;
+	bool contains(const std::string& key) const;
 	bool empty() const;
 	int size() const;
 	std::vector<std::string> keys(const char* prefix = "") const;
+	std::vector<std::string> keys(const std::string& key) const;
+	void clear();
 
  private:
 	struct TrieNode {
@@ -52,9 +59,9 @@ class Trie {
 template <typename T, unsigned R, char C>
 std::ostream& operator<<(std::ostream& out, const Trie<T,R,C>& trie) {
 	out << "{";
-	const auto& keys = trie.keys();
+	const auto keys = trie.keys();
 	for (size_t i = 0; i < keys.size(); ++i)
-		out << (i == 0 ? "\"" : ", \"") << keys[i] << "\": \"" << *trie.get(keys[i].c_str()) << '\"';
+		out << (i == 0 ? "\"" : ", \"") << keys[i] << "\": \"" << *trie.get(keys[i]) << '\"';
 	out << "}";
 	return out;
 }
@@ -73,6 +80,12 @@ bool Trie<T,R,C>::contains(const char* key) const
 }
 
 template <typename T, unsigned R, char C>
+bool Trie<T,R,C>::contains(const std::string& key) const
+{
+	return contains(key.c_str());
+}
+
+template <typename T, unsigned R, char C>
 bool Trie<T,R,C>::TrieNode::contains(const char* key) const
 {
 	if (key[0] == '\0') return !!data_; // !! to force use of operator bool()
@@ -84,6 +97,12 @@ template <typename T, unsigned R, char C>
 const T* Trie<T,R,C>::get(const char* key) const
 {
 	return root_ ? root_->get(key) : nullptr;
+}
+
+template <typename T, unsigned R, char C>
+const T* Trie<T,R,C>::get(const std::string& key) const
+{
+	return get(key.c_str());
 }
 
 template <typename T, unsigned R, char C>
@@ -101,11 +120,23 @@ T* Trie<T,R,C>::get(const char* key)
 }
 
 template <typename T, unsigned R, char C>
+T* Trie<T,R,C>::get(const std::string& key)
+{
+	return get(key.c_str());
+}
+
+template <typename T, unsigned R, char C>
 void Trie<T,R,C>::put(const char* key, T val)
 {
 	if (!root_) root_ = std::make_unique<TrieNode>();
 	root_->put(key, std::move(val));
 	++size_;
+}
+
+template <typename T, unsigned R, char C>
+void Trie<T,R,C>::put(const std::string& key, T val)
+{
+	put(key.c_str(), std::move(val));
 }
 
 template <typename T, unsigned R, char C>
@@ -127,6 +158,12 @@ bool Trie<T,R,C>::remove(const char* key)
 	const bool found = remove(root_, key);
 	if (found) --size_;
 	return found;
+}
+
+template <typename T, unsigned R, char C>
+bool Trie<T,R,C>::remove(const std::string& key)
+{
+	return remove(key.c_str());
 }
 
 template <typename T, unsigned R, char C>
@@ -165,6 +202,12 @@ std::vector<std::string> Trie<T,R,C>::keys(const char* prefix) const
 }
 
 template <typename T, unsigned R, char C>
+std::vector<std::string> Trie<T,R,C>::keys(const std::string& prefix) const
+{
+	return keys(prefix.c_str());
+}
+
+template <typename T, unsigned R, char C>
 std::vector<std::string> Trie<T,R,C>::TrieNode::keys(const char* prefix, int pos) const
 {
 	if (prefix[pos] == '\0') {
@@ -189,6 +232,13 @@ void Trie<T,R,C>::collect(
 	else if (node->data_) keys.push_back(prefix);
 	for (unsigned char c = 0; c < R; ++c)
 		collect(node->next_[c], std::move(prefix + static_cast<char>(c + C)), keys);
+}
+
+template <typename T, unsigned R, char C>
+void Trie<T,R,C>::clear()
+{
+	for (const auto& key : keys())
+		remove(key);
 }
 
 } // namespace structures
