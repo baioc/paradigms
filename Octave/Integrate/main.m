@@ -20,7 +20,7 @@ err = abs(Sn - I)
 err_ = abs(Sn - Simpson(f, a, b, 2*n))
 printf("\n");
 
-% Gaussian quadrature
-Gm = Legendre(f, a, b)
+% Gauss-Legendre quadrature
+Gm = GaussianQuadrature(f, a, b)
 err = abs(Gm - I)
 printf("\n");
