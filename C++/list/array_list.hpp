@@ -3,7 +3,8 @@
 
 #include "list.hpp"
 
-#include <algorithm>       	// std::copy, swap
+#include <algorithm>       	// swap
+#include <memory>          	// uninitialized_move, copy
 #include <initializer_list>
 
 
@@ -101,7 +102,8 @@ ArrayList<T>::ArrayList(const std::initializer_list<T>& initial):
 {
 	auto data = content_;
 	for (auto&& element : initial) {
-		*(data++) = element;
+		new (data) T(element);
+		data++;
 		++tail_;
 	}
 }
@@ -113,7 +115,7 @@ ArrayList<T>::ArrayList(const ArrayList<T>& origin):
 {
 	content_ = static_cast<T*>(malloc(sizeof(T) * origin.allocated_size_));
 	assert(content_ != nullptr);
-	std::copy(origin.content_, origin.content_ + origin.allocated_size_, content_);
+	std::uninitialized_copy(origin.content_, origin.content_ + origin.allocated_size_, content_);
 }
 
 template <typename T>
@@ -181,7 +183,7 @@ void ArrayList<T>::insert(int position, T element)
 	for (int i = size(); i > position; --i)
 		swap(content_[i], content_[i-1]);
 
-	content_[position] = std::move(element);
+	new (content_ + position) T(std::move(element));
 	tail_++;
 }
 
@@ -210,7 +212,8 @@ int ArrayList<T>::insertion(int end, T element)
 		swap(content_[i+1], content_[i]);
 
 	const int pos = i+1;
-	content_[pos] = std::move(element);
+	new (content_ + pos) T(std::move(element));
+
 	return pos;
 }
 
@@ -220,7 +223,7 @@ int ArrayList<T>::insert(T element)
 	if (size() >= allocated_size_)
 		grow();
 
-	return insertion(tail_++, element);
+	return insertion(tail_++, std::move(element));
 }
 
 template <typename T>
@@ -228,7 +231,7 @@ void ArrayList<T>::sort()
 {
 	// Insertion Sort
 	for (int i = 1; i < size(); ++i)
-		insertion(i - 1, content_[i]);
+		insertion(i - 1, std::move(content_[i]));
 }
 
 template <typename T>
@@ -238,13 +241,8 @@ ArrayList<T>& ArrayList<T>::operator+=(const ArrayList<T>& rhs)
 	auto new_content = static_cast<T*>(malloc(sizeof(T) * new_allocated_size));
 	assert(new_content != nullptr);
 
-	for (int i = 0; i < size(); ++i)
-		new_content[i] = std::move(content_[i]);
-
-	for (int i = 0; i < rhs.size(); ++i) {
-		T temp(rhs.content_[i]);
-		new_content[i + size()] = std::move(temp);
-	}
+	std::uninitialized_move(content_, content_+size(), new_content);
+	std::uninitialized_copy(rhs.content_, rhs.content_+rhs.size(), new_content+size());
 
 	std::swap(content_, new_content);
 	free(new_content);

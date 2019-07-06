@@ -20,7 +20,7 @@ void print(const List<T>& list)
 
 int main(int argc, char const *argv[])
 {
-	using TestedList = structures::DoublyLinkedList<int>;
+	using TestedList = structures::ArrayList<int>;
 
 	TestedList l = {1, 0, 1, 1, 2, 3};
 	print(l);

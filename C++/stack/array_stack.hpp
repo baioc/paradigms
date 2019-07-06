@@ -1,7 +1,8 @@
 #ifndef STRUCTURES_STACK_HPP
 #define STRUCTURES_STACK_HPP
 
-#include <algorithm>	// std::swap, std::copy
+#include <algorithm>	// std::swap
+#include <memory>   	// uninitialized_copy
 
 #include <cassert>
 
@@ -10,6 +11,7 @@ namespace structures {
 
 template <typename T>
 	// requires MoveAssignable<T>
+	// requires CopyAssignable<T>
 class Stack {
  public:
 	explicit Stack(int size = 8);
@@ -71,7 +73,7 @@ Stack<T>::Stack(const Stack<T>& origin):
 {
 	content_ = static_cast<T*>(malloc(sizeof(T) * origin.allocated_size_));
 	assert(content_ != nullptr);
-	std::copy(origin.content_, origin.content_ + origin.allocated_size_, content_);
+	std::uninitialized_copy(origin.content_, origin.content_ + origin.allocated_size_, content_);
 }
 
 template <typename T>
@@ -79,7 +81,7 @@ Stack<T>& Stack<T>::operator=(const Stack<T>& origin)
 {
 	Stack temp(origin);
 	swap(*this, temp);
-    return *this;
+	return *this;
 }
 
 template <typename T>
@@ -114,7 +116,8 @@ void Stack<T>::push(T element)
 	if (current_size_ >= allocated_size_)
 		grow();
 
-	content_[current_size_++] = std::move(element);
+	new (content_ + current_size_) T(std::move(element));
+	current_size_++;
 }
 
 template <typename T>
