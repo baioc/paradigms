@@ -83,7 +83,6 @@
   (if (< n 0) (/ 1 (expt b (- n)))
       (iter b n 1)))
 
-
 ;; recursive O(n) multiplication
 (define (* a n)
   (if (= n 0) 0
@@ -109,3 +108,19 @@
           (else (iter a (- n 1) (+ prod a)))))
   (if (< n 0) (iter (- a) (- n) 0)
       (iter a n 0)))
+
+;; iterative O(lg(n)) fibonacci
+(define (fib n)
+  (define (iter a b p q n)
+    (cond ((= n 0) b)
+          ((even? n) (iter a
+                           b
+                           (+ (square q) (square p)) ; p'
+                           (+ (square q) (* 2 (* p q))) ; q'
+                           (/ n 2)))
+          (else (iter (+ (* b q) (* a (+ q p)))
+                      (+ (* b p) (* a q))
+                      p
+                      q
+                      (- n 1)))))
+  (iter 1 0 0 1 n))
