@@ -82,3 +82,30 @@
           (else (iter (square b) (/ n 2) aux))))
   (if (< n 0) (/ 1 (expt b (- n)))
       (iter b n 1)))
+
+
+;; recursive O(n) multiplication
+(define (* a n)
+  (if (= n 0) 0
+      (+ a (* a (- n 1)))))
+
+;; iterative O(n) multiplication
+(define (* a n)
+  (define (iter a n prod)
+    ; (display a) (display n) (display prod) (newline)
+    (if (= n 0) prod
+        (iter a (- n 1) (+ prod a))))
+  (if (< n 0) (iter (- a) (- n) 0)
+      (iter a n 0)))
+
+;; Russian peasant multiplication, O(lg(n))
+(define (* a n)
+  (define (double b) (arithmetic-shift b 1))
+  (define (halve b) (arithmetic-shift b -1))
+  (define (iter a n prod)
+    ; (display a) (display n) (display prod) (newline)
+    (cond ((= n 0) prod)
+          ((even? n) (iter (double a) (halve n) prod))
+          (else (iter a (- n 1) (+ prod a)))))
+  (if (< n 0) (iter (- a) (- n) 0)
+      (iter a n 0)))
