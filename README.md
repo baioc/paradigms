@@ -5,7 +5,7 @@ Snippets from various languages showcasing their programming style.
 
 Code explored here may relate to any of the following learning resources:
 
-* [Profs. Abelson & Sussman's Structure and Interpretation of Computer Programs (SICP) book and MIT (6.001) course](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-001-structure-and-interpretation-of-computer-programs-spring-2005/)
+* [MIT Structure and Interpretation of Computer Programs (6.001, SICP) teachings by Profs. Abelson & Sussman](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-001-structure-and-interpretation-of-computer-programs-spring-2005/)
 * [Stanford Programming Paradigms (CS107) lectures by Prof. Jerry Cain](https://www.youtube.com/playlist?list=PL9D558D49CA734A02)
 * [Patterson & Hennessy's Computer Org. and Design (MIPS Edition) exercises](https://github.com/CalicoUFSC/biblioteca/blob/master/3a_fase/INE5411.md)
 * [UFSC Numerical Analysis (INE5409) algorithms by Prof. Sergio Peters](http://sergiopeters.prof.ufsc.br/livro-calculo-numerico-computacional/)
