@@ -5,6 +5,7 @@
 #include <stdlib.h> 	// malloc, realloc, free
 #include <assert.h>
 #include <string.h> 	// memcpy
+#include <errno.h>  	// error codes
 
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
@@ -36,8 +37,14 @@ static void stack_grow(struct stack *s)
 {
 	assert(s->allocated_size > 0);
 	s->allocated_size *= 2;
-	s->elements = realloc(s->elements, s->allocated_size * s->type_size);
-	assert(s->elements != NULL);
+
+	void *mem = realloc(s->elements, s->allocated_size * s->type_size);
+	if (mem == NULL) {
+		free(s->elements);
+		exit(ENOMEM);
+	}
+
+	s->elements = mem;
 }
 
 void stack_push(struct stack *s, void *source)

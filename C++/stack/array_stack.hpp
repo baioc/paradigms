@@ -101,10 +101,16 @@ Stack<T>& Stack<T>::operator=(Stack<T>&& other)
 template <typename T>
 void Stack<T>::grow(float scaling)
 {
-	assert(allocated_size_ * scaling >= 1);
+	assert(allocated_size_ > 0);
 	allocated_size_ *= scaling;
-	content_ = static_cast<T*>(realloc(content_, sizeof(T) * allocated_size_));
-	assert(content_ != nullptr);
+
+	auto mem = static_cast<T*>(realloc(content_, sizeof(T) * allocated_size_));
+	if (mem == nullptr) {
+		free(content_);
+		exit(ENOMEM);
+	}
+
+	content_ = mem;
 }
 
 template <typename T>
