@@ -31,7 +31,7 @@
 
 ;; takes two or more "atom" numbers
 (define (arg-sum x y . args)
-  (+ x y (apply + args)))
+  (+ x y (list-sum args)))
 
 ;; if, else if example, could use cond instead
 (define (expt base exponent)
@@ -42,9 +42,9 @@
 
 ;; uses or & and to be able to return early from the recursion
 ;; (cadr x) := (car (cdr x))
-(define (sorted? num-list)
-  (or (<= (length num-list) 1)
-      (and (<= (car num-list) (cadr num-list))
-           (sorted? (cdr num-list)))))
+(define (sorted? sequence)
+  (or (<= (length sequence) 1)
+      (and (<= (car sequence) (cadr sequence))
+           (sorted? (cdr sequence)))))
 
 (define test '("naught" 5 1 2 3 4))

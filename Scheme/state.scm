@@ -1,0 +1,10 @@
+;; make a "monitored" procedure which tracks how many times it was called
+(define (make-monitored proc)
+  (define (count n)
+    (lambda (. args)
+      (cond ((and (not (null? args))
+                  (eq? (car args) 'how-many-calls?))
+             n)
+            (else (begin (set! n (+ n 1))
+                         (apply proc args))))))
+  (count 0))

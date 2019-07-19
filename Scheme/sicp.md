@@ -39,3 +39,11 @@ Thus, any powerful programming language should be able to describe primitive dat
 > In the defining statement “A lake is a naturally occurring stretch of water”:
 > “naturally occurring stretch of water” is the *definiens* and
 > "lake" is the *definiendum*.
+
+### Actions and Identity
+
+We say that an action A had an effect on an object X (or equivalently, that X was changed by A) if some property P which was true of X *before A* became false of X *after A*.
+
+We say that two objects X and Y are the same if any action which has an effect on X has the same effect on Y.
+
+> "As assignment and thus change actions are introduced into our programming, we have opened ourselves up to all the horrible questions that have been plaguing philosophers for thousands of years" - Gerald Jay Sussman, MIT 6.001 (1968)
