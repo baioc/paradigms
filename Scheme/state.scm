@@ -1,12 +1,13 @@
 ;; make a "monitored" procedure which tracks how many times it was called
 (define (make-monitored proc)
   (define (count n)
-    (lambda (. args)
+    (define (delegate . args)
       (cond ((and (not (null? args))
                   (eq? (car args) 'how-many-calls?))
              n)
             (else (begin (set! n (+ n 1))
-                         (apply proc args))))))
+                         (apply proc args)))))
+    delegate)
   (count 0))
 
 
@@ -38,8 +39,9 @@
          (set-car! queue (cdar queue)))))
 
 
+;; literally a dictionary/map
 (define (make-table)
-  (cons '*table* '()))
+  (cons '_table_ '()))
 
 ;; ps: (assoc 'x '((a 1) (b 2) (x 3) (c 4))) -> '(x 3)
 (define (lookup table key)
@@ -56,11 +58,14 @@
                   (cons (cons key value) (cdr table)))))
   'ok)
 
+
+;; make a function that caches its past results
 (define (memoize func)
   (let ((results (make-table)))
-    (lambda (. args)
+    (define (delegate . args)
       (let ((cached (lookup results args)))
         (or cached
             (let ((y (apply func args)))
               (insert! results args y)
-              y))))))
+              y))))
+    delegate))

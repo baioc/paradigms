@@ -50,4 +50,4 @@
              items))))
 
 ;; '!' is shorthand to 'define', as in declaring a "variable"
-(! test '(10 (1 2) ((3) () 4)))
+(define test '(10 (1 2) ((3) () 4)))
