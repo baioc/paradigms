@@ -8,3 +8,59 @@
             (else (begin (set! n (+ n 1))
                          (apply proc args))))))
   (count 0))
+
+
+;; pointers to head and tail
+(define (make-queue)
+  (cons '() '()))
+
+(define (empty-queue? queue)
+  (null? (car queue)))
+
+(define (front-queue queue)
+  (if (empty-queue? queue)
+      (error "FRONT called with an empty queue" queue)
+      (caar queue)))
+
+(define (enqueue! queue item)
+  (let ((node (cons item '())))
+    (cond ((empty-queue? queue)
+           (set-car! queue node)
+           (set-cdr! queue node))
+          (else
+           (set-cdr! (cdr queue) node)
+           (set-cdr! queue node)))))
+
+(define (dequeue! queue)
+  (cond ((empty-queue? queue)
+         (error "DEQUEUE! called with an empty queue" queue))
+        (else
+         (set-car! queue (cdar queue)))))
+
+
+(define (make-table)
+  (cons '*table* '()))
+
+;; ps: (assoc 'x '((a 1) (b 2) (x 3) (c 4))) -> '(x 3)
+(define (lookup table key)
+  (let ((record (assoc key (cdr table))))
+    (if record
+        (cdr record)
+        #f)))
+
+(define (insert! table key value)
+  (let ((record (assoc key (cdr table))))
+    (if record
+        (set-cdr! record value)
+        (set-cdr! table
+                  (cons (cons key value) (cdr table)))))
+  'ok)
+
+(define (memoize func)
+  (let ((results (make-table)))
+    (lambda (. args)
+      (let ((cached (lookup results args)))
+        (or cached
+            (let ((y (apply func args)))
+              (insert! results args y)
+              y))))))

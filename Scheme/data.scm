@@ -8,11 +8,13 @@
 
 (define (cdr x) (x 2))
 
+
 ;; equivalent to python's range(n)
 (define (iota n)
   (define (aux k)
     (if (< k n) (cons k (aux (+ k 1))) '()))
   (aux 0))
+
 
 ;; recursively map a procedure to a list's elements
 (define (map proc list)
@@ -37,3 +39,24 @@
   (if (null? sequence) initial
       (op (car sequence)
           (accumulate op initial (cdr sequence)))))
+
+
+;; "Alonzo Church's hack", with mutable data
+(define (cons x y)
+  (lambda (m)
+    (m x
+       y
+       (lambda (n) (set! x n))
+       (lambda (n) (set! y n)))))
+
+(define (car x)
+  (x (lambda (a d set-a! set-d!) a)))
+
+(define (cdr x)
+  (x (lambda (a d set-a! set-d!) d)))
+
+(define (set-car! p v)
+  (p (lambda (a d set-a! set-d!) (set-a! v))))
+
+(define (set-cdr! p v)
+  (p (lambda (a d set-a! set-d!) (set-d! v))))
