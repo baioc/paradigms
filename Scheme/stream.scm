@@ -84,6 +84,7 @@
   (if (= n 0) (head s)
       (nth (- n 1) (tail s))))
 
+
 (define (ints-from n)
   (stream n (ints-from (+ n 1))))
 
@@ -97,3 +98,49 @@
 
 (define primes
   (sieve (ints-from 2)))
+
+
+(define (sqrt-stream x)
+  (define (average a b)
+    (/ (+ a b) 2))
+
+  (define (improve guess x)
+    (average guess (/ x guess)))
+
+  (stream 1.0
+          (smap (lambda (guess)
+                  (improve guess x))
+                (sqrt-stream x))))
+
+(define (partial-sums s)
+  (smap + s (stream 0 (partial-sums s))))
+
+;; Madhava's formula: the Gregory–Leibniz series for arctan(z=1)
+(define (pi-summands n)
+  (stream (/ 1.0 n)
+          (smap - (pi-summands (+ n 2)))))
+
+(define pi-stream
+  ;; stream the successive approximations of pi through the series
+  (smap (lambda (x) (* x 4))
+        (partial-sums (pi-summands 1))))
+
+;; Leonhard Euler's transform is an accelerator (converts a sequence of approximations
+;; to one that converges faster) that works well for partial sums with alternating signs
+(define (euler-transform seq)
+  (define (square x) (* x x))
+  (let ((Sn-1 (nth 0 seq))
+        (Sn (nth 1 seq))
+        (Sn+1 (nth 2 seq)))
+    (let ((En (- Sn+1 (/ (square (- Sn+1 Sn))
+                         (+ Sn-1 (* -2 Sn) Sn+1)))))
+      (stream (if (nan? En) Sn+1 En)
+              (euler-transform (tail seq))))))
+
+;; a stream of successively transformed streams
+(define (tableau t s)
+  (stream s
+          (tableau t (t s))))
+
+(define (accelerated transform seq)
+  (smap head (tableau transform seq)))
