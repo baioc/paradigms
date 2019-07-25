@@ -49,5 +49,5 @@
                        (permute (remove elem items))))
              items))))
 
-;; '!' is shorthand to 'define', as in declaring a "variable"
+
 (define test '(10 (1 2) ((3) () 4)))

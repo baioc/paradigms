@@ -24,6 +24,12 @@
         (iter b (+ a b) (- count 1))))
   (iter 0 1 n))
 
+;; the Euclidean algorithm
+(define (gcd a b)
+  (if (= b 0) a
+      (gcd b (modulo a b))))
+
+
 ;; takes a list as argument
 (define (list-sum num-list)
   (if (null? num-list) 0
@@ -36,8 +42,9 @@
 ;; if, else if example, could use cond instead
 (define (expt base exponent)
   (if (> exponent 0)
-        (* base (expt base (- exponent 1)))
-      (if (= exponent 0) 1
+      (* base (expt base (- exponent 1)))
+      (if (= exponent 0)
+          1
           (/ 1 (expt base (* exponent -1))))))
 
 ;; uses or & and to be able to return early from the recursion
@@ -46,5 +53,6 @@
   (or (<= (length sequence) 1)
       (and (<= (car sequence) (cadr sequence))
            (sorted? (cdr sequence)))))
+
 
 (define test '("naught" 5 1 2 3 4))

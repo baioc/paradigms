@@ -47,3 +47,11 @@ We say that an action A had an effect on an object X (or equivalently, that X wa
 We say that two objects X and Y are the same if any action which has an effect on X has the same effect on Y.
 
 > "As assignment and thus change actions are introduced into our programming, we have opened ourselves up to all the horrible questions that have been plaguing philosophers for thousands of years" - Gerald Jay Sussman, MIT 6.001 (1968)
+
+## LISP
+
+According to [wikipedia](https://en.wikipedia.org/wiki/Lisp_programming_language): Originally specified in 1958, Lisp ("LISt Processor") is the second-oldest high-level programming language in widespread use today (Fortran is one year older).
+
+As a *general-purpose* programming language, **LISP isn't fit to solve any particular problem.
+Instead, it is useful for constructing within it the language that solves the problems one wants to solve**.
+This makes it "general-purpose" in an unexpected sort of way.

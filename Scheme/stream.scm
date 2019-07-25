@@ -1,20 +1,19 @@
 ;; memo-proc'ed no-args procedure is only evaluated once, result is cached
 (define (memo-proc p)
-  (let ((run? #f)
-        (result '()))
+  (let ((run? #f) (result '()))
     (lambda ()
-      (if run? result
-        (let ((y (p)))
-          (begin
-            (set! run? #t)
-            (set! result y)
-            y))))))
+      (if run?
+          result
+          (let ((y (p)))
+            (begin (set! run? #t)
+                   (set! result y)
+                   y))))))
 
 ;; special define syntax in order to perform delayed evaluation of arguments
 (define-syntax lazy
   (syntax-rules ()
     ((lazy exp)
-     (memo-proc (lambda () exp)))))
+      (memo-proc (lambda () exp)))))
 
 (define (sforce p)
   (p))
@@ -23,7 +22,7 @@
 (define-syntax stream
   (syntax-rules ()
     ((stream x y)
-     (cons x (lazy y)))))
+      (cons x (lazy y)))))
 
 (define (head s)
   (car s))
@@ -37,10 +36,23 @@
 (define empty
   '())
 
-(define (smap proc s)
+(define (smap-unary proc s)
   (if (empty? s) s
       (stream (proc (head s))
-              (smap proc (tail s)))))
+              (smap-unary proc (tail s)))))
+
+;; a more general map takes a procedure of n arguments, together with n lists,
+;; and applies the procedure to all the first elements of the lists, all the
+;; second elements of the lists, and so on, returning a list of the results. eg:
+;; (map + (list 1 2 3) (list 40 50 60) (list 700 800 900))  ->  (741 852 963)
+(define (smap proc . streamlist)
+  (if (or (null? streamlist)
+          (empty? (car streamlist)))
+      empty
+      (stream
+        (apply proc (map head streamlist))
+        (apply smap
+               (cons proc (map tail streamlist))))))
 
 (define (filter pred s)
   (cond ((empty? s) s)
@@ -73,13 +85,12 @@
       (nth (- n 1) (tail s))))
 
 (define (ints-from n)
-  (stream n
-          (ints-from (+ n 1))))
+  (stream n (ints-from (+ n 1))))
 
 ;; Sieve of Eratosthenes
 (define (sieve ns)
   (define (divisible? a b)
-    (= 0 (modulo a b)))
+    (= 0 (remainder a b)))
   (stream (head ns)
           (sieve (filter (lambda (x) (not (divisible? x (head ns))))
                          (tail ns)))))
