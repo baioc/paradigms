@@ -41,9 +41,9 @@
 
 ;; literally a dictionary/map
 (define (make-table)
-  (cons '_table_ '()))
+  (cons 'table '()))
 
-;; ps: (assoc 'x '((a 1) (b 2) (x 3) (c 4))) -> '(x 3)
+;; ps: (assoc 'x '((a 1) (b 2) (x 3) (c 4))) -> '(x 3) : #f, uses equal? for comparison
 (define (lookup table key)
   (let ((record (assoc key (cdr table))))
     (if record

@@ -1,4 +1,6 @@
-# MIT 6.001 Structure and Interpretation of Computer Programs
+# The Wizard Book
+
+MIT 6.001 - Structure and Interpretation of Computer Programs
 
 ## Computer Science
 
@@ -54,4 +56,33 @@ According to [wikipedia](https://en.wikipedia.org/wiki/Lisp_programming_language
 
 As a *general-purpose* programming language, **LISP isn't fit to solve any particular problem.
 Instead, it is useful for constructing within it the language that solves the problems one wants to solve**.
+Lisp is particularly well suited to this task, because of its ability to represent and manipulate symbolic expressions.
 This makes it "general-purpose" in an unexpected sort of way.
+
+### Metalinguistic Abstraction
+
+Metalinguistic abstraction - talking about and establishing new languages - plays an important role in all branches of engineering design.
+It is particularly important to computer programming, because in programming not only can we formulate new languages but we can also implement these languages by constructing evaluators.
+
+An evaluator (or interpreter) for a programming language is a procedure that, when applied to an expression (a sequence of symbols) of the language, performs the actions required to evaluate that expression.
+An evaluator that is written in the same language that it evaluates is said to be *metacircular*.
+
+**It is no exaggeration to regard this as the most fundamental idea in programming**:
+The evaluator, which determines the meaning of expressions in a programming language, is just another program.
+To appreciate this point is to change our images of ourselves as programmers.
+We come to see ourselves as designers of languages, rather than only users of languages designed by others.
+
+
+# METACIRCULAR EVALUATOR TODO:
+
+- primitive-procedure?
+- apply-primitive-procedure
+
+- compound-procedure?
+- procedure-body
+- procedure-parameters
+- procedure-environment
+- make-procedure
+
+- lookup-variable
+- extend-environment
