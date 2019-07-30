@@ -36,11 +36,6 @@
 (define empty
   '())
 
-(define (smap-unary proc s)
-  (if (empty? s) s
-      (stream (proc (head s))
-              (smap-unary proc (tail s)))))
-
 ;; a more general map takes a procedure of n arguments, together with n lists,
 ;; and applies the procedure to all the first elements of the lists, all the
 ;; second elements of the lists, and so on, returning a list of the results. eg:

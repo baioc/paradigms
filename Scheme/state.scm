@@ -43,15 +43,14 @@
 (define (make-table)
   (cons 'table '()))
 
-;; ps: (assoc 'x '((a 1) (b 2) (x 3) (c 4))) -> '(x 3) : #f, uses equal? for comparison
+;; ps: (assv 'x '((a 1) (b 2) (x 3) (c 4))) -> '(x 3) : #f, uses eqv? for comparison
 (define (lookup table key)
-  (let ((record (assoc key (cdr table))))
-    (if record
-        (cdr record)
-        #f)))
+  (let ((record (assv key (cdr table))))
+    (cond (record => cdr)
+          (else #f))))
 
 (define (insert! table key value)
-  (let ((record (assoc key (cdr table))))
+  (let ((record (assv key (cdr table))))
     (if record
         (set-cdr! record value)
         (set-cdr! table

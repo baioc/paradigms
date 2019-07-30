@@ -73,16 +73,10 @@ To appreciate this point is to change our images of ourselves as programmers.
 We come to see ourselves as designers of languages, rather than only users of languages designed by others.
 
 
-# METACIRCULAR EVALUATOR TODO:
+# METACIRCULAR EVALUATOR (TODO):
 
-- primitive-procedure?
-- apply-primitive-procedure
-
-- compound-procedure?
-- procedure-body
-- procedure-parameters
-- procedure-environment
-- make-procedure
-
-- lookup-variable
-- extend-environment
+- . vararg notation
+- func
+- math
+- state
+- stream

@@ -1,43 +1,20 @@
 ;; ************************ GENERIC INTERPRETER ********************************
 
-; ;; simple dispatch on type
-; (define (eval exp env)
-;   (cond ; primitives
-;         ((self-evaluating? exp) exp)
-;         ((variable? exp) (lookup-variable exp env))
-;         ; special forms
-;         ((quotation? exp) (quoted exp))
-;         ((assignment? exp) (eval-assignment exp env))
-;         ((definition? exp) (eval-definition exp env))
-;         ((if? exp) (eval-if exp env))
-;         ((lambda? exp)
-;          (make-procedure (lambda-parameters exp)
-;                          (lambda-body exp)
-;                          env))
-;         ((begin? exp)
-;          (eval-sequence (begin-actions exp) env))
-;         ((cond? exp) (eval (cond->if exp) env))
-;         ; derivate form
-;         ((application? exp)
-;          (apply (eval (operator exp) env)
-;                 (list-of-values (operands exp) env)))
-;         ; unknown
-;         (else (error "Unknown expression type -- EVAL" exp))))
-
 ;; data-directed style dispatch
-(define (eval exp env)
+(define (evaln exp env)
   (cond ; primitives
         ((self-evaluating? exp) exp)
         ((variable? exp) (lookup-variable exp env))
         ; combinations
         ((reserved? exp) (eval-rules exp env))
         ((application? exp)
-         (apply (eval (operator exp) env)
-                (list-of-values (operands exp) env)))
+         (applyn (evaln (operator exp) env)
+                 (list-of-values (operands exp) env)))
         ; unknown
         (else (error "Unknown expression type -- EVAL" exp))))
 
-(define (apply procedure arguments)
+(define apply-in-underlying-scheme apply) ;; save scheme
+(define (applyn procedure arguments)
   (cond ; goto primitive routine
         ((primitive-procedure? procedure)
          (apply-primitive-procedure procedure arguments))
@@ -55,98 +32,124 @@
 
 ;; ************************** EVALUATION RULES *********************************
 
-(define reserved-word-rules
-  (list
-    ('quote
-      (lambda (exp env) (quoted exp)))
-    ('set!
-      eval-assignment)
-    ('lambda
-      (lambda (exp env)
-        (make-procedure (lambda-parameters exp)
-                        (lambda-body exp)
-                        env)))
-    ('define
-      eval-definition)
-    ('if
-      eval-if)
-    ('begin
-      (lambda (exp env) (eval-sequence (begin-actions exp) env)))
-    ('cond
-      (lambda (exp env) (eval (cond->if exp) env)))))
-
-(define (eval-rules exp env)
-  ((assq (car exp) reserved-word-rules) exp env))
-
-;; @NOTE: this could be removed by replacing the consequent of application? for
-;; (map (eval (operator exp) env) (operands exp)), but that would imply this
-;; evaluator depends on language support for higher-order procedures
 (define (list-of-values exps env)
   (if (no-operands? exps) '()
-      ;; @XXX: order of evaluation of a list of expressions is the same as cons'
-      (cons (eval (first-operand exps) env)
-            (list-of-values (rest-operands exps) env))))
+      ;; @NOTE: this sets the order of evaluation of a list of expressions
+      (let* (
+             (right (list-of-values (rest-operands exps) env))
+             (left (evaln (first-operand exps) env))
+            )
+        (cons left right))))
 
 (define (eval-sequence exps env)
-  (cond ((last-exp? exps) (eval (first-exp exps) env))
-        (else (eval (first-exp exps) env)
+  (cond ((last-exp? exps) (evaln (first-exp exps) env))
+        (else (evaln (first-exp exps) env)
               (eval-sequence (rest-exps exps) env))))
+
 
 ;; @NOTE: the procedure true? is used here because the truth value of an
 ;; expression may differ between the evaluator's and the implemented languages
-(define (true? predicate) predicate)
+(define (true? predicate)
+  (not (false? predicate)))
+
+(define (false? predicate)
+  (eq? predicate '#f))
+
 (define (eval-if exp env)
-  (if (true? (eval (if-predicate exp) env))
-      (eval (if-consequent exp) env)
-      (eval (if-alternative exp) env)))
+  (if (true? (evaln (if-predicate exp) env))
+      (evaln (if-consequent exp) env)
+      (evaln (if-alternative exp) env)))
+
+
+(define (eval-and clauses env)
+  (if (empty-exp? clauses) 'true
+      (let ((result (evaln (first-exp clauses) env)))
+        (cond ((false? result) 'false)
+              ((last-exp? clauses) result)
+              (else (eval-and (rest-exps clauses) env))))))
+
+(define (eval-or clauses env)
+  (if (empty-exp? clauses) 'false
+      (let ((result (evaln (first-exp clauses) env)))
+        (cond ((true? result) result)
+              (else (eval-or (rest-exps clauses) env))))))
+
 
 ;; @FIXME: this implementation of define ignores a subtle issue in the handling
 ;; of internal definitions, although it works correctly in most cases.
 ;; We will see what the problem is and how to solve it in section 4.1.6.
 (define (eval-definition exp env)
   (define-variable! (definition-variable exp)
-                    (eval (definition-value exp) env)
+                    (evaln (definition-value exp) env)
                     env)
   'ok)
 
 ;; @NOTE: returning 'ok is optional and implementation dependent
 (define (eval-assignment exp env)
   (set-variable-value! (assignment-variable exp)
-                       (eval (assignment-value exp) env)
+                       (evaln (assignment-value exp) env)
                        env)
   'ok)
+
+
+(define reserved-word-rules
+  (list
+    (cons 'quote
+      (lambda (exp env) (quoted exp)))
+    (cons 'set!
+      (lambda (exp env) (eval-assignment exp env)))
+    (cons 'lambda
+      (lambda (exp env)
+        (make-procedure (lambda-parameters exp)
+                        (lambda-body exp)
+                        env)))
+    (cons 'define
+      (lambda (exp env) (eval-definition exp env)))
+    (cons 'if
+      (lambda (exp env) (eval-if exp env)))
+    (cons 'begin
+      (lambda (exp env) (eval-sequence (begin-actions exp) env)))
+    (cons 'cond
+      (lambda (exp env) (evaln (cond->if exp) env)))
+    (cons 'and
+      (lambda (exp env) (eval-and (and-clauses exp) env)))
+    (cons 'or
+      (lambda (exp env) (eval-or (or-clauses exp) env)))
+    (cons 'let
+      (lambda (exp env) (evaln (let->combination exp) env)))
+    (cons 'let*
+      (lambda (exp env) (evaln (let*->let exp) env)))))
+
+(define (eval-rules exp env)
+  ((cdr (assq (car exp) reserved-word-rules)) exp env))
 
 
 ;; *********************** SYMBOLIC REPRESENTATION *****************************
 
 (define (self-evaluating? exp)
-  (cond ((number? exp) true)
-        ((string? exp) true)
-        (else false)))
+  (cond ((number? exp) #t)
+        ((string? exp) #t)
+        (else #f)))
 
 (define (variable? exp)
   (symbol? exp))
 
 (define (reserved? exp)
-  (if (pair? exp)
-      (assq (car exp) reserved-words) ; assq uses eq?, better for symbol compare
-      false))
+  (if (and (pair? exp)
+           (assq (car exp) reserved-word-rules))
+      #t
+      #f))
 
-; (define (tagged-list? exp tag)
-;   (if (pair? exp)
-;       (eq? (car exp) tag)
-;       false))
+(define (tagged-list? exp tag)
+  (if (and (pair? exp)
+           (eq? (car exp) tag))
+      #t
+      #f))
 
-
-; (define (quotation? exp)
-;   (tagged-list? exp 'quote))
 
 (define (quoted exp)
   (cadr exp))
 
-
-; (define (assignment? exp)
-;   (tagged-list? exp 'set!))
 
 (define (assignment-variable exp)
   (cadr exp))
@@ -154,9 +157,6 @@
 (define (assignment-value exp)
   (caddr exp))
 
-
-; (define (lambda? exp)
-;   (tagged-list? exp 'lambda))
 
 (define (lambda-parameters exp)
   (cadr exp))
@@ -167,9 +167,6 @@
 (define (make-lambda parameters body)
   (cons 'lambda (cons parameters body)))
 
-
-; (define (definition? exp)
-;   (tagged-list? exp 'define))
 
 (define (definition-variable exp)
   (if (symbol? (cadr exp))
@@ -182,9 +179,6 @@
       (make-lambda (cdadr exp)   ; parameters
                    (cddr exp)))) ; body
 
-
-; (define (if? exp)
-;   (tagged-list? exp 'if))
 
 (define (if-predicate exp)
   (cadr exp))
@@ -203,32 +197,37 @@
   (list 'if predicate consequent alternative))
 
 
-; (define (begin? exp)
-;   (tagged-list? exp 'begin))
-
-(define (begin-actions exp)
-  (cdr exp))
-
 (define (first-exp seq)
   (car seq))
 
 (define (rest-exps seq)
   (cdr seq))
 
+(define (empty-exp? seq)
+  (null? seq))
+
 (define (last-exp? seq)
-  (null? (cdr seq)))
+  (empty-exp? (rest-exps seq)))
+
+
+(define (begin-actions exp)
+  (cdr exp))
 
 (define (make-begin seq)
   (cons 'begin seq))
 
 (define (sequence->exp seq)
-  (cond ((null? seq) seq)
+  (cond ((empty-exp? seq) seq)
         ((last-exp? seq) (first-exp seq))
         (else (make-begin seq))))
 
 
-; (define (cond? exp)
-;   (tagged-list? exp 'cond))
+(define (and-clauses exp)
+  (cdr exp))
+
+(define (or-clauses exp)
+  (cdr exp))
+
 
 (define (cond-clauses exp)
   (cdr exp))
@@ -236,8 +235,16 @@
 (define (cond-predicate clause)
   (car clause))
 
+;; Scheme allows an additional syntax for cond clauses, (<test> => <recipient>).
+;; If <test> evaluates to a true value, then <recipient> is evaluated: its value
+;; must be a procedure of one argument; this procedure is then invoked on <test>,
+;; and the result is returned as the value of the cond expression. For example:
+;; (cond ((assoc 'b '((a 1) (b 2))) => cadr)
+;;       (else #f)) -> 2
 (define (cond-actions clause)
-  (cdr clause))
+  (if (eq? (cadr clause) '=>)
+      (list (list (caddr clause) (cond-predicate clause)))
+      (cdr clause)))
 
 (define (cond-else-clause? clause)
   (eq? (cond-predicate clause) 'else))
@@ -256,6 +263,41 @@
             (make-if (cond-predicate first)
                      (sequence->exp (cond-actions first))
                      (expand-clauses rest))))))
+
+
+(define (let-body exp)
+  (caddr exp))
+
+(define (let-associations exp)
+  (cadr exp))
+
+(define (let-vars exp)
+  (map car (let-associations exp)))
+
+(define (let-inits exp)
+  (map cadr (let-associations exp)))
+
+; (let ((<var1> <exp1>)          <=>        ((lambda (<var1> ... <varn>)
+;         ...                                  <body>)
+;       (<varn> <expn>))                     <exp1>
+;   <body>)                                   ...
+;                                            <expn>)
+(define (let->combination exp)
+  (cons (make-lambda (let-vars exp)
+                     (let-body exp))
+        (let-inits exp)))
+
+(define (make-let associations body)
+  (list 'let associations body))
+
+(define (let-reduce associations body)
+  (if (null? associations)
+      body
+      (make-let (list (car associations))
+                (let-reduce (cdr associations) body))))
+
+(define (let*->let exp)
+  (let-reduce (let-associations exp) (let-body exp)))
 
 
 ;; @NOTE: differently than the special forms, the derivate combination isn't
@@ -277,3 +319,197 @@
 
 (define (rest-operands ops)
   (cdr ops))
+
+
+(define (compound-procedure? exp)
+  (tagged-list? exp 'procedure))
+
+(define (procedure-parameters proc)
+  (cadr proc))
+
+(define (procedure-body proc)
+  (caddr proc))
+
+(define (procedure-environment proc)
+  (cadddr proc))
+
+(define (make-procedure parameters body env)
+  (list 'procedure parameters body env))
+
+
+;; ****************************** ENVIRONMENT **********************************
+
+(define (enclosing-environment env)
+  (cdr env))
+
+(define (first-frame env)
+  (car env))
+
+(define empty-environment
+  '())
+
+
+(define (make-frame variables values)
+  (cons variables values))
+
+(define (frame-variables frame)
+  (car frame))
+
+(define (frame-values frame)
+  (cdr frame))
+
+(define (add-binding-to-frame! var val frame)
+  (set-car! frame (cons var (frame-variables frame)))
+  (set-cdr! frame (cons val (frame-values frame))))
+
+
+(define (extend-environment vars vals base-env)
+  (if (= (length vars) (length vals))
+      (cons (make-frame vars vals) base-env)
+      (if (< (length vars) (length vals))
+          (error "Too many arguments supplied" vars vals)
+          (error "Too few arguments supplied" vars vals))))
+
+(define (lookup-variable var env)
+  (define (env-loop env)
+    (define (scan vars vals)
+      (cond ((null? vars) ; variable not bound locally? check outer scope
+             (env-loop (enclosing-environment env)))
+            ((eq? var (car vars)) (car vals))
+            (else (scan (cdr vars) (cdr vals)))))
+    (if (eq? env empty-environment)
+        (error "Unbound variable" var)
+        (let ((frame (first-frame env)))
+          (scan (frame-variables frame)
+                (frame-values frame)))))
+  (env-loop env))
+
+(define (define-variable! var val env)
+  (let ((frame (first-frame env)))
+    (define (scan vars vals)
+      (cond ((null? vars)
+             (add-binding-to-frame! var val frame))
+            ((eq? var (car vars))
+             (set-car! vals val))
+            (else (scan (cdr vars) (cdr vals)))))
+    (scan (frame-variables frame)
+          (frame-values frame))))
+
+(define (set-variable-value! var val env)
+  (define (env-loop env)
+    (define (scan vars vals)
+      (cond ((null? vars)
+             (env-loop (enclosing-environment env)))
+            ((eq? var (car vars))
+             (set-car! vals val))
+            (else (scan (cdr vars) (cdr vals)))))
+    (if (eq? env empty-environment)
+        (error "Unbound variable -- SET!" var)
+        (let ((frame (first-frame env)))
+          (scan (frame-variables frame)
+                (frame-values frame)))))
+  (env-loop env))
+
+(define (setup-environment)
+  (let ((initial-env
+          (extend-environment (primitive-procedure-names)
+                              (primitive-procedure-objects)
+                              empty-environment)))
+    (define-variable! 'true #t initial-env)
+    (define-variable! 'false #f initial-env)
+    initial-env))
+
+
+(define (primitive-procedure? proc)
+  (tagged-list? proc 'primitive))
+
+(define (primitive-implementation proc)
+  (cadr proc))
+
+(define primitive-procedures
+  (list (cons 'not not)
+        (cons '+ +)
+        (cons '- -)
+        (cons '= =)
+        (cons '< <)
+        (cons '> >)
+        (cons '* *)
+        (cons '/ /)
+        (cons 'remainder remainder)
+        (cons 'modulo modulo)
+        (cons 'abs abs)
+        (cons 'eq? eq?)
+        (cons 'equal? equal?)
+        (cons 'eqv? eqv?)
+        (cons 'number? number?)
+        (cons 'string? string?)
+        (cons 'symbol? symbol?)
+        (cons 'pair? pair?)
+        (cons 'read read)
+        (cons 'display display)
+        (cons 'exit exit)
+        ;
+        (cons 'eval evaln)
+        (cons 'apply applyn)
+        ;
+        (cons 'cons cons)
+        (cons 'car car)
+        (cons 'cdr cdr)
+        (cons 'null? null?)
+        (cons 'list list)
+        (cons 'list? list?)
+        (cons 'append append)
+        (cons 'length length)
+        (cons 'assoc assoc)
+        (cons 'assq assq)
+        (cons 'assv assv)
+        ;
+        (cons 'cadr cadr)
+        (cons 'caddr caddr)
+        ))
+
+(define (primitive-procedure-names)
+  (map car primitive-procedures))
+
+(define (primitive-procedure-objects)
+  (map (lambda (proc) (list 'primitive (cdr proc)))
+       primitive-procedures))
+
+(define (apply-primitive-procedure proc args)
+  (apply-in-underlying-scheme
+    (primitive-implementation proc) args))
+
+
+;; ************************ Read-Eval-Print-Loop *******************************
+
+(define global-environment (setup-environment))
+
+(define input-prompt ">> ")
+
+(define output-prompt "")
+
+(define (repl)
+  (prompt-for-input input-prompt)
+  (let ((input (read)))
+    (let ((output (evaln input global-environment)))
+      (announce-output output-prompt)
+      (user-print output)))
+  (repl))
+
+(define (prompt-for-input string)
+  (newline) (display string))
+
+(define (announce-output string)
+  (display string))
+
+(define (user-print object)
+  (if (compound-procedure? object)
+      (display (list 'compound-procedure
+                     (procedure-parameters object)
+                     (procedure-body object)
+                     '<procedure-env>))
+      (display object)))
+
+(display "ABRACADABRA (version L-0.1)\n")
+
+(repl)

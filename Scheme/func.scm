@@ -49,5 +49,9 @@
                        (permute (remove elem items))))
              items))))
 
+(define (map proc seq)
+  (if (null? seq) seq
+      (cons (proc (car seq))
+            (map proc (cdr seq)))))
 
 (define test '(10 (1 2) ((3) () 4)))
