@@ -41,7 +41,7 @@
 
 ;; literally a dictionary/map
 (define (make-table)
-  (cons 'table '()))
+  (cons '*table* '()))
 
 ;; ps: (assv 'x '((a 1) (b 2) (x 3) (c 4))) -> '(x 3) : #f, uses eqv? for comparison
 (define (lookup table key)
