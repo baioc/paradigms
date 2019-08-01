@@ -75,8 +75,10 @@ We come to see ourselves as designers of languages, rather than only users of la
 
 # METACIRCULAR EVALUATOR (TODO):
 
+- hide some primitives
+- functional primitives
 - . vararg notation
-- func
+- letrec
 - math
 - state
 - stream

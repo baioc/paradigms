@@ -1,15 +1,14 @@
 ;; ******************************** LOGGER *************************************
-(define (debug-log . msgs) (logger 4 'DEBUG ": " msgs))
-(define (info-log . msgs) (logger 3 'INFO ": " msgs))
-(define (warn-log . msgs) (logger 2 'WARN ": " msgs))
-(define (error-log . msgs) (logger 1 'ERROR ": " msgs))
+(define (debug-log . msgs) (logger 4 (cons "DEBUG:" msgs)))
+(define (info-log . msgs) (logger 3 (cons "INFO:" msgs)))
+(define (warn-log . msgs) (logger 2 (cons "WARNING:" msgs)))
+(define (error-log . msgs) (logger 1 (cons "ERROR:" msgs)))
 
-(define (logger level . msgs)
+(define (logger level msgs)
   (if (<= level *log-level*)
       (begin
-        (for-each display msgs)
-        (newline)
-        (car msgs))))
+        (map (lambda (obj) (display obj) (display " ")) msgs)
+        (newline))))
 
 (define *log-level* 3)
 
@@ -25,7 +24,8 @@
 
 ;; data-directed style dispatch
 (define (evaln exp env)
-  (debug-log "EVAL" exp)
+  (debug-log "BEG-EVAL" exp)
+  (let ((result
   (cond ; primitives
         ((self-evaluating? exp) exp)
         ((variable? exp) (lookup-variable exp env))
@@ -35,8 +35,9 @@
          (begin (debug-log "APPLICATION" exp)
          (applyn (evaln (operator exp) env)
                  (eval-list (operands exp) env))))
-        ; unknown
+        ; unknown (or null)
         (else (error-log "Unknown expression type -- EVAL" exp))))
+  )(debug-log "END-EVAL" exp) result))
 
 (define apply-in-underlying-scheme apply) ;; save scheme
 (define (applyn procedure arguments)
@@ -47,8 +48,7 @@
         ((compound-procedure? procedure)
          (begin (debug-log "APPLY-COMPOUND"
                            (procedure-parameters procedure)
-                           (procedure-body procedure)
-                           arguments)
+                           (procedure-body procedure))
          (eval-sequence
            (procedure-body procedure)
            (extend-environment
@@ -84,19 +84,17 @@
       (lambda (exp env) (eval-and (and-clauses exp) env)))
     (cons 'or
       (lambda (exp env) (eval-or (or-clauses exp) env)))
+    ;; @TODO: letrec https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book-Z-H-26.html#%_thm_4.20
     (cons 'let
       (lambda (exp env) (evaln (let->combination exp) env)))
     (cons 'let*
       (lambda (exp env) (evaln (let*->let exp) env)))))
 
 (define (reserved? exp)
-  (if (and (pair? exp)
-           (assq (car exp) reserved-word-rules))
-      #t
-      #f))
+  (and (pair? exp)
+       (assq (car exp) reserved-word-rules)))
 
 (define (eval-rules exp env)
-  (debug-log "EVAL-RULES" (car exp))
   ((cdr (assq (car exp) reserved-word-rules)) exp env))
 
 
@@ -118,16 +116,16 @@
 
 ;; @NOTE: the procedure true? is used here because the truth value of an
 ;; expression may differ between the evaluator's and the implemented languages
-(define (eval-if exp env)
-  (if (true? (evaln (if-predicate exp) env))
-      (evaln (if-consequent exp) env)
-      (evaln (if-alternative exp) env)))
-
 (define (true? predicate)
   (not (false? predicate)))
 
 (define (false? predicate)
-  (eq? predicate '#f))
+  (eq? predicate 'false)) ;; PS: '#f === #f
+
+(define (eval-if exp env)
+  (if (true? (evaln (if-predicate exp) env))
+      (evaln (if-consequent exp) env)
+      (evaln (if-alternative exp) env)))
 
 
 (define (eval-and clauses env)
@@ -144,36 +142,34 @@
               (else (eval-or (rest-clauses clauses) env))))))
 
 
-;; @NOTE: returning 'ok is optional and implementation dependent
 (define (eval-definition exp env)
   (debug-log "EVAL-DEFINITION" (definition-variable exp) (definition-value exp))
   (define-variable! (definition-variable exp)
                     (evaln (definition-value exp) env)
-                    env)
-  'ok)
+                    env))
 
 (define (eval-assignment exp env)
   (set-variable-value! (assignment-variable exp)
                        (evaln (assignment-value exp) env)
-                       env)
-  'ok)
+                       env))
 
 
 ;; *********************** SYMBOLIC REPRESENTATION *****************************
 
 (define (self-evaluating? exp)
-  (or (null? exp)
-      (number? exp)
-      (string? exp)))
+  (or (number? exp)
+      (string? exp)
+      ;; @XXX: evaluating () is normally illegal
+      (null? exp)
+      (char? exp)))
 
 (define (variable? exp)
-  (symbol? exp))
+  (or (symbol? exp)
+      (boolean? exp)))
 
 (define (tagged-list? exp tag)
-  (if (and (pair? exp)
-           (eq? (car exp) tag))
-      #t
-      #f))
+  (and (pair? exp)
+       (eq? (car exp) tag)))
 
 
 (define (quoted exp)
@@ -201,12 +197,12 @@
   (tagged-list? exp 'define))
 
 (define (definition-variable exp)
-  (if (symbol? (cadr exp))
+  (if (variable? (cadr exp))
       (cadr exp)    ; direct definition
       (caadr exp))) ; procedure definition
 
 (define (definition-value exp)
-  (if (symbol? (cadr exp))
+  (if (variable? (cadr exp))
       (caddr exp)
       (make-lambda (cdadr exp)   ; parameters
                    (cddr exp)))) ; body
@@ -230,7 +226,7 @@
 
 
 (define (make-begin seq)
-  (list 'begin seq))
+  (cons 'begin seq))
 
 (define (begin-actions exp)
   (cdr exp))
@@ -265,7 +261,7 @@
 ;; and the result is returned as the value of the cond expression. For example:
 ;; (cond ((assoc 'b '((a 1) (b 2))) => cadr)
 ;;       (else #f)) -> 2
-;; @XXX: as it is, <test> gets evaluated twice, once during the predicate
+;; @FIXME: as it is, <test> gets evaluated twice, once during the predicate
 ;; evaluation and then to apply <recipient> to it
 (define (cond-actions clause)
   (if (eq? (cadr clause) '=>)
@@ -310,7 +306,7 @@
 
 
 (define (make-let associations body)
-  (list 'let associations body))
+  (cons 'let (cons associations body)))
 
 (define (let-associations exp)
   (cadr exp))
@@ -339,7 +335,7 @@
     (if (null? associations)
         (sequence->exp body)
         (make-let (list (car associations))
-                  (let-reduce (cdr associations) body))))
+                  (list (let-reduce (cdr associations) body)))))
   (let-reduce (let-associations exp) (let-body exp)))
 
 
@@ -365,7 +361,7 @@
 
 
 (define (make-procedure parameters body env)
-  (debug-log "MAKE-PROCEDURE" parameters "->" (scan-out-defines body))
+  (debug-log "MAKE-PROCEDURE" parameters (scan-out-defines body))
   (list 'procedure parameters (scan-out-defines body) env))
 
 (define (compound-procedure? exp)
@@ -399,16 +395,16 @@
   (define (defines->let exprs defs ndefs)
     (cond ((null? exprs)
            (if (null? defs) body
-               (make-let (name-defs defs)
-                         (append (set-defs defs)
-                                 ndefs))))
+               (list (make-let (name-defs defs)
+                               (append (set-defs defs)
+                                       (reverse ndefs))))))
           ((definition? (car exprs))
            (defines->let (cdr exprs)
-                         (append defs (list (car exprs)))
+                         (cons (car exprs) defs)
                          ndefs))
           (else (defines->let (cdr exprs)
                               defs
-                              (append ndefs (list (car exprs)))))))
+                              (cons (car exprs) ndefs)))))
   (defines->let body '() '()))
 
 
@@ -435,7 +431,7 @@
 
 (define (add-binding-to-frame! var val frame)
   (set-car! frame (cons var (frame-variables frame)))
-  (set-cdr! frame (cons val (frame-values frame))))
+  (set-cdr! frame (cons val (frame-values frame))) 'ok)
 
 
 (define (extend-environment vars vals base-env)
@@ -468,7 +464,7 @@
       (cond ((null? vars)
              (add-binding-to-frame! var val frame))
             ((eq? var (car vars))
-             (set-car! vals val))
+             (set-car! vals val) 'ok)
             (else (scan (cdr vars) (cdr vals)))))
     (scan (frame-variables frame)
           (frame-values frame))))
@@ -479,7 +475,7 @@
       (cond ((null? vars)
              (env-loop (enclosing-environment env)))
             ((eq? var (car vars))
-             (set-car! vals val))
+             (set-car! vals val) 'ok)
             (else (scan (cdr vars) (cdr vals)))))
     (if (eq? env the-empty-environment)
         (warn-log "Unbound variable -- SET!" var)
@@ -493,85 +489,206 @@
           (extend-environment (primitive-procedure-names)
                               (primitive-procedure-objects)
                               the-empty-environment)))
-    (define-variable! 'true #t initial-env)
-    (define-variable! 'false #f initial-env)
+    (define-variable! 'true 'true initial-env)
+    (define-variable! 'false 'false initial-env)
     initial-env))
 
 
 (define primitive-procedures
-  (list
-        ;; minimal
-        (cons 'not not)
+  (list ;; minimal
         (cons '+ +)
         (cons '- -)
         (cons '= =)
         (cons '< <)
         (cons '> >)
+        (cons 'not not)
         ;; reduced
         (cons '<= <=)
         (cons '>= >=)
         (cons '* *)
         (cons '/ /)
+        (cons '1+ (lambda (n) (+ n 1)))
+        (cons '1- (lambda (n) (- n 1)))
+        (cons 'zero? zero?)
+        (cons 'negative? negative?)
+        (cons 'positive? positive?)
+        (cons 'quotient quotient)
         (cons 'remainder remainder)
         (cons 'modulo modulo)
-        ;; lisp
+        ;; Revised^5 Report Scheme ; docs at https://docs.racket-lang.org/guide
+        ;; symbolic
         (cons 'equal? equal?)
         (cons 'eqv? eqv?)
         (cons 'eq? eq?)
         (cons 'symbol? symbol?)
         (cons 'pair? pair?)
-        (cons 'string? string?)
+        ;; numeric
         (cons 'number? number?)
-        (cons 'complex? complex?)
-        (cons 'real? real?)
-        (cons 'integer? integer?)
-        (cons 'rational? rational?)
-        (cons 'exact? exact?)
         (cons 'inexact? inexact?)
+        (cons 'exact? exact?)
+        (cons 'inexact->exact inexact->exact)
+        (cons 'exact->inexact exact->inexact)
+        (cons 'complex? complex?)
+        (cons 'make-rectangular make-rectangular)
+        (cons 'make-polar make-polar)
+        (cons 'real-part real-part)
+        (cons 'imag-part imag-part)
+        (cons 'magnitude magnitude)
+        (cons 'angle angle)
+        (cons 'real? real?)
+        (cons 'rational? rational?)
+        (cons 'numerator numerator)
+        (cons 'denominator denominator)
+        (cons 'integer? integer?)
+        ;; system
         (cons 'exit exit)
+        (cons 'error error)
         ;; io; for more info see https://www.scheme.com/tspl3/io.html
-        (cons 'eof-object? eof-object?)
         (cons 'read read)
+        (cons 'write write)
+        (cons 'port? port?)
+        (cons 'eof-object? eof-object?)
+        (cons 'display display)
+        (cons 'newline newline)
+        (cons 'input-port? input-port?)
         (cons 'open-input-file open-input-file)
         (cons 'close-input-port close-input-port)
-        (cons 'load load)
-        (cons 'newline newline)
-        (cons 'display display)
+        (cons 'output-port? output-port?)
         (cons 'open-output-file open-output-file)
         (cons 'close-output-port close-output-port)
-        (cons 'write write)
-        (cons 'error error)
-        ;; extra
+        (cons 'read-char read-char)
+        (cons 'write-char write-char)
+        (cons 'peek-char peek-char)
+        (cons 'char-ready? char-ready?)
+        ;; strings
+        (cons 'string? string?)
+        (cons 'string-length string-length)
+        (cons 'string-ref string-ref)
+        (cons 'string-set! string-set!)
+        (cons 'string=? string=?)
+        (cons 'string-ci=? string-ci=?)
+        (cons 'string<? string<?)
+        (cons 'string-ci<? string-ci<?)
+        (cons 'string<=? string<=?)
+        (cons 'string-ci<=? string-ci<=?)
+        (cons 'string>? string>?)
+        (cons 'string-ci>? string-ci>?)
+        (cons 'string>=? string>=?)
+        (cons 'string-ci>=? string-ci>=?)
+        (cons 'substring substring)
+        (cons 'string-append string-append)
+        (cons 'string-copy string-copy)
+        (cons 'string->number string->number)
+        (cons 'number->string number->string)
+        (cons 'symbol->string symbol->string)
+        (cons 'string->symbol string->symbol)
+        ;; characters
+        (cons 'char? char?)
+        (cons 'char-upcase char-upcase)
+        (cons 'char-downcase char-downcase)
+        (cons 'char-alphabetic? char-alphabetic?)
+        (cons 'char-numeric? char-numeric?)
+        (cons 'char-alphanumeric? (lambda (c) (or (char-alphabetic? c)
+                                                  (char-numeric? c))))
+        (cons 'char-whitespace? char-whitespace?)
+        (cons 'char-upper-case? char-upper-case?)
+        (cons 'char-lower-case? char-lower-case?)
+        (cons 'char=? char=?)
+        (cons 'char-ci=? char-ci=?)
+        (cons 'char<? char<?)
+        (cons 'char-ci<? char-ci<?)
+        (cons 'char<=? char<=?)
+        (cons 'char-ci<=? char-ci<=?)
+        (cons 'char>? char>?)
+        (cons 'char-ci>? char-ci>?)
+        (cons 'char>=? char>=?)
+        (cons 'char-ci>=? char-ci>=?)
+        (cons 'integer->char integer->char)
+        (cons 'char->integer char->integer)
+        ;; lists
         (cons 'cons cons)
         (cons 'car car)
         (cons 'cdr cdr)
-        (cons 'null? null?)
+        (cons 'set-car! set-car!)
+        (cons 'set-cdr! set-cdr!)
         (cons 'list list)
         (cons 'list? list?)
-        (cons 'append append)
+        (cons 'null? null?)
         (cons 'length length)
+        (cons 'append append)
         (cons 'reverse reverse)
-        (cons 'abs abs)
-        (cons 'even? even?)
-        (cons 'odd? odd?)
-        (cons 'max max)
-        (cons 'min min)
+        (cons 'list-tail list-tail)
+        (cons 'list-ref list-ref)
+        (cons 'assq assq)
+        (cons 'assv assv)
+        (cons 'assoc assoc)
+        (cons 'memq memq)
+        (cons 'memv memv)
+        (cons 'member member)
+        (cons 'string->list string->list)
+        (cons 'list->string list->string)
+        ;; math
         (cons 'floor floor)
         (cons 'ceiling ceiling)
         (cons 'truncate truncate)
         (cons 'round round)
-        (cons 'assoc assoc)
-        (cons 'assq assq)
-        (cons 'assv assv)
+        (cons 'abs abs)
+        (cons 'gcd gcd)
+        (cons 'lcm lcm)
+        (cons 'expt expt)
+        (cons 'sqrt sqrt)
+        (cons 'odd? odd?)
+        (cons 'even? even?)
+        (cons 'max max)
+        (cons 'min min)
+        (cons 'exp exp)
+        (cons 'log log)
+        (cons 'sin sin)
+        (cons 'cos cos)
+        (cons 'tan tan)
+        (cons 'asin asin)
+        (cons 'acos acos)
+        (cons 'atan atan)
+        ;; extra
+        ; 2
+        (cons 'caar caar)
         (cons 'cadr cadr)
+        (cons 'cdar cdar)
+        (cons 'cddr cddr)
+        ; 3
+        (cons 'caaar caaar)
+        (cons 'caadr caadr)
+        (cons 'cadar cadar)
+        (cons 'cdaar cdaar)
         (cons 'caddr caddr)
+        (cons 'cdadr cdadr)
+        (cons 'cddar cddar)
+        (cons 'cdddr cdddr)
+        ; 4
+        (cons 'caaaar caaaar)
+        (cons 'caaadr caaadr)
+        (cons 'caadar caadar)
+        (cons 'cadaar cadaar)
+        (cons 'cdaaar cdaaar)
+        (cons 'caaddr caaddr)
+        (cons 'cadadr cadadr)
+        (cons 'caddar caddar)
+        (cons 'cdaadr cdaadr)
+        (cons 'cdadar cdadar)
+        (cons 'cddaar cddaar)
+        (cons 'cadddr cadddr)
+        (cons 'cdaddr cdaddr)
+        (cons 'cddadr cddadr)
+        (cons 'cdddar cdddar)
+        (cons 'cddddr cddddr)
+        ;; ... <more primitives>
 ))
 
 (define (primitive-procedure-names)
   (map car primitive-procedures))
 
 (define (primitive-procedure-objects)
-  (map (lambda (proc) (list 'primitive (cdr proc)))
+  (map (lambda (prim-proc) (list 'primitive (cdr prim-proc)))
        primitive-procedures))
 
 (define (primitive-procedure? proc)
@@ -582,8 +699,11 @@
 
 (define (apply-primitive-procedure proc args)
   (debug-log "APPLY-PRIMITIVE" proc args)
-  (apply-in-underlying-scheme
-    (primitive-implementation proc) args))
+  (let ((result (apply-in-underlying-scheme (primitive-implementation proc)
+                                            args)))
+    (cond ((eq? result '#f) 'false)
+          ((eq? result '#t) 'true)
+          (else result))))
 
 
 ;; ************************ Read-Eval-Print-Loop *******************************
@@ -617,6 +737,7 @@
   (if (compound-procedure? object)
       (display (list 'compound-procedure
                      (procedure-parameters object)
+                     "->"
                      (procedure-body object)
                      '<procedure-env>))
       (display object)))
