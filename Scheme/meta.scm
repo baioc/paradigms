@@ -1,16 +1,24 @@
 ;; ******************************** LOGGER *************************************
-(define (debug-log . msgs) (logger 4 (cons "DEBUG:" msgs)))
-(define (info-log . msgs) (logger 3 (cons "INFO:" msgs)))
-(define (warn-log . msgs) (logger 2 (cons "WARNING:" msgs)))
-(define (error-log . msgs) (logger 1 (cons "ERROR:" msgs)))
-
-(define (logger level msgs)
+(define (logger level msgs method)
   (if (<= level *log-level*)
       (begin
-        (map (lambda (obj) (display obj) (display " ")) msgs)
+        (map (lambda (obj) (method obj) (display " ")) msgs)
         (newline))))
 
-(define *log-level* 3)
+(define *log-level* 2)
+
+
+(define (debug-log . msgs)
+  (logger 4 (cons 'DEBUG: msgs) write))
+
+(define (info-log . msgs)
+  (logger 3 (cons 'INFO: msgs) write))
+
+(define (warn-log . msgs)
+  (logger 2 (cons 'WARNING: msgs) display))
+
+(define (error-log . msgs)
+  (logger 1 (cons 'ERROR: msgs) display))
 
 (define (set-log-verbosity! level)
   (cond ((eq? level 'DEBUG) (set! *log-level* 4))
@@ -20,146 +28,141 @@
         ((eq? level 'QUIET) (set! *log-level* 0))))
 
 
-;; ************************ GENERIC INTERPRETER ********************************
-
-;; syntactic analysis separated from execution
-(define (evaln exp env)
-  ((analyze exp) env))
+;; ************************* GENERIC INTERPRETER *******************************
 
 ;; data-directed style dispatch
-(define (analyze exp)
-  (cond ; primitives
-        ((self-evaluating? exp) (analyze-self-evaluating exp))
-        ((variable? exp) (analyze-variable exp))
-        ; combinations
-        ((reserved? exp) (analyze-syntax-rules exp))
-        ((application? exp) (analyze-application exp))
-        ; unknown (or null)
-        (else (error-log "Unknown expression type -- ANALYZE" exp))))
+(define (analyze expr)
+  (debug-log 'Analyzing expr)
+  (cond ;; primitives
+        ((self-evaluating? expr) (analyze-self-evaluating expr))
+        ((variable? expr) (analyze-variable expr))
+        ;; combinations
+        ((reserved? expr) (analyze-syntax-rules expr))
+        ((application? expr) (analyze-application expr))
+        ;; unknown
+        (else (error-log "Unknown expression type -- ANALYZE" expr))))
 
-(define apply-in-underlying-scheme apply) ;; save scheme
 (define (execute procedure arguments)
-  (cond ; goto primitive routine
+  (cond ;; goto primitive routine
         ((primitive-procedure? procedure)
          (apply-primitive-procedure procedure arguments))
-        ; or evaluate a combination
+        ;; or execute compund procedure
         ((compound-procedure? procedure)
          ((procedure-body procedure)
           (extend-environment (procedure-parameters procedure)
                               arguments
                               (procedure-environment procedure))))
-        ; fail
+        ;; fail
         (else (error-log "Unknown procedure type -- EXECUTE" procedure))))
 
 
-;; ***************************** SYNTAX RULES **********************************
+;; *********************** SYNTACTIC ANALYSIS RULES ****************************
 
 (define reserved-word-rules
   (list
-    (cons 'quote
-      (lambda (exp) (analyze-quoted exp)))
-    (cons 'set!
-      (lambda (exp) (analyze-assignment exp)))
-    (cons 'lambda
-      (lambda (exp) (analyze-lambda exp)))
-    (cons 'define
-      (lambda (exp) (analyze-definition exp)))
-    (cons 'if
-      (lambda (exp) (analyze-if exp)))
-    (cons 'begin
-      (lambda (exp) (analyze-sequence (begin-actions exp))))
-    (cons 'cond
-      (lambda (exp) (analyze (cond->if exp))))
-    (cons 'and
-      (lambda (exp) (analyze-and (and-clauses exp))))
-    (cons 'or
-      (lambda (exp) (analyze-or (or-clauses exp))))
-    ;; @TODO: letrec https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book-Z-H-26.html#%_thm_4.20
-    (cons 'let
-      (lambda (exp) (analyze (let->combination exp))))
-    (cons 'let*
-      (lambda (exp) (analyze (let*->let exp))))))
+    (cons 'lambda (lambda (expr) (analyze-lambda expr)))
+    (cons 'λ (lambda (expr) (analyze-lambda expr)))
+    (cons 'define (lambda (expr) (analyze-definition expr)))
+    (cons 'set! (lambda (expr) (analyze-assignment expr)))
+    (cons 'quote (lambda (expr) (analyze-quotation expr)))
+    (cons 'if (lambda (expr) (analyze-if expr)))
+    (cons 'begin (lambda (expr) (analyze-sequence (begin-actions expr))))
+    (cons 'cond (lambda (expr) (analyze (cond->if expr))))
+    (cons 'and (lambda (expr) (analyze-and (and-clauses expr))))
+    (cons 'or (lambda (expr) (analyze-or (or-clauses expr))))
+    (cons 'let (lambda (expr) (analyze (let->combination expr))))
+    (cons 'let* (lambda (expr) (analyze (let*->let expr))))
+))
 
-(define (reserved? exp)
-  (and (pair? exp)
-       (assq (car exp) reserved-word-rules)))
+(define (reserved? expr)
+  (and (pair? expr)
+       (assq (car expr) reserved-word-rules)))
 
-(define (analyze-syntax-rules exp)
-  ((cdr (assq (car exp) reserved-word-rules)) exp))
+(define (analyze-syntax-rules expr)
+  (let ((keyword (car expr)))
+    (debug-log 'Fetching 'syntax 'rules 'for keyword)
+    ((cdr (assq keyword reserved-word-rules)) expr)))
 
 
-(define (analyze-sequence exps)
-  (define (loop first-proc rest-procs)
-    (if (null? rest-procs) first-proc
-        (loop (lambda (env) (first-proc env) ((car rest-procs) env))
-              (cdr rest-procs))))
-  (let ((procs (map analyze exps)))
-    (loop (car procs) (cdr procs))))
+(define (analyze-self-evaluating expr)
+  (info-log 'Atom expr)
+  (lambda (env) expr))
 
-(define (analyze-application exp)
-  (let ((funcproc (analyze (operator exp)))
-        (argprocs (analyze-list (operands exp))))
-    (lambda (env)
-      (execute (funcproc env)
-               (map (lambda (aproc) (aproc env))
-                    argprocs)))))
-
-(define (analyze-list exps)
-  (if (no-operands? exps) '()
-      ;; @NOTE: this sets the order of evaluation of a list of expressions
-      (let* (
-             (right (analyze-list (rest-operands exps)))
-             (left (analyze (first-operand exps)))
-            )
-        (cons left right))))
+(define (analyze-variable expr)
+  (lambda (env)
+    (info-log 'Looking 'up expr)
+    (lookup-variable expr env)))
 
 
-(define (analyze-self-evaluating exp)
-  (lambda (env) exp))
+(define (analyze-application expr)
+  (let ((operator (operator expr))
+        (operands (operands expr)))
+    (info-log 'Analyzing 'application (cons operator operands))
+    (let ((funcproc (analyze operator))
+          (argprocs (map analyze operands)))
+      (lambda (env)
+        (info-log 'Executing (cons operator operands))
+        (execute (funcproc env)
+                 (map (lambda (aproc) (aproc env))
+                      argprocs))))))
 
-(define (analyze-quoted exp)
-  (let ((qval (quoted exp)))
-    (lambda (env) qval)))
 
-(define (analyze-variable exp)
-  (lambda (env) (lookup-variable exp env)))
-
-(define (analyze-lambda exp)
-  (let ((params (lambda-parameters exp))
-        (bproc (analyze-sequence (lambda-body exp))))
+(define (analyze-lambda expr)
+  (let ((params (lambda-parameters expr))
+        (bproc (analyze-sequence (lambda-body expr))))
     (lambda (env) (make-procedure params bproc env))))
 
-
-;; @NOTE: the procedure true? is used here because the truth value of an
-;; expression may differ between the evaluator's and the implemented languages
-(define (true? predicate)
-  (not (false? predicate)))
-
-(define (false? predicate)
-  (eq? predicate 'false)) ;; PS: '#f === #f
-
-(define (analyze-if exp)
-  (let ((pproc (analyze (if-predicate exp)))
-        (cproc (analyze (if-consequent exp)))
-        (aproc (analyze (if-alternative exp))))
-    (lambda (env)
-      (if (true? (pproc env))
-          (cproc env)
-          (aproc env)))))
+(define (analyze-sequence exprs)
+  ; unroll(a (b c)) ->
+  ; (lambda (env)
+  ;   ((lambda (env)
+  ;      (a env)
+  ;      (b env)) env)
+  ;   (c env))
+  (define (unroll first-proc rest-procs)
+    (if (null? rest-procs) first-proc
+        (unroll (lambda (env) (first-proc env) ((car rest-procs) env))
+                (cdr rest-procs))))
+  (let ((procs (map analyze exprs)))
+    (unroll (car procs) (cdr procs))))
 
 
-(define (analyze-definition exp)
-  (let ((var (definition-variable exp))
-        (vproc (analyze (definition-value exp))))
-    (lambda (env)
-      (define-variable! var (vproc env) env))))
+(define (analyze-definition expr)
+  (let ((val (definition-value expr)))
+    (let ((var (definition-variable expr))
+          (vproc (analyze val)))
+      (lambda (env)
+        (info-log 'Define var ': val)
+        (define-variable! var (vproc env) env)))))
 
-(define (analyze-assignment exp)
-  (let ((var (assignment-variable exp))
-        (vproc (analyze (assignment-value exp))))
-    (lambda (env)
-      (set-variable-value! var (vproc env) env))))
+(define (analyze-assignment expr)
+  (let ((val (assignment-value expr)))
+    (let ((var (assignment-variable expr))
+          (vproc (analyze val)))
+      (lambda (env)
+        (info-log 'Assign var '= val)
+        (set-variable-value! var (vproc env) env)))))
 
+
+(define (analyze-quotation expr)
+  (let ((qval (quotation expr)))
+    (lambda (env) qval)))
+
+
+;; @NOTE: true? is abstracted away because the truth value of an expression
+;; may differ between the interpreter's and the implemented languages
+(define (analyze-if expr)
+  (let ((predicate (if-predicate expr))
+        (consequent (if-consequent expr))
+        (alternative (if-alternative expr)))
+    (let ((pproc (analyze predicate))
+          (cproc (analyze consequent))
+          (aproc (analyze alternative)))
+      (lambda (env)
+        (info-log 'Conditionally predicate '? consequent ': alternative)
+        (if (true? (pproc env))
+            (cproc env)
+            (aproc env))))))
 
 (define (analyze-and clauses)
   (define (eval-and clauses env)
@@ -170,7 +173,7 @@
                 (else (eval-and (rest-clauses clauses) env))))))
   (lambda (env) (eval-and clauses env)))
 
-;; @FIXME ^-V
+;; @FIXME: these two
 
 (define (analyze-or clauses)
   (define (eval-or clauses env)
@@ -183,160 +186,181 @@
 
 ;; *********************** SYMBOLIC REPRESENTATION *****************************
 
-(define (self-evaluating? exp)
-  (or (number? exp)
-      (string? exp)
-      ;; @XXX: evaluating () is normally illegal
-      (null? exp)
-      (char? exp)))
+(define (self-evaluating? expr)
+  (or (number? expr)
+      (string? expr)
+      (char? expr)
+      (null? expr)))
 
-(define (variable? exp)
-  (or (symbol? exp)
-      (boolean? exp)))
+(define (variable? expr)
+  (or (symbol? expr)
+      (boolean? expr)))
 
-(define (tagged-list? exp tag)
-  (and (pair? exp)
-       (eq? (car exp) tag)))
-
-
-(define (quoted exp)
-  (cadr exp))
+(define (tagged-list? expr tag)
+  (and (pair? expr)
+       (eq? (car expr) tag)))
 
 
-(define (assignment-variable exp)
-  (cadr exp))
+(define (application? expr) ;; untagged
+  (pair? expr))
 
-(define (assignment-value exp)
-  (caddr exp))
+(define (operator expr)
+  (car expr))
+
+(define (operands expr)
+  (cdr expr))
 
 
 (define (make-lambda parameters body)
-  ;; (lambda <vars>           =>         (lambda <vars>
-  ;;   (define u <e1>)                     (let ((u '*unassigned*)
-  ;;   (define v <e2>)                           (v '*unassigned*))
-  ;;   <e3>)                                 (set! u <e1>)
-  ;;                                         (set! v <e2>)
-  ;;                                         <e3>))
-  (define (scan-out-defines body)
-    (define (name-defs defines)
-      (map (lambda (def) (list (definition-variable def)
-                              '*unassigned*))
-          defines))
-    (define (set-defs defines)
-      (map (lambda (def) (list 'set!
-                              (definition-variable def)
-                              (definition-value def)))
-          defines))
-    (define (defines->let exprs defs ndefs)
-      (cond ((null? exprs)
-            (if (null? defs) body
-                (list (make-let (name-defs defs)
-                                (append (set-defs defs)
-                                        (reverse ndefs))))))
-            ((definition? (car exprs))
-            (defines->let (cdr exprs)
-                          (cons (car exprs) defs)
-                          ndefs))
-            (else (defines->let (cdr exprs)
-                                defs
-                                (cons (car exprs) ndefs)))))
-    (defines->let body '() '()))
-  (debug-log "MAKE-LAMBDA" parameters "->" body)
-  (cons 'lambda (cons parameters (scan-out-defines body))))
+  (debug-log 'Making 'lambda parameters '-> body)
+  (cons 'lambda (cons parameters body)))
 
-(define (lambda-parameters exp)
-  (cadr exp))
+(define (lambda-parameters expr)
+  (let ((params (cadr expr)))
+    (if (list? params) params
+        (begin (warn-log "Improper formal argument list" params)
+               (list params)))))
 
-(define (lambda-body exp)
-  (cddr exp))
+(define (lambda-body expr)
+  (cddr expr))
 
 
-(define (definition? exp)
-  (tagged-list? exp 'define))
+(define (make-procedure parameters body env)
+  (list 'procedure parameters body env))
 
-(define (definition-variable exp)
-  (if (variable? (cadr exp))
-      (cadr exp)    ; direct definition
-      (caadr exp))) ; procedure definition
+(define (compound-procedure? expr)
+  (tagged-list? expr 'procedure))
 
-(define (definition-value exp)
-  (if (variable? (cadr exp))
-      (caddr exp)
-      (make-lambda (cdadr exp)   ; parameters
-                   (cddr exp)))) ; body
+(define (procedure-parameters proc)
+  (cadr proc))
+
+(define (procedure-body proc)
+  (caddr proc))
+
+(define (procedure-environment proc)
+  (cadddr proc))
+
+
+;; @DELETE
+; (define (definition? expr)
+;   (tagged-list? expr 'define))
+
+(define (definition-variable expr)
+  (let ((definiendum (cadr expr)))
+    (if (variable? definiendum)
+        definiendum          ;; direct definition
+        (car definiendum)))) ;; procedure definition
+
+(define (definition-value expr)
+  (let ((definiendum (cadr expr))
+        (definiens (cddr expr)))
+    (if (variable? definiendum)
+        (car definiens)
+        (make-lambda (cdr definiendum) ;; formal arguments
+                     definiens))))     ;; body
+
+
+;; @DELETE
+; (define (make-set variable value)
+;   (debug-log 'Making 'assignment variable '= value)
+;   (list 'set! variable value))
+
+(define (assignment-variable expr)
+  (cadr expr))
+
+(define (assignment-value expr)
+  (caddr expr))
+
+
+(define (quotation expr)
+  (let ((quoted (cadr expr)))
+    (if (eq? quoted 'λ)
+        'lambda
+        quoted)))
 
 
 (define (make-if predicate consequent alternative)
-  (list 'if predicate consequent alternative))
+  (cons 'if (cons predicate (cons consequent alternative))))
 
-(define (if-predicate exp)
-  (cadr exp))
+(define (if-predicate expr)
+  (cadr expr))
 
-(define (if-consequent exp)
-  (caddr exp))
+(define (if-consequent expr)
+  (caddr expr))
 
 ;; @NOTE: the value of an if expression when the predicate is false and there is
 ;; no alternative is unspecified in Scheme; we have chosen here to make it false
-(define (if-alternative exp)
-  (if (not (null? (cdddr exp)))
-      (cadddr exp)
-      'false))
+(define (if-alternative expr)
+  (if (null? (cdddr expr)) 'false
+      (cadddr expr)))
+
+(define (true? predicate)
+  (not (false? predicate)))
+
+(define (false? predicate)
+  ;; @NOTE (quote false) === false
+  (eq? predicate 'false))
 
 
 (define (make-begin seq)
-  (cons 'begin seq))
+  (list 'begin seq))
 
-(define (begin-actions exp)
-  (cdr exp))
+(define (begin-actions expr)
+  (let ((actions (cdr expr)))
+    (if (null? actions)
+        (list actions)
+        actions)))
 
-(define (sequence->exp seq)
+(define (sequence->expr seq)
+  (debug-log 'Wrapping seq)
   (cond ((null? seq) seq)
         ((null? (cdr seq)) (car seq))
         (else (make-begin seq))))
 
 
-(define (cond-clauses exp)
-  (cdr exp))
+(define (cond->if expr)
+  (cond-expand-clauses (cond-clauses expr)))
+
+(define (cond-clauses expr)
+  (cdr expr))
 
 (define (cond-predicate clause)
   (car clause))
 
-;; Scheme allows an additional syntax for cond clauses, (<test> => <recipient>).
-;; If <test> evaluates to a true value, then <recipient> is evaluated: its value
-;; must be a procedure of one argument; this procedure is then invoked on <test>
-;; and the result is returned as the value of the cond expression. For example:
+;; additional syntax for cond clauses: (<test> => <recipient>); if <test>
+;; evaluates to a true value, then <recipient> is evaluated: its value must be a
+;; procedure of one argument; this procedure is then invoked on <test>. eg:
 ;; (cond ((assoc 'b '((a 1) (b 2))) => cadr)
-;;       (else #f)) -> 2
+;;       (else false)) -> 2
 ;; @FIXME: as it is, <test> gets evaluated twice, once during the predicate
-;; evaluation and then to apply <recipient> to it
+;; evaluation and then when applying <recipient> to it
 (define (cond-actions clause)
-  (if (eq? (cadr clause) '=>)
-      (list (list (caddr clause) (cond-predicate clause)))
-      (cdr clause)))
+  (let ((actions (cdr clause)))
+    (if (eq? (car actions) '=>)
+        (list (cadr actions) (cond-predicate clause))
+        actions)))
 
 (define (cond-else-clause? clause)
   (eq? (cond-predicate clause) 'else))
 
-(define (cond->if exp)
-  (define (expand-clauses clauses)
-    (if (null? clauses) 'false ; no else clause
+(define (cond-expand-clauses clauses)
+    (if (null? clauses) clauses ;; no else clause
         (let ((first (car clauses))
               (rest (cdr clauses)))
-          (if (cond-else-clause? first)
-              (if (null? rest)
-                  (sequence->exp (cond-actions first))
-                  (error-log "ELSE clause isn't last -- COND->IF" clauses))
-              (make-if (cond-predicate first)
-                       (sequence->exp (cond-actions first))
-                       (expand-clauses rest))))))
-  (expand-clauses (cond-clauses exp)))
+          (cond ((cond-else-clause? first)
+                 (if (not (null? rest))
+                     (warn-log "ELSE clause isn't last -- COND" clauses)
+                     (sequence->expr (cond-actions first))))
+                (else (make-if (cond-predicate first)
+                               (sequence->expr (cond-actions first))
+                               (cond-expand-clauses rest)))))))
 
 
-(define (and-clauses exp)
-  (cdr exp))
+(define (and-clauses expr)
+  (cdr expr))
 
-(define (or-clauses exp)
-  (cdr exp))
+(define (or-clauses expr)
+  (cdr expr))
 
 (define (first-clause lst)
   (car lst))
@@ -352,74 +376,88 @@
 
 
 (define (make-let associations body)
-  (cons 'let (cons associations body)))
+  (let ((seq (sequence->expr body)))
+    (debug-log 'Letting associations 'into 'scope seq)
+    (list 'let associations seq)))
 
-(define (let-associations exp)
-  (cadr exp))
+(define (let-associations expr)
+  (cadr expr))
 
-(define (let-body exp)
-  (cddr exp))
+(define (let-body expr)
+  (cddr expr))
 
-(define (let-vars exp)
-  (map car (let-associations exp)))
+(define (let-vars expr)
+  (map car (let-associations expr)))
 
-(define (let-inits exp)
-  (map cadr (let-associations exp)))
+(define (let-inits expr)
+  (map cadr (let-associations expr)))
 
-;; (let ((<var1> <exp1>)         =>          ((lambda (<var1> ... <varn>)
-;;         ...                                  <body>)
-;;       (<varn> <expn>))                     <exp1>
-;;   <body>)                                   ...
-;;                                            <expn>)
-(define (let->combination exp)
-  (cons (make-lambda (let-vars exp)
-                     (let-body exp))
-        (let-inits exp)))
+;(let ((<var1> <exp1>)
+;        ...
+;      (<varn> <expn>))
+;  <body>)
+;; =>
+;((lambda (<var1> ... <varn>)
+;   <body>)
+; <exp1>
+;  ...
+; <expn>)
+(define (let->combination expr)
+  (cons (make-lambda (let-vars expr)
+                     (let-body expr))
+        (let-inits expr)))
 
-(define (let*->let exp)
+
+(define (let*->let expr)
   (define (let-reduce associations body)
-    (if (null? associations)
-        (sequence->exp body)
+    (if (null? associations) body
         (make-let (list (car associations))
-                  (list (let-reduce (cdr associations) body)))))
-  (let-reduce (let-associations exp) (let-body exp)))
+                  (let-reduce (cdr associations) body))))
+  (let-reduce (let-associations expr) (let-body expr)))
 
 
-;; @NOTE: differently than the special forms, the derivate combination isn't
-;; tagged thus it must be checked last in eval's cond expression type dispatch
-(define (application? exp)
-  (pair? exp))
-
-(define (operator exp)
-  (car exp))
-
-(define (operands exp)
-  (cdr exp))
-
-(define (first-operand ops)
-  (car ops))
-
-(define (rest-operands ops)
-  (cdr ops))
-
-(define (no-operands? ops)
-  (null? ops))
-
-
-(define (make-procedure parameters body env)
-  (list 'procedure parameters body env))
-
-(define (compound-procedure? exp)
-  (tagged-list? exp 'procedure))
-
-(define (procedure-parameters proc)
-  (cadr proc))
-
-(define (procedure-body proc)
-  (caddr proc))
-
-(define (procedure-environment proc)
-  (cadddr proc))
+; (lambda <vars>
+;   (define u <e1>)
+;   (define v <e2>)
+;   <e3>)
+;; =>
+; (lambda <vars>
+; (let ((u '*unassigned*)
+;       (v '*unassigned*))
+;   (set! u <e1>)
+;   (set! v <e2>)
+;   <e3>))
+; (define (scan-out-defines body)
+;   (define (declare-defs defines)
+;       (map (lambda (def) (list (definition-variable def)
+;                                '(quote *unassigned*)))
+;            defines))
+;   (define (initialize-defs defines)
+;     (map (lambda (def) (make-set (definition-variable def)
+;                                  (definition-value def)))
+;          defines))
+;   (define (defines->let exprs defs ndefs)
+;     (debug-log "DEFINES->LET" "\n  " exprs "\n  " defs "\n  " ndefs)
+;     (cond ((null? exprs)
+;            (if (null? defs) body
+;                (let* ((_ (debug-log "**DEFINES->MAKING-LET**"))
+;                       (declarations (declare-defs defs))
+;                       (initializations (initialize-defs defs))
+;                       (rest-of-body (reverse ndefs)))
+;                 (debug-log "  " declarations (append initializations rest-of-body))
+;                 (let->combination (make-let declarations (append initializations rest-of-body))))))
+;           ((definition? (car exprs))
+;            (debug-log "Internalizing" (car exprs) "into" (cdr exprs))
+;            (defines->let (cdr exprs)
+;                          (cons (car exprs) defs)
+;                          ndefs))
+;           (else (defines->let (cdr exprs)
+;                               defs
+;                               (cons (car exprs) ndefs)))))
+;   (let ((out (defines->let body '() '())))
+;     (debug-log "DEFINES->LET result:" out)
+;     out))
+;; @DELETE
 
 
 ;; ****************************** ENVIRONMENT **********************************
@@ -458,12 +496,13 @@
 (define (lookup-variable var env)
   (define (env-loop env)
     (define (scan vars vals)
-      (cond ((null? vars) ; variable not bound locally? check outer scope
+      (cond ((null? vars) ;; crawl up to the outermost scope
              (env-loop (enclosing-environment env)))
             ((eq? var (car vars))
-             (if (eq? (car vals) '*unassigned*)
-                 (error-log "Unassigned variable" var)
-                 (car vals)))
+             (let ((v (car vals)))
+               (if (eq? v '*unassigned*)
+                   (error-log "Unassigned variable" var)
+                   v)))
             (else (scan (cdr vars) (cdr vals)))))
     (if (eq? env the-empty-environment)
         (warn-log "Unbound variable" var)
@@ -475,7 +514,7 @@
 (define (define-variable! var val env)
   (let ((frame (first-frame env)))
     (define (scan vars vals)
-      (cond ((null? vars)
+      (cond ((null? vars) ;; var free? bind it locally to val
              (add-binding-to-frame! var val frame))
             ((eq? var (car vars))
              (set-car! vals val) 'ok)
@@ -486,7 +525,7 @@
 (define (set-variable-value! var val env)
   (define (env-loop env)
     (define (scan vars vals)
-      (cond ((null? vars)
+      (cond ((null? vars) ;; variable not bound locally? check outer scope
              (env-loop (enclosing-environment env)))
             ((eq? var (car vars))
              (set-car! vals val) 'ok)
@@ -499,10 +538,11 @@
   (env-loop env))
 
 (define (setup-environment)
+  (info-log 'Set-up)
   (let ((initial-env
-          (extend-environment (primitive-procedure-names)
-                              (primitive-procedure-objects)
-                              the-empty-environment)))
+        (extend-environment (primitive-procedure-names)
+                            (primitive-procedure-objects)
+                            the-empty-environment)))
     (define-variable! 'true 'true initial-env)
     (define-variable! 'false 'false initial-env)
     initial-env))
@@ -697,14 +737,14 @@
         (cons 'cddadr cddadr)
         (cons 'cdddar cdddar)
         (cons 'cddddr cddddr)
-        ; <...>
 ))
 
 (define (primitive-procedure-names)
   (map car primitive-procedures))
 
 (define (primitive-procedure-objects)
-  (map (lambda (prim-proc) (list 'primitive (cdr prim-proc)))
+  (map (lambda (prim-proc)
+         (list 'primitive (cdr prim-proc)))
        primitive-procedures))
 
 (define (primitive-procedure? proc)
@@ -714,50 +754,59 @@
   (cadr proc))
 
 (define (apply-primitive-procedure proc args)
-  (debug-log "APPLY-PRIMITIVE" args "->" proc)
-  (let ((result (apply-in-underlying-scheme (primitive-implementation proc)
-                                            args)))
-    (cond ((eq? result '#f) 'false)
-          ((eq? result '#t) 'true)
-          (else result))))
+  (let ((primpl (primitive-implementation proc)))
+    (debug-log 'Applying 'primitive primpl)
+    (let ((result (apply primpl args)))
+      (cond ((eq? result '#f) 'false)
+            ((eq? result '#t) 'true)
+            (else result)))))
 
 
-;; ************************ Read-Eval-Print-Loop *******************************
-
-(define global-environment (setup-environment))
-
-(set-log-verbosity! 'DEBUG) ;; QUIET < ERROR < WARNING < INFO < @DEBUG
-
-
-(define input-prompt ">> ")
-
-(define (prompt-for-input string)
-  (newline) (display string))
-
-(define (announce-output string)
-  (display string))
+;; ************************ Command Line Interface *****************************
 
 (define (repl)
-  (prompt-for-input input-prompt)
-  (let ((input (read)))
-    (if (eof-object? input)
-        (begin
-          (newline)
-          (info-log "*** bye! ***")
-          (exit))
-        (let ((output (evaln input global-environment)))
-          (user-print output))))
-  (repl))
+  (define (loop)
+    ; read
+    (prompt)
+    (let ((input (read)))
+      (if (not (eof-object? input))
+          ; eval
+          (let ((output ((analyze input) global-environment)))
+            ; print
+            (user-print output)
+            ; loop
+            (loop)))))
+  (info-log 'Greetings!)
+  (display greet)
+  (loop)
+  (newline)
+  (info-log 'Shut-down)
+  (display bye)
+  (exit))
 
-(define (user-print object)
-  (if (compound-procedure? object)
-      (display (list 'compound-procedure
-                     (procedure-parameters object)
-                     "->"
-                     (procedure-body object)))
-      (display object)))
+(define (user-print obj)
+  (cond ((compound-procedure? obj) (write (procedure-body obj)))
+        ((primitive-procedure? obj) (write (primitive-implementation obj)))
+        (else (write obj))))
 
 
-(info-log "ABRACADABRA [version L-0.1]")
+(define greet
+"  ___ ____________  ___  _____  ___ ______  ___ ____________  ___
+ / _ \\| ___ | ___ \\/ _ \\/  __ \\/ _ \\|  _  \\/ _ \\| ___ | ___ \\/ _ \\
+/ /_\\ | |_/ | |_/ / /_\\ | /  \\/ /_\\ | | | / /_\\ | |_/ | |_/ / /_\\ \\
+|  _  | ___ |    /|  _  | |   |  _  | | | |  _  | ___ |    /|  _  |
+| | | | |_/ | |\\ \\| | | | \\__/| | | | |/ /| | | | |_/ | |\\ \\| | | |
+\\_| |_\\____/\\_| \\_\\_| |_/\\____\\_| |_|___/ \\_| |_\\____/\\_| \\_\\_| |_/
+(c) 2019, Gabriel B. Sant'Anna
+Version 0.3.bb\n")
+
+(define (prompt) (display "\n>> "))
+
+(define bye "*** bye! ***\n")
+
+
+(set-log-verbosity! 'DEBUG) ;; QUIET < ERROR < [WARN] < INFO < @DEBUG
+
+(define global-environment (setup-environment))
 
 (repl)

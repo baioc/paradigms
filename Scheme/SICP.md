@@ -6,8 +6,14 @@ MIT 6.001 - Structure and Interpretation of Computer Programs
 
 Not really a science (according to Richard Feynman).
 Not really about computers, in the same way that physics is not really about particle accelerators and biology is not really about microscopes.
-Computer science brings us the **formalized knowledge about processes**, that is, to **convey with precision the imperative knowledge of how to do things**.
 > "Computer science is no more about computers than astronomy is about telescopes." — Edsger Dijkstra / Michael Fellows
+
+It is in fact about two things:
+
+1. How we define "what is true" - declarative knowledge
+2. How we define "how to" do something - imperative knowledge
+
+Computer science brings us the **formalized knowledge about processes**, that is, to **convey with precision the imperative knowledge of how to do things**.
 
 The pattern of rules that direct a process is called a procedure.
 **And in the same way a wizard uses spells to control magic, computer scientists use procedures to control processes.**
@@ -18,9 +24,15 @@ Thus, **"programs must be written for people to read, and only incidentally for 
 Among the programs we write, some (but never enough) perform a precise mathematical function such as sorting or finding the maximum of a sequence of numbers, determining primality, or finding the square root.
 We call such programs algorithms
 
+### Managing Complexity
+
 As programmers fit data and program pieces to construct large systems, complexity must be controlled.
 Here, computer science behaves as an abstract form of engineering: the real-world aspects of physical systems are left behind and the only constraints imposed in building sotfware are the limitations of our minds.
 > "If art interprets our dreams, the computer executes them in the guise of programs!"
+
+The most fundamental of such techniques is **the Black-box abstraction**.
+Being able to define and name new pieces of knowledge and expose them as a black box entity in the language which can be used without knowing the inner details is crucial thing in managing complexity.
+That way, wecreate levels of abstractions and minimize number of items that we have to deal with on certain level.
 
 ## Programming
 
@@ -32,7 +44,7 @@ Every powerful language has three mechanisms for accomplishing this:
 - means of combination, by which compound elements are built from simpler ones, and
 - means of abstraction, by which compound elements can be named and manipulated as units.
 
-In programming, we deal with two kinds of elements: procedures and data (later we will discover that they are really not so distinct.).
+In programming, we deal with two kinds of elements: procedures and data (later we will discover that they are really not so distinct).
 Informally, data is "stuff" that we want to manipulate, and procedures are descriptions of the rules for manipulating the data.
 Thus, any powerful programming language should be able to describe primitive data and primitive procedures and should have methods for combining and abstracting procedures and data.
 
@@ -72,13 +84,10 @@ The evaluator, which determines the meaning of expressions in a programming lang
 To appreciate this point is to change our images of ourselves as programmers.
 We come to see ourselves as designers of languages, rather than only users of languages designed by others.
 
-
-# METACIRCULAR EVALUATOR (TODO):
+# METACIRCULAR EVALUATOR (@TODO):
 
 - hide some primitives
-- functional primitives
-- . vararg notation
-- letrec
-- math
-- state
-- stream
+- functional & meta primitives
+- compile
+- varargs
+- [letrec](https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book-Z-H-26.html#%_thm_4.20)
