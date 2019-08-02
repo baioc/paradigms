@@ -30,7 +30,7 @@ eq?
 (test false)
 (define l0 (lambda b b))
 (l0 0)
-(define l1 (λ (b) b))
+(define l1 (lambda (b) b))
 (l1 1)
 (define (l2 b) b)
 (l2 2)
@@ -43,8 +43,8 @@ eq?
 
 ;; begin
 (begin
-  (l4)
-  'hey)
+  'hey
+  (l4))
 (begin)
 (begin 'ho)
 

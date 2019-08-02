@@ -96,7 +96,7 @@ true
 #:INFO Executing (eq? (quote lambda) (quote λ)) 
 #:INFO Looking up eq? 
 #:DEBUG Applying primitive #<procedure (scheme#eq? x y)> 
-true
+false
 >> #:DEBUG Analyzing (+ 1 2 3 4) 
 #:INFO Analyzing application (+ 1 2 3 4) 
 #:DEBUG Analyzing + 
@@ -177,12 +177,12 @@ ok
 #:INFO Looking up l0 
 #:INFO Looking up b 
 0
->> #:DEBUG Analyzing (define l1 (λ (b) b)) 
+>> #:DEBUG Analyzing (define l1 (lambda (b) b)) 
 #:DEBUG Fetching syntax rules for define 
-#:DEBUG Analyzing (λ (b) b) 
-#:DEBUG Fetching syntax rules for λ 
+#:DEBUG Analyzing (lambda (b) b) 
+#:DEBUG Fetching syntax rules for lambda 
 #:DEBUG Analyzing b 
-#:INFO Define l1 : (λ (b) b) 
+#:INFO Define l1 : (lambda (b) b) 
 ok
 >> #:DEBUG Analyzing (l1 1) 
 #:INFO Analyzing application (l1 1) 
@@ -257,13 +257,13 @@ ok
 #:INFO Atom -1 
 #:INFO Define l4 : (lambda () (l3 (l2 newline)) (l3 (l1 newline)) (1- -1)) 
 ok
->> #:DEBUG Analyzing (begin (l4) (quote hey)) 
+>> #:DEBUG Analyzing (begin (quote hey) (l4)) 
 #:DEBUG Fetching syntax rules for begin 
+#:DEBUG Analyzing (quote hey) 
+#:DEBUG Fetching syntax rules for quote 
 #:DEBUG Analyzing (l4) 
 #:INFO Analyzing application (l4) 
 #:DEBUG Analyzing l4 
-#:DEBUG Analyzing (quote hey) 
-#:DEBUG Fetching syntax rules for quote 
 #:INFO Executing (l4) 
 #:INFO Looking up l4 
 #:INFO Executing (l3 (l2 newline)) 
@@ -289,7 +289,7 @@ ok
 #:INFO Executing (1- -1) 
 #:INFO Looking up 1- 
 #:DEBUG Applying primitive #<procedure (? n)> 
-hey
+-2
 >> #:DEBUG Analyzing (begin) 
 #:DEBUG Fetching syntax rules for begin 
 #:DEBUG Analyzing () 

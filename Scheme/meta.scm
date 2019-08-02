@@ -1,3 +1,27 @@
+;; ****************************** SOURCE INFO **********************************
+;; Copyright (c) 2019 Gabriel B. Sant'Anna
+;;
+;; @license MIT <https://gitlab.com/baioc/paradigms>
+;;
+;; Permission is hereby granted, free of charge, to any person obtaining a copy
+;; of this software and associated documentation files (the "Software"), to deal
+;; in the Software without restriction, including without limitation the rights
+;; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+;; copies of the Software, and to permit persons to whom the Software is
+;; furnished to do so, subject to the following conditions:
+;;
+;; The above copyright notice and this permission notice shall be included in
+;; all copies or substantial portions of the Software.
+;;
+;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+;; SOFTWARE.
+
+
 ;; ******************************** LOGGER *************************************
 (define (logger level msgs method)
   (if (<= level *log-level*)
@@ -61,7 +85,6 @@
 (define reserved-word-rules
   (list
     (cons 'lambda (lambda (expr) (analyze-lambda expr)))
-    (cons 'λ (lambda (expr) (analyze-lambda expr)))
     (cons 'define (lambda (expr) (analyze-definition expr)))
     (cons 'set! (lambda (expr) (analyze-assignment expr)))
     (cons 'quote (lambda (expr) (analyze-quotation expr)))
@@ -74,24 +97,24 @@
     (cons 'let* (lambda (expr) (analyze (let*->let expr))))
 ))
 
-(define (reserved? expr)
-  (and (pair? expr)
-       (assq (car expr) reserved-word-rules)))
+(define (reserved? sexpr)
+  (and (pair? sexpr)
+       (assq (car sexpr) reserved-word-rules)))
 
-(define (analyze-syntax-rules expr)
-  (let ((keyword (car expr)))
+(define (analyze-syntax-rules sexpr)
+  (let ((keyword (car sexpr)))
     (debug-log 'Fetching 'syntax 'rules 'for keyword)
-    ((cdr (assq keyword reserved-word-rules)) expr)))
+    ((cdr (assq keyword reserved-word-rules)) sexpr)))
 
 
-(define (analyze-self-evaluating expr)
-  (info-log 'Atom expr)
-  (lambda (env) expr))
+(define (analyze-self-evaluating sexpr)
+  (info-log 'Atom sexpr)
+  (lambda (env) sexpr))
 
-(define (analyze-variable expr)
+(define (analyze-variable var)
   (lambda (env)
-    (info-log 'Looking 'up expr)
-    (lookup-variable expr env)))
+    (info-log 'Looking 'up var)
+    (lookup-variable var env)))
 
 
 (define (analyze-application expr)
@@ -112,7 +135,7 @@
         (bproc (analyze-sequence (lambda-body expr))))
     (lambda (env) (make-procedure params bproc env))))
 
-(define (analyze-sequence exprs)
+(define (analyze-sequence sexprs)
   ; unroll(a (b c)) ->
   ; (lambda (env)
   ;   ((lambda (env)
@@ -123,7 +146,7 @@
     (if (null? rest-procs) first-proc
         (unroll (lambda (env) (first-proc env) ((car rest-procs) env))
                 (cdr rest-procs))))
-  (let ((procs (map analyze exprs)))
+  (let ((procs (map analyze sexprs)))
     (unroll (car procs) (cdr procs))))
 
 
@@ -186,50 +209,50 @@
 
 ;; *********************** SYMBOLIC REPRESENTATION *****************************
 
-(define (self-evaluating? expr)
-  (or (number? expr)
-      (string? expr)
-      (char? expr)
-      (null? expr)))
+(define (self-evaluating? sexpr)
+  (or (number? sexpr)
+      (string? sexpr)
+      (char? sexpr)
+      (null? sexpr)))
 
-(define (variable? expr)
-  (or (symbol? expr)
-      (boolean? expr)))
+(define (variable? sexpr)
+  (or (symbol? sexpr)
+      (boolean? sexpr)))
 
-(define (tagged-list? expr tag)
-  (and (pair? expr)
-       (eq? (car expr) tag)))
+(define (tagged-list? sexpr tag)
+  (and (pair? sexpr)
+       (eq? (car sexpr) tag)))
 
 
-(define (application? expr) ;; untagged
-  (pair? expr))
+(define (application? sexpr) ;; untagged
+  (pair? sexpr))
 
-(define (operator expr)
-  (car expr))
+(define (operator sexpr)
+  (car sexpr))
 
-(define (operands expr)
-  (cdr expr))
+(define (operands sexpr)
+  (cdr sexpr))
 
 
 (define (make-lambda parameters body)
   (debug-log 'Making 'lambda parameters '-> body)
   (cons 'lambda (cons parameters body)))
 
-(define (lambda-parameters expr)
-  (let ((params (cadr expr)))
+(define (lambda-parameters sexpr)
+  (let ((params (cadr sexpr)))
     (if (list? params) params
         (begin (warn-log "Improper formal argument list" params)
                (list params)))))
 
-(define (lambda-body expr)
-  (cddr expr))
+(define (lambda-body sexpr)
+  (cddr sexpr))
 
 
 (define (make-procedure parameters body env)
   (list 'procedure parameters body env))
 
-(define (compound-procedure? expr)
-  (tagged-list? expr 'procedure))
+(define (compound-procedure? sexpr)
+  (tagged-list? sexpr 'procedure))
 
 (define (procedure-parameters proc)
   (cadr proc))
@@ -242,18 +265,18 @@
 
 
 ;; @DELETE
-; (define (definition? expr)
-;   (tagged-list? expr 'define))
+; (define (definition? sexpr)
+;   (tagged-list? sexpr 'define))
 
-(define (definition-variable expr)
-  (let ((definiendum (cadr expr)))
+(define (definition-variable sexpr)
+  (let ((definiendum (cadr sexpr)))
     (if (variable? definiendum)
         definiendum          ;; direct definition
         (car definiendum)))) ;; procedure definition
 
-(define (definition-value expr)
-  (let ((definiendum (cadr expr))
-        (definiens (cddr expr)))
+(define (definition-value sexpr)
+  (let ((definiendum (cadr sexpr))
+        (definiens (cddr sexpr)))
     (if (variable? definiendum)
         (car definiens)
         (make-lambda (cdr definiendum) ;; formal arguments
@@ -265,34 +288,31 @@
 ;   (debug-log 'Making 'assignment variable '= value)
 ;   (list 'set! variable value))
 
-(define (assignment-variable expr)
-  (cadr expr))
+(define (assignment-variable sexpr)
+  (cadr sexpr))
 
-(define (assignment-value expr)
-  (caddr expr))
+(define (assignment-value sexpr)
+  (caddr sexpr))
 
 
-(define (quotation expr)
-  (let ((quoted (cadr expr)))
-    (if (eq? quoted 'λ)
-        'lambda
-        quoted)))
+(define (quotation sexpr)
+  (cadr sexpr))
 
 
 (define (make-if predicate consequent alternative)
   (cons 'if (cons predicate (cons consequent alternative))))
 
-(define (if-predicate expr)
-  (cadr expr))
+(define (if-predicate sexpr)
+  (cadr sexpr))
 
-(define (if-consequent expr)
-  (caddr expr))
+(define (if-consequent sexpr)
+  (caddr sexpr))
 
 ;; @NOTE: the value of an if expression when the predicate is false and there is
 ;; no alternative is unspecified in Scheme; we have chosen here to make it false
-(define (if-alternative expr)
-  (if (null? (cdddr expr)) 'false
-      (cadddr expr)))
+(define (if-alternative sexpr)
+  (if (null? (cdddr sexpr)) 'false
+      (cadddr sexpr)))
 
 (define (true? predicate)
   (not (false? predicate)))
@@ -305,8 +325,8 @@
 (define (make-begin seq)
   (list 'begin seq))
 
-(define (begin-actions expr)
-  (let ((actions (cdr expr)))
+(define (begin-actions sexpr)
+  (let ((actions (cdr sexpr)))
     (if (null? actions)
         (list actions)
         actions)))
@@ -321,8 +341,8 @@
 (define (cond->if expr)
   (cond-expand-clauses (cond-clauses expr)))
 
-(define (cond-clauses expr)
-  (cdr expr))
+(define (cond-clauses sexpr)
+  (cdr sexpr))
 
 (define (cond-predicate clause)
   (car clause))
@@ -356,11 +376,11 @@
                                (cond-expand-clauses rest)))))))
 
 
-(define (and-clauses expr)
-  (cdr expr))
+(define (and-clauses sexpr)
+  (cdr sexpr))
 
-(define (or-clauses expr)
-  (cdr expr))
+(define (or-clauses sexpr)
+  (cdr sexpr))
 
 (define (first-clause lst)
   (car lst))
@@ -380,11 +400,11 @@
     (debug-log 'Letting associations 'into 'scope seq)
     (list 'let associations seq)))
 
-(define (let-associations expr)
-  (cadr expr))
+(define (let-associations sexpr)
+  (cadr sexpr))
 
-(define (let-body expr)
-  (cddr expr))
+(define (let-body sexpr)
+  (cddr sexpr))
 
 (define (let-vars expr)
   (map car (let-associations expr)))
@@ -436,9 +456,9 @@
 ;     (map (lambda (def) (make-set (definition-variable def)
 ;                                  (definition-value def)))
 ;          defines))
-;   (define (defines->let exprs defs ndefs)
-;     (debug-log "DEFINES->LET" "\n  " exprs "\n  " defs "\n  " ndefs)
-;     (cond ((null? exprs)
+;   (define (defines->let sexprs defs ndefs)
+;     (debug-log "DEFINES->LET" "\n  " sexprs "\n  " defs "\n  " ndefs)
+;     (cond ((null? sexprs)
 ;            (if (null? defs) body
 ;                (let* ((_ (debug-log "**DEFINES->MAKING-LET**"))
 ;                       (declarations (declare-defs defs))
@@ -446,14 +466,14 @@
 ;                       (rest-of-body (reverse ndefs)))
 ;                 (debug-log "  " declarations (append initializations rest-of-body))
 ;                 (let->combination (make-let declarations (append initializations rest-of-body))))))
-;           ((definition? (car exprs))
-;            (debug-log "Internalizing" (car exprs) "into" (cdr exprs))
-;            (defines->let (cdr exprs)
-;                          (cons (car exprs) defs)
+;           ((definition? (car sexprs))
+;            (debug-log "Internalizing" (car sexprs) "into" (cdr sexprs))
+;            (defines->let (cdr sexprs)
+;                          (cons (car sexprs) defs)
 ;                          ndefs))
-;           (else (defines->let (cdr exprs)
+;           (else (defines->let (cdr sexprs)
 ;                               defs
-;                               (cons (car exprs) ndefs)))))
+;                               (cons (car sexprs) ndefs)))))
 ;   (let ((out (defines->let body '() '())))
 ;     (debug-log "DEFINES->LET result:" out)
 ;     out))
