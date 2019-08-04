@@ -36,6 +36,7 @@
 (define empty
   '())
 
+
 ;; a more general map takes a procedure of n arguments, together with n lists,
 ;; and applies the procedure to all the first elements of the lists, all the
 ;; second elements of the lists, and so on, returning a list of the results. eg:
@@ -71,13 +72,17 @@
       (stream lo (range (+ lo 1) hi))))
 
 (define (foreach proc s)
-  (cond ((not (empty? s))
-           (proc (head s))
-           (foreach proc (tail s)))))
+  (if (not (empty? s))
+      (begin (proc (head s))
+             (foreach proc (tail s)))))
+
+(define (sprint seq)
+  (foreach (lambda (x) (display x) (newline)) seq))
 
 (define (nth n s)
-  (if (= n 0) (head s)
-      (nth (- n 1) (tail s))))
+  (cond ((empty? s) '())
+        ((= n 0) (head s))
+        (else (nth (- n 1) (tail s)))))
 
 
 (define (ints-from n)
@@ -87,9 +92,10 @@
 (define (sieve ns)
   (define (divisible? a b)
     (= 0 (remainder a b)))
-  (stream (head ns)
-          (sieve (filter (lambda (x) (not (divisible? x (head ns))))
-                         (tail ns)))))
+  (if (empty? ns) ns
+      (stream (head ns)
+              (sieve (filter (lambda (x) (not (divisible? x (head ns))))
+                             (tail ns))))))
 
 (define primes
   (sieve (ints-from 2)))
@@ -124,18 +130,25 @@
 ;; to one that converges faster) that works well for partial sums with alternating signs
 (define (euler-transform seq)
   (define (square x) (* x x))
+  (define (nan? x) (not (= x x)))
   (let ((Sn-1 (nth 0 seq))
         (Sn (nth 1 seq))
         (Sn+1 (nth 2 seq)))
-    (let ((En (- Sn+1 (/ (square (- Sn+1 Sn))
-                         (+ Sn-1 (* -2 Sn) Sn+1)))))
-      (stream (if (nan? En) Sn+1 En)
-              (euler-transform (tail seq))))))
-
-;; a stream of successively transformed streams
-(define (tableau t s)
-  (stream s
-          (tableau t (t s))))
+    (if (or (not (number? Sn-1))
+            (not (number? Sn))
+            (not (number? Sn+1)))
+        empty
+        (let ((En (- Sn+1 (/ (square (- Sn+1 Sn))
+                             (+ Sn-1 (* -2 Sn) Sn+1)))))
+          (if (nan? En)
+              (begin (display "Euler Transform converged to machine precision\n")
+                     (stream Sn+1 empty))
+              (stream En (euler-transform (tail seq))))))))
 
 (define (accelerated transform seq)
+  ;; a stream of successively transformed streams
+  (define (tableau t s)
+    (if (empty? s) s
+        (stream s (tableau t (t s)))))
+  ;; stream of the first element in each of the tableau's stream
   (smap head (tableau transform seq)))

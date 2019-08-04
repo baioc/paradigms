@@ -1,24 +1,27 @@
 ;; primitives
 42
 0.03
-12e-14
+12e-4
 1e-90
 9/15
 3+4i
 #\c
 "this is a string"
 'a
-false
+''a
+'(a b c)
+#t
 true
+#f
+false
 
 ;; variables
-x
-(define x 99)
-x
-(set! x -1)
-x
-#t
-#f
+(set! k -1)
+k
+(define k 99)
+k
+(set! k -88)
+k
 eq?
 (eq? false 'false)
 (eq? 'lambda 'λ)
@@ -28,27 +31,23 @@ eq?
 (define (test b) (if b (display "#TRUE\n") (display "#FALSE\n")))
 (test '#f)
 (test false)
-(define l0 (lambda b b))
-(l0 0)
+; (define l0 (λ b b)) (l0 0)
 (define l1 (lambda (b) b))
-(l1 1)
 (define (l2 b) b)
-(l2 2)
 (define l3 (lambda (b) (b)))
-(l3 newline)
 (define (l4)
   (l3 (l2 newline))
   (l3 (l1 newline))
-  (1- -1))
+  (square 4))
 
 ;; begin
 (begin
   'hey
   (l4))
-(begin)
-(begin 'ho)
+; (begin)
+(begin "ho")
 
-;; order of evaluation
+;; @TEST: order of evaluation
 (define (x=1) (set! x 1) 1)
 (define (x=2) (set! x 2) 2)
 (define x 0)
@@ -59,7 +58,6 @@ x
 x
 (+ (x=2) (x=1))
 x
-(set! x 0)
 
 ;; let
 (let ((x 7) (y 8)) (+ x y))
@@ -67,15 +65,22 @@ x
 (let ((x 7) (y 8)) (+ x y) y)
 
 ;; let*
-(define (call* f g)
-  (let* ((b (g)) (a (f)))
+(define (call1* f g)
+  (let* ((b (g))
+         (a (f)))
+    a))
+(call1* x=1 x=2)
+(define (call2* f g)
+  (let* ((b (g))
+         (a (f)))
     (+ a b)))
+(set! x 0)
 x
-(call* x=1 x=2)
+(call2* x=1 x=2)
 x
 (set! x 0)
 x
-(call* x=2 x=1)
+(call2* x=2 x=1)
 x
 
 ;; cond

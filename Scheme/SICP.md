@@ -87,7 +87,8 @@ We come to see ourselves as designers of languages, rather than only users of la
 # METACIRCULAR EVALUATOR (@TODO):
 
 - hide some primitives
-- functional & meta primitives
+- functional & meta primitives (procedure? map apply for-each eval, etc)
 - compile
 - varargs
 - [letrec](https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book-Z-H-26.html#%_thm_4.20)
+- primitive printing of #<void>
