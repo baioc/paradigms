@@ -1,7 +1,7 @@
 ;; ****************************** SOURCE INFO **********************************
 ;; Copyright (c) 2019 Gabriel B. Sant'Anna
 ;;
-;; @license MIT <https://gitlab.com/baioc/paradigms>
+;; @License MIT <https://gitlab.com/baioc/paradigms>
 ;;
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
 ;; of this software and associated documentation files (the "Software"), to deal
@@ -21,11 +21,11 @@
 ;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ;; SOFTWARE.
 
-; @Tested with:
-; chez-9.5.2
-; petite-9.5.2
-; bigloo-4.3e
-; guile-2.2.6
+;; @Tested with:
+;; chez-9.5.2
+;; petite-9.5.2
+;; guile-2.2.6
+;; bigloo-4.3e
 
 
 ;; ******************************** LOGGER *************************************
@@ -62,8 +62,8 @@
 
 ;; ************************* GENERIC INTERPRETER *******************************
 
-(define (evaln pexpr env)
-  (pexpr env))
+(define (evaln expr env)
+  ((analyze expr) env))
 
 ;; data-directed style dispatch
 (define (analyze expr)
@@ -101,7 +101,7 @@
 
 (define (analyze-reserved expr)
   (let ((keyword (reserved-word expr)))
-    (info-log 'Fetching 'syntax 'rules keyword)
+    (debug-log 'Fetching 'syntax 'rules keyword)
     ((reserved-rule keyword) expr)))
 
 (define (analyze-application expr)
@@ -140,12 +140,11 @@
 (define (analyze-lambda expr)
   (let ((params (lambda-parameters expr))
         (body (analyze-sequence (lambda-body expr))))
-    (if (list? params)
-        ;; @NOTE: procedures reference the frame where they were defined
-        (lambda (env) (make-procedure params body env))
-        (warn-log "Improper formal argument list" params))))
+    (if (not (list? params))
+        (warn-log "Improper formal argument list" params)
+        (lambda (env) (make-procedure params body env)))))
 
-;; @NOTE: expression sequentialization is done by nesting
+;; expression sequentialization is done by nesting
 (define (analyze-sequence exprs)
   (define (unroll first-proc rest-procs)
     (if (null? rest-procs) first-proc
@@ -181,31 +180,35 @@
         (cproc (analyze (if-consequent expr)))
         (aproc (analyze (if-alternative expr))))
     (lambda (env)
-      ;; @NOTE: truth value of expression may differ in separate languages
+      ;; truth value of expression may differ in separate languages
       (if (true? (pproc env))
           (cproc env)
           (aproc env)))))
 
 
-;; expansion of other conditionals into nested ifs
+;; clauses are evaluated right to left, when the predicate is true the actions
+;; are performed in sequence and their final value is returned; an else clause
+;; is always executed when found.
+;; the pipe additional syntax (<test> => <sink>) works such that if <test> gets
+;; evaluated to a true value, the one-argument procedure <sink> is applied on it
 (define (cond->if clauses)
   (if (empty-clauses? clauses) 'false ;; no else clause
       (let ((curr (current-clause clauses))
             (rest (rest-clauses clauses)))
         (cond ((cond-else-clause? curr)
                   (if (not (at-last-clause? clauses))
-                      (warn-log "ELSE clause isn't last" clauses))
-                  (sequence->expr (cond-actions curr)))
+                      (warn-log "ELSE clause isn't last" (cons 'cond clauses)))
+                  (make-begin (cond-actions curr)))
               ((cond-pipe-clause? curr)
                   (make-let (list (list '*temp* (cond-predicate curr)))
                             (make-if '*temp*
                                      (list (cond-pipe-action curr) '*temp*)
                                      (cond->if rest))))
               (else (make-if (cond-predicate curr)
-                             (sequence->expr (cond-actions curr))
+                             (make-begin (cond-actions curr))
                              (cond->if rest)))))))
 
-;; @NOTE: in AND; when a clause evaluates to false, returns false immediately;
+;; when a clause evaluates to false, returns false immediately;
 ;; when every clause evaluates to true, returns the value of the last one;
 ;; when there are no clauses, returns true
 (define (and->if clauses)
@@ -216,7 +219,7 @@
                              (and->if (rest-clauses clauses)))
                          'false))))
 
-;; @NOTE: in OR; when a clause evaluates to true, returns its value immediately;
+;; when a clause evaluates to true, returns its value immediately;
 ;; when every clause evaluates to false, returns false;
 ;; when there are no clauses, returns false
 (define (or->if clauses)
@@ -227,7 +230,7 @@
                          (or->if (rest-clauses clauses))))))
 
 
-;; @NOTE: since let defines a local scope, it is derived as a lambda combination
+;; since let defines a local scope, it is derived as a lambda combination
 ;; whose arguments are immediately bound to the initializing parameters
 (define (let->combination expr)
   (cons (make-lambda (let-vars expr)
@@ -236,11 +239,12 @@
 
 ;; let* imposes order, thus it may be constructed by nesting lets
 (define (let*->let expr)
-  (define (let-reduce associations body)
-    (if (null? associations) body
-        (let ((expr (let-reduce (cdr associations) body)))
-          (make-let (list (car associations))
-                    (if (tagged-list? expr 'let) (list expr) expr))))) ;; @XXX
+  (define (let-reduce associations exprs)
+    (if (null? associations)
+        (if (null? (cdr exprs)) (car exprs)
+            exprs) ;; unwraps lists with a single element
+        (make-let (list (car associations))
+                  (let-reduce (cdr associations) exprs))))
   (let-reduce (let-associations expr) (let-body expr)))
 
 
@@ -266,8 +270,8 @@
 (define (compound-procedure? sexpr)
   (tagged-list? sexpr 'procedure))
 
-(define (primitive-procedure? proc)
-  (tagged-list? proc 'primitive))
+(define (primitive-procedure? sexpr)
+  (tagged-list? sexpr 'primitive))
 
 (define (tagged-list? sexpr tag)
   (and (pair? sexpr)
@@ -332,7 +336,7 @@
 
 
 (define (make-if predicate consequent alternative)
-  (cons 'if (cons predicate (cons consequent alternative))))
+  (list 'if predicate consequent alternative))
 
 (define (if-predicate sexpr)
   (cadr sexpr))
@@ -346,21 +350,16 @@
   (if (null? (cdddr sexpr)) 'false
       (cadddr sexpr)))
 
-(define (true? predicate)
-  (not (false? predicate)))
+;; @NOTE: anything not equal to the symbol false is "true"
+(define (true? expr)
+  (not (eq? expr 'false)))
 
-(define (false? predicate)
-  (eq? predicate 'false))
 
+(define (make-begin exprs)
+  (cons 'begin exprs))
 
 (define (begin-actions sexpr)
   (cdr sexpr))
-
-(define (sequence->expr sexpr)
-  (debug-log 'Wrapping sexpr)
-  (cond ((null? sexpr) sexpr)
-        ((null? (cdr sexpr)) (car sexpr))
-        (else (cons 'begin sexpr))))
 
 
 ;; these are shared by COND, AND & OR derivation
@@ -397,8 +396,8 @@
 
 
 (define (make-let associations body)
-    (debug-log 'Letting associations 'into 'scope 'of body)
-    (cons 'let (cons associations body)))
+  (debug-log 'Letting associations 'into 'scope 'of body)
+  (list 'let associations body))
 
 (define (let-associations sexpr)
   (cadr sexpr))
@@ -459,17 +458,18 @@
 
 ;; ****************************** ENVIRONMENT **********************************
 
+;; lambdas/procedures reference the frame where they were defined
 (define (make-procedure parameters body env)
   (list 'procedure parameters body env))
 
-(define (procedure-parameters proc)
-  (cadr proc))
+(define (procedure-parameters sexpr)
+  (cadr sexpr))
 
-(define (procedure-body proc)
-  (caddr proc))
+(define (procedure-body sexpr)
+  (caddr sexpr))
 
-(define (procedure-environment proc)
-  (cadddr proc))
+(define (procedure-environment sexpr)
+  (cadddr sexpr))
 
 (define (apply-compound-procedure procedure arguments)
   ((procedure-body procedure)
@@ -491,6 +491,7 @@
   (cdr env))
 
 
+;; a frame binds local variables to their values
 (define (make-frame variables values)
   (let ((numvars (length variables))
         (numvals (length values)))
@@ -500,6 +501,7 @@
              (warn-log "Too many arguments supplied" variables values))
           ((> numvars numvals)
              (warn-log "Too few arguments supplied" variables values)))))
+;; @TODO this check elsewhere?
 
 (define (frame-variables frame)
   (car frame))
@@ -580,7 +582,7 @@
   (let ((primpl (primitive-implementation proc)))
     (info-log 'Applying 'primitive primpl 'to args)
     (let ((result (apply primpl args)))
-      ;; necessary conversion of representation
+      ;; @XXX: necessary conversion of primitive representation of truth
       (cond ((eq? result '#f) 'false)
             ((eq? result '#t) 'true)
             (else result)))))
@@ -773,7 +775,7 @@
     (repl-prompt)
     (let ((input (simplify (read)))) ;; read
       (if (not (eof-object? input))
-          (let ((output (evaln (analyze input) global-environment))) ;; eval
+          (let ((output (evaln input global-environment))) ;; eval
             (repl-print output) ;; print
             (loop))))) ;; loop
   (info-log 'Greetings!)
@@ -798,7 +800,7 @@
           (else input)))
   (if (null? swaps) sexpr
       (let-replace (cdr swaps)
-                   (let-replace-unary (caar swaps) (cadar swaps) sexpr))))
+                      (let-replace-unary (caar swaps) (cadar swaps) sexpr))))
 
 (define (repl-print obj)
   (cond ((compound-procedure? obj)

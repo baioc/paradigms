@@ -34,13 +34,13 @@ INFO: Atom #\c
 INFO: Atom "this is a string" 
 "this is a string"
 >> DEBUG: Analyzing (quote a) 
-INFO: Fetching syntax rules quote 
+DEBUG: Fetching syntax rules quote 
 a
 >> DEBUG: Analyzing (quote (quote a)) 
-INFO: Fetching syntax rules quote 
+DEBUG: Fetching syntax rules quote 
 (quote a)
 >> DEBUG: Analyzing (quote (a b c)) 
-INFO: Fetching syntax rules quote 
+DEBUG: Fetching syntax rules quote 
 (a b c)
 >> DEBUG: Analyzing #t 
 INFO: Looking up #t 
@@ -55,7 +55,7 @@ WARNING: Unbound variable #f
 INFO: Looking up false 
 false
 >> DEBUG: Analyzing (set! k -1) 
-INFO: Fetching syntax rules set! 
+DEBUG: Fetching syntax rules set! 
 DEBUG: Analyzing -1 
 INFO: Atom -1 
 WARNING: Unbound variable! k 
@@ -63,14 +63,14 @@ WARNING: Unbound variable! k
 INFO: Looking up k 
 WARNING: Unbound variable k 
 >> DEBUG: Analyzing (define k 99) 
-INFO: Fetching syntax rules define 
+DEBUG: Fetching syntax rules define 
 DEBUG: Analyzing 99 
 INFO: Atom 99 
 >> DEBUG: Analyzing k 
 INFO: Looking up k 
 99
 >> DEBUG: Analyzing (set! k -88) 
-INFO: Fetching syntax rules set! 
+DEBUG: Fetching syntax rules set! 
 DEBUG: Analyzing -88 
 INFO: Atom -88 
 >> DEBUG: Analyzing k 
@@ -82,7 +82,7 @@ INFO: Looking up eq?
 >> DEBUG: Analyzing (eq? false (quote false)) 
 DEBUG: Analyzing false 
 DEBUG: Analyzing (quote false) 
-INFO: Fetching syntax rules quote 
+DEBUG: Fetching syntax rules quote 
 DEBUG: Analyzing eq? 
 INFO: Looking up false 
 INFO: Looking up eq? 
@@ -90,9 +90,9 @@ INFO: Applying primitive #<procedure eq?> to (false false)
 true
 >> DEBUG: Analyzing (eq? (quote lambda) (quote lambda)) 
 DEBUG: Analyzing (quote lambda) 
-INFO: Fetching syntax rules quote 
+DEBUG: Fetching syntax rules quote 
 DEBUG: Analyzing (quote lambda) 
-INFO: Fetching syntax rules quote 
+DEBUG: Fetching syntax rules quote 
 DEBUG: Analyzing eq? 
 INFO: Looking up eq? 
 INFO: Applying primitive #<procedure eq?> to (λ λ) 
@@ -111,12 +111,12 @@ INFO: Looking up +
 INFO: Applying primitive #<procedure +> to (1 2 3 4) 
 10
 >> DEBUG: Analyzing (define (test b) (if b (display "#TRUE\n") (display "#FALSE\n"))) 
-INFO: Fetching syntax rules define 
+DEBUG: Fetching syntax rules define 
 DEBUG: Making lambda (b) -> ((if b (display "#TRUE\n") (display "#FALSE\n"))) 
 DEBUG: Analyzing (lambda (b) (if b (display "#TRUE\n") (display "#FALSE\n"))) 
-INFO: Fetching syntax rules λ 
+DEBUG: Fetching syntax rules lambda 
 DEBUG: Analyzing (if b (display "#TRUE\n") (display "#FALSE\n")) 
-INFO: Fetching syntax rules if 
+DEBUG: Fetching syntax rules if 
 DEBUG: Analyzing (display "#FALSE\n") 
 DEBUG: Analyzing "#FALSE\n" 
 INFO: Atom "#FALSE\n" 
@@ -128,7 +128,7 @@ DEBUG: Analyzing display
 DEBUG: Analyzing b 
 >> DEBUG: Analyzing (test (quote #f)) 
 DEBUG: Analyzing (quote #f) 
-INFO: Fetching syntax rules quote 
+DEBUG: Fetching syntax rules quote 
 DEBUG: Analyzing test 
 INFO: Looking up test 
 INFO: Looking up b 
@@ -147,27 +147,27 @@ INFO: Applying primitive #<procedure display> to ("#FALSE\n")
 #FALSE
 #<void>
 >> DEBUG: Analyzing (define l1 (lambda (b) b)) 
-INFO: Fetching syntax rules define 
+DEBUG: Fetching syntax rules define 
 DEBUG: Analyzing (lambda (b) b) 
-INFO: Fetching syntax rules λ 
+DEBUG: Fetching syntax rules lambda 
 DEBUG: Analyzing b 
 >> DEBUG: Analyzing (define (l2 b) b) 
-INFO: Fetching syntax rules define 
+DEBUG: Fetching syntax rules define 
 DEBUG: Making lambda (b) -> (b) 
 DEBUG: Analyzing (lambda (b) b) 
-INFO: Fetching syntax rules λ 
+DEBUG: Fetching syntax rules lambda 
 DEBUG: Analyzing b 
 >> DEBUG: Analyzing (define l3 (lambda (b) (b))) 
-INFO: Fetching syntax rules define 
+DEBUG: Fetching syntax rules define 
 DEBUG: Analyzing (lambda (b) (b)) 
-INFO: Fetching syntax rules λ 
+DEBUG: Fetching syntax rules lambda 
 DEBUG: Analyzing (b) 
 DEBUG: Analyzing b 
 >> DEBUG: Analyzing (define (l4) (l3 (l2 newline)) (l3 (l1 newline)) (square 4)) 
-INFO: Fetching syntax rules define 
+DEBUG: Fetching syntax rules define 
 DEBUG: Making lambda () -> ((l3 (l2 newline)) (l3 (l1 newline)) (square 4)) 
 DEBUG: Analyzing (lambda () (l3 (l2 newline)) (l3 (l1 newline)) (square 4)) 
-INFO: Fetching syntax rules λ 
+DEBUG: Fetching syntax rules lambda 
 DEBUG: Analyzing (square 4) 
 DEBUG: Analyzing 4 
 INFO: Atom 4 
@@ -183,9 +183,9 @@ DEBUG: Analyzing newline
 DEBUG: Analyzing l1 
 DEBUG: Analyzing l3 
 >> DEBUG: Analyzing (begin (quote hey) (l4)) 
-INFO: Fetching syntax rules begin 
+DEBUG: Fetching syntax rules begin 
 DEBUG: Analyzing (quote hey) 
-INFO: Fetching syntax rules quote 
+DEBUG: Fetching syntax rules quote 
 DEBUG: Analyzing (l4) 
 DEBUG: Analyzing l4 
 INFO: Looking up l4 
@@ -207,34 +207,34 @@ INFO: Looking up square
 INFO: Applying primitive #<procedure> to (4) 
 16
 >> DEBUG: Analyzing (begin "ho") 
-INFO: Fetching syntax rules begin 
+DEBUG: Fetching syntax rules begin 
 DEBUG: Analyzing "ho" 
 INFO: Atom "ho" 
 "ho"
 >> DEBUG: Analyzing (define (x=1) (set! x 1) 1) 
-INFO: Fetching syntax rules define 
+DEBUG: Fetching syntax rules define 
 DEBUG: Making lambda () -> ((set! x 1) 1) 
 DEBUG: Analyzing (lambda () (set! x 1) 1) 
-INFO: Fetching syntax rules λ 
+DEBUG: Fetching syntax rules lambda 
 DEBUG: Analyzing (set! x 1) 
-INFO: Fetching syntax rules set! 
+DEBUG: Fetching syntax rules set! 
 DEBUG: Analyzing 1 
 INFO: Atom 1 
 DEBUG: Analyzing 1 
 INFO: Atom 1 
 >> DEBUG: Analyzing (define (x=2) (set! x 2) 2) 
-INFO: Fetching syntax rules define 
+DEBUG: Fetching syntax rules define 
 DEBUG: Making lambda () -> ((set! x 2) 2) 
 DEBUG: Analyzing (lambda () (set! x 2) 2) 
-INFO: Fetching syntax rules λ 
+DEBUG: Fetching syntax rules lambda 
 DEBUG: Analyzing (set! x 2) 
-INFO: Fetching syntax rules set! 
+DEBUG: Fetching syntax rules set! 
 DEBUG: Analyzing 2 
 INFO: Atom 2 
 DEBUG: Analyzing 2 
 INFO: Atom 2 
 >> DEBUG: Analyzing (define x 0) 
-INFO: Fetching syntax rules define 
+DEBUG: Fetching syntax rules define 
 DEBUG: Analyzing 0 
 INFO: Atom 0 
 >> DEBUG: Analyzing x 
@@ -255,7 +255,7 @@ INFO: Applying primitive #<procedure +> to (1 2)
 INFO: Looking up x 
 1
 >> DEBUG: Analyzing (set! x 0) 
-INFO: Fetching syntax rules set! 
+DEBUG: Fetching syntax rules set! 
 DEBUG: Analyzing 0 
 INFO: Atom 0 
 >> DEBUG: Analyzing x 
@@ -276,7 +276,7 @@ INFO: Applying primitive #<procedure +> to (2 1)
 INFO: Looking up x 
 2
 >> DEBUG: Analyzing (let ((x 7) (y 8)) (+ x y)) 
-INFO: Fetching syntax rules let 
+DEBUG: Fetching syntax rules let 
 DEBUG: Making lambda (x y) -> ((+ x y)) 
 DEBUG: Analyzing ((lambda (x y) (+ x y)) 7 8) 
 DEBUG: Analyzing 7 
@@ -284,7 +284,7 @@ INFO: Atom 7
 DEBUG: Analyzing 8 
 INFO: Atom 8 
 DEBUG: Analyzing (lambda (x y) (+ x y)) 
-INFO: Fetching syntax rules λ 
+DEBUG: Fetching syntax rules lambda 
 DEBUG: Analyzing (+ x y) 
 DEBUG: Analyzing x 
 DEBUG: Analyzing y 
@@ -295,7 +295,7 @@ INFO: Looking up +
 INFO: Applying primitive #<procedure +> to (7 8) 
 15
 >> DEBUG: Analyzing (let ((x 8) (y 7)) y) 
-INFO: Fetching syntax rules let 
+DEBUG: Fetching syntax rules let 
 DEBUG: Making lambda (x y) -> (y) 
 DEBUG: Analyzing ((lambda (x y) y) 8 7) 
 DEBUG: Analyzing 8 
@@ -303,12 +303,12 @@ INFO: Atom 8
 DEBUG: Analyzing 7 
 INFO: Atom 7 
 DEBUG: Analyzing (lambda (x y) y) 
-INFO: Fetching syntax rules λ 
+DEBUG: Fetching syntax rules lambda 
 DEBUG: Analyzing y 
 INFO: Looking up y 
 7
 >> DEBUG: Analyzing (let ((x 7) (y 8)) (+ x y) y) 
-INFO: Fetching syntax rules let 
+DEBUG: Fetching syntax rules let 
 DEBUG: Making lambda (x y) -> ((+ x y) y) 
 DEBUG: Analyzing ((lambda (x y) (+ x y) y) 7 8) 
 DEBUG: Analyzing 7 
@@ -316,7 +316,7 @@ INFO: Atom 7
 DEBUG: Analyzing 8 
 INFO: Atom 8 
 DEBUG: Analyzing (lambda (x y) (+ x y) y) 
-INFO: Fetching syntax rules λ 
+DEBUG: Fetching syntax rules lambda 
 DEBUG: Analyzing (+ x y) 
 DEBUG: Analyzing x 
 DEBUG: Analyzing y 
@@ -329,30 +329,30 @@ INFO: Applying primitive #<procedure +> to (7 8)
 INFO: Looking up y 
 8
 >> DEBUG: Analyzing (define (call1* f g) (let* ((b (g)) (a (f))) a)) 
-INFO: Fetching syntax rules define 
+DEBUG: Fetching syntax rules define 
 DEBUG: Making lambda (f g) -> ((let* ((b (g)) (a (f))) a)) 
 DEBUG: Analyzing (lambda (f g) (let* ((b (g)) (a (f))) a)) 
-INFO: Fetching syntax rules λ 
+DEBUG: Fetching syntax rules lambda 
 DEBUG: Analyzing (let* ((b (g)) (a (f))) a) 
-INFO: Fetching syntax rules let* 
-DEBUG: Letting ((a (f))) into scope of (a) 
-DEBUG: Letting ((b (g))) into scope of ((let ((a (f))) a)) 
+DEBUG: Fetching syntax rules let* 
+DEBUG: Letting ((a (f))) into scope of a 
+DEBUG: Letting ((b (g))) into scope of (let ((a (f))) a) 
 DEBUG: Analyzing (let ((b (g))) (let ((a (f))) a)) 
-INFO: Fetching syntax rules let 
+DEBUG: Fetching syntax rules let 
 DEBUG: Making lambda (b) -> ((let ((a (f))) a)) 
 DEBUG: Analyzing ((lambda (b) (let ((a (f))) a)) (g)) 
 DEBUG: Analyzing (g) 
 DEBUG: Analyzing g 
 DEBUG: Analyzing (lambda (b) (let ((a (f))) a)) 
-INFO: Fetching syntax rules λ 
+DEBUG: Fetching syntax rules lambda 
 DEBUG: Analyzing (let ((a (f))) a) 
-INFO: Fetching syntax rules let 
+DEBUG: Fetching syntax rules let 
 DEBUG: Making lambda (a) -> (a) 
 DEBUG: Analyzing ((lambda (a) a) (f)) 
 DEBUG: Analyzing (f) 
 DEBUG: Analyzing f 
 DEBUG: Analyzing (lambda (a) a) 
-INFO: Fetching syntax rules λ 
+DEBUG: Fetching syntax rules lambda 
 DEBUG: Analyzing a 
 >> DEBUG: Analyzing (call1* x=1 x=2) 
 DEBUG: Analyzing x=1 
@@ -366,36 +366,36 @@ INFO: Looking up f
 INFO: Looking up a 
 1
 >> DEBUG: Analyzing (define (call2* f g) (let* ((b (g)) (a (f))) (+ a b))) 
-INFO: Fetching syntax rules define 
+DEBUG: Fetching syntax rules define 
 DEBUG: Making lambda (f g) -> ((let* ((b (g)) (a (f))) (+ a b))) 
 DEBUG: Analyzing (lambda (f g) (let* ((b (g)) (a (f))) (+ a b))) 
-INFO: Fetching syntax rules λ 
+DEBUG: Fetching syntax rules lambda 
 DEBUG: Analyzing (let* ((b (g)) (a (f))) (+ a b)) 
-INFO: Fetching syntax rules let* 
-DEBUG: Letting ((a (f))) into scope of ((+ a b)) 
-DEBUG: Letting ((b (g))) into scope of ((let ((a (f))) (+ a b))) 
+DEBUG: Fetching syntax rules let* 
+DEBUG: Letting ((a (f))) into scope of (+ a b) 
+DEBUG: Letting ((b (g))) into scope of (let ((a (f))) (+ a b)) 
 DEBUG: Analyzing (let ((b (g))) (let ((a (f))) (+ a b))) 
-INFO: Fetching syntax rules let 
+DEBUG: Fetching syntax rules let 
 DEBUG: Making lambda (b) -> ((let ((a (f))) (+ a b))) 
 DEBUG: Analyzing ((lambda (b) (let ((a (f))) (+ a b))) (g)) 
 DEBUG: Analyzing (g) 
 DEBUG: Analyzing g 
 DEBUG: Analyzing (lambda (b) (let ((a (f))) (+ a b))) 
-INFO: Fetching syntax rules λ 
+DEBUG: Fetching syntax rules lambda 
 DEBUG: Analyzing (let ((a (f))) (+ a b)) 
-INFO: Fetching syntax rules let 
+DEBUG: Fetching syntax rules let 
 DEBUG: Making lambda (a) -> ((+ a b)) 
 DEBUG: Analyzing ((lambda (a) (+ a b)) (f)) 
 DEBUG: Analyzing (f) 
 DEBUG: Analyzing f 
 DEBUG: Analyzing (lambda (a) (+ a b)) 
-INFO: Fetching syntax rules λ 
+DEBUG: Fetching syntax rules lambda 
 DEBUG: Analyzing (+ a b) 
 DEBUG: Analyzing a 
 DEBUG: Analyzing b 
 DEBUG: Analyzing + 
 >> DEBUG: Analyzing (set! x 0) 
-INFO: Fetching syntax rules set! 
+DEBUG: Fetching syntax rules set! 
 DEBUG: Analyzing 0 
 INFO: Atom 0 
 >> DEBUG: Analyzing x 
@@ -419,7 +419,7 @@ INFO: Applying primitive #<procedure +> to (1 2)
 INFO: Looking up x 
 1
 >> DEBUG: Analyzing (set! x 0) 
-INFO: Fetching syntax rules set! 
+DEBUG: Fetching syntax rules set! 
 DEBUG: Analyzing 0 
 INFO: Atom 0 
 >> DEBUG: Analyzing x 
@@ -443,17 +443,64 @@ INFO: Applying primitive #<procedure +> to (2 1)
 INFO: Looking up x 
 2
 >> DEBUG: Analyzing (cond ((assoc (quote b) (quote ((a 1) (b 2)))) => cadr)) 
-INFO: Fetching syntax rules cond 
-DEBUG: Letting ((*temp* (assoc (quote b) (quote ((a 1) (b 2)))))) into scope of (if *temp* (cadr *temp*) . false) 
-DEBUG: Analyzing (let ((*temp* (assoc (quote b) (quote ((a 1) (b 2)))))) if *temp* (cadr *temp*) . false) 
-INFO: Fetching syntax rules let 
-DEBUG: Making lambda (*temp*) -> (if *temp* (cadr *temp*) . false) 
-DEBUG: Analyzing ((lambda (*temp*) if *temp* (cadr *temp*) . false) (assoc (quote b) (quote ((a 1) (b 2))))) 
+DEBUG: Fetching syntax rules cond 
+DEBUG: Letting ((*temp* (assoc (quote b) (quote ((a 1) (b 2)))))) into scope of (if *temp* (cadr *temp*) false) 
+DEBUG: Analyzing (let ((*temp* (assoc (quote b) (quote ((a 1) (b 2)))))) (if *temp* (cadr *temp*) false)) 
+DEBUG: Fetching syntax rules let 
+DEBUG: Making lambda (*temp*) -> ((if *temp* (cadr *temp*) false)) 
+DEBUG: Analyzing ((lambda (*temp*) (if *temp* (cadr *temp*) false)) (assoc (quote b) (quote ((a 1) (b 2))))) 
 DEBUG: Analyzing (assoc (quote b) (quote ((a 1) (b 2)))) 
 DEBUG: Analyzing (quote b) 
-INFO: Fetching syntax rules quote 
+DEBUG: Fetching syntax rules quote 
 DEBUG: Analyzing (quote ((a 1) (b 2))) 
-INFO: Fetching syntax rules quote 
+DEBUG: Fetching syntax rules quote 
 DEBUG: Analyzing assoc 
-DEBUG: Analyzing (lambda (*temp*) if *temp* (cadr *temp*) . false) 
-INFO: Fetching syntax rules λ 
+DEBUG: Analyzing (lambda (*temp*) (if *temp* (cadr *temp*) false)) 
+DEBUG: Fetching syntax rules lambda 
+DEBUG: Analyzing (if *temp* (cadr *temp*) false) 
+DEBUG: Fetching syntax rules if 
+DEBUG: Analyzing false 
+DEBUG: Analyzing (cadr *temp*) 
+DEBUG: Analyzing *temp* 
+DEBUG: Analyzing cadr 
+DEBUG: Analyzing *temp* 
+INFO: Looking up assoc 
+INFO: Applying primitive #<procedure assoc> to (b ((a 1) (b 2))) 
+INFO: Looking up *temp* 
+INFO: Looking up *temp* 
+INFO: Looking up cadr 
+INFO: Applying primitive #<procedure cadr> to ((b 2)) 
+2
+>> DEBUG: Analyzing (define (test flag) (cond (else (quote other-option)) (flag (quote should-be-this)))) 
+DEBUG: Fetching syntax rules define 
+DEBUG: Making lambda (flag) -> ((cond (else (quote other-option)) (flag (quote should-be-this)))) 
+DEBUG: Analyzing (lambda (flag) (cond (else (quote other-option)) (flag (quote should-be-this)))) 
+DEBUG: Fetching syntax rules lambda 
+DEBUG: Analyzing (cond (else (quote other-option)) (flag (quote should-be-this))) 
+DEBUG: Fetching syntax rules cond 
+WARNING: ELSE clause isn't last (cond (else 'other-option) (flag 'should-be-this)) 
+DEBUG: Analyzing (begin (quote other-option)) 
+DEBUG: Fetching syntax rules begin 
+DEBUG: Analyzing (quote other-option) 
+DEBUG: Fetching syntax rules quote 
+>> DEBUG: Analyzing (test true) 
+DEBUG: Analyzing true 
+DEBUG: Analyzing test 
+INFO: Looking up true 
+INFO: Looking up test 
+other-option
+>> DEBUG: Analyzing (cond) 
+DEBUG: Fetching syntax rules cond 
+DEBUG: Analyzing false 
+INFO: Looking up false 
+false
+>> DEBUG: Analyzing (cond (else 1)) 
+DEBUG: Fetching syntax rules cond 
+DEBUG: Analyzing (begin 1) 
+DEBUG: Fetching syntax rules begin 
+DEBUG: Analyzing 1 
+INFO: Atom 1 
+1
+>> 
+INFO: Shut-down... 
+*** bye! ***

@@ -47,7 +47,7 @@ eq?
 ; (begin)
 (begin "ho")
 
-;; @TEST: order of evaluation
+;; order of evaluation
 (define (x=1) (set! x 1) 1)
 (define (x=2) (set! x 2) 2)
 (define x 0)
@@ -88,6 +88,7 @@ x
 (define (test flag)
   (cond (else 'other-option)
         (flag 'should-be-this)))
+(test true)
 (cond )
 (cond (else 1))
 
