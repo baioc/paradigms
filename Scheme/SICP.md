@@ -84,11 +84,13 @@ The evaluator, which determines the meaning of expressions in a programming lang
 To appreciate this point is to change our images of ourselves as programmers.
 We come to see ourselves as designers of languages, rather than only users of languages designed by others.
 
-# METACIRCULAR EVALUATOR (@TODO):
+# @METACIRCULAR EVALUATOR:
 
-- hide some primitives
-- functional & meta primitives (procedure? map apply for-each eval, etc)
-- compile
-- varargs
+- more primitives
+  - procedure?, apply, map, for-each, filter
+  - force, delay
+  - eval, apply, load
+- [simultaneous scope](https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book-Z-H-26.html#%_thm_4.16)
+  - See [The Y Operator](https://dreamsongs.com/Files/WhyOfY.pdf)
 - [letrec](https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book-Z-H-26.html#%_thm_4.20)
-- primitive printing of #<void>
+- bigloo -v -O3 -Wall -cc COMPILER

@@ -1,3 +1,7 @@
+#!/usr/bin/scheme --script
+; !# ;; GUILE's mandatory script comment end
+;; coding: utf-8
+; (module metascheme) ;; module declaration for BIGLOO
 ;; ****************************** SOURCE INFO **********************************
 ;; Copyright (c) 2019 Gabriel B. Sant'Anna
 ;;
@@ -22,10 +26,9 @@
 ;; SOFTWARE.
 
 ;; @Tested with:
-;; chez-9.5.2
-;; petite-9.5.2
-;; guile-2.2.6
-;; bigloo-4.3e
+;; - chez-9.5.2
+;; - guile-2.2.6
+;; - bigloo-4.3e
 
 
 ;; ******************************** LOGGER *************************************
@@ -34,7 +37,7 @@
       (begin
         (for-each (lambda (obj) (method obj) (display " ")) msgs)
         (newline)))
-  '*void*)
+  (voidn))
 
 (define *log-level* 2)
 
@@ -95,8 +98,9 @@
   (lambda (env) thing))
 
 (define (analyze-variable var)
+  (info-log 'Variable var)
   (lambda (env)
-    (info-log 'Looking 'up var)
+    (debug-log 'Looking 'up var)
     (lookup-variable var env)))
 
 (define (analyze-reserved expr)
@@ -107,12 +111,13 @@
 (define (analyze-application expr)
   (define (eval-args procargs env)
     (if (null? procargs) procargs
-        ;; @NOTE: this sets the order of evaluation for procedure arguments
+        ;; @NOTE: right to left order of evaluation for procedure arguments
         (let* (
                (rest (eval-args (cdr procargs) env))
                (first ((car procargs) env))
               )
           (cons first rest))))
+  (info-log 'Application expr)
   (let ((funcproc (analyze (operator expr)))
         (argprocs (map analyze (operands expr))))
     (lambda (env) (execute (funcproc env) (eval-args argprocs env)))))
@@ -141,7 +146,7 @@
   (let ((params (lambda-parameters expr))
         (body (analyze-sequence (lambda-body expr))))
     (if (not (list? params))
-        (warn-log "Improper formal argument list" params)
+        (error-log "Improper formal argument list" params)
         (lambda (env) (make-procedure params body env)))))
 
 ;; expression sequentialization is done by nesting
@@ -153,7 +158,7 @@
                 (cdr rest-procs))))
   (let ((procs (map analyze exprs)))
     (if (null? procs)
-        (warn-log "Empty symbolic expression" exprs)
+        (error-log "Empty symbolic expression" exprs)
         (unroll (car procs) (cdr procs)))))
 
 
@@ -187,9 +192,9 @@
 
 
 ;; clauses are evaluated right to left, when the predicate is true the actions
-;; are performed in sequence and their final value is returned; an else clause
-;; is always executed when found.
-;; the pipe additional syntax (<test> => <sink>) works such that if <test> gets
+;; are performed in sequence and their final value is returned;
+;; an else clause is always executed when found;
+;; the additional syntax (<test> => <sink>) works such that if <test> gets
 ;; evaluated to a true value, the one-argument procedure <sink> is applied on it
 (define (cond->if clauses)
   (if (empty-clauses? clauses) 'false ;; no else clause
@@ -197,7 +202,7 @@
             (rest (rest-clauses clauses)))
         (cond ((cond-else-clause? curr)
                   (if (not (at-last-clause? clauses))
-                      (warn-log "ELSE clause isn't last" (cons 'cond clauses)))
+                      (warn-log "ELSE clause isn't last"))
                   (make-begin (cond-actions curr)))
               ((cond-pipe-clause? curr)
                   (make-let (list (list '*temp* (cond-predicate curr)))
@@ -207,6 +212,7 @@
               (else (make-if (cond-predicate curr)
                              (make-begin (cond-actions curr))
                              (cond->if rest)))))))
+
 
 ;; when a clause evaluates to false, returns false immediately;
 ;; when every clause evaluates to true, returns the value of the last one;
@@ -239,12 +245,12 @@
 
 ;; let* imposes order, thus it may be constructed by nesting lets
 (define (let*->let expr)
-  (define (let-reduce associations exprs)
+  (define (let-reduce associations body)
     (if (null? associations)
-        (if (null? (cdr exprs)) (car exprs)
-            exprs) ;; unwraps lists with a single element
+        (if (null? (cdr body))
+            (car body) body) ;; unwraps lists with a single element
         (make-let (list (car associations))
-                  (let-reduce (cdr associations) exprs))))
+                  (let-reduce (cdr associations) body))))
   (let-reduce (let-associations expr) (let-body expr)))
 
 
@@ -253,7 +259,8 @@
 (define (self-evaluating? sexpr)
   (or (number? sexpr)
       (string? sexpr)
-      (char? sexpr)))
+      (char? sexpr)
+      (vector? sexpr)))
 
 (define (variable? sexpr)
   (or (symbol? sexpr)
@@ -290,8 +297,8 @@
 
 
 (define (make-lambda parameters body)
-  (debug-log 'Making 'lambda parameters '-> body)
-  (cons 'lambda (cons parameters body)))
+  (let ((procedure (cons 'lambda (cons parameters body))))
+    (info-log 'Making procedure) procedure))
 
 (define (lambda-parameters sexpr)
   (cadr sexpr))
@@ -299,10 +306,6 @@
 (define (lambda-body sexpr)
   (cddr sexpr))
 
-
-;; @DELETE
-; (define (definition? sexpr)
-;   (tagged-list? sexpr 'define))
 
 (define (definition-variable sexpr)
   (let ((definiendum (cadr sexpr)))
@@ -318,11 +321,6 @@
         (make-lambda (cdr definiendum) ;; formal arguments
                      definiens))))     ;; body
 
-
-;; @DELETE
-; (define (make-set variable value)
-;   (debug-log 'Making 'assignment variable '= value)
-;   (list 'set! variable value))
 
 (define (assignment-variable sexpr)
   (cadr sexpr))
@@ -344,10 +342,8 @@
 (define (if-consequent sexpr)
   (caddr sexpr))
 
-;; @NOTE: the value of an if expression when the predicate is false and there is
-;; no alternative is unspecified in Scheme; we have chosen to make it false
 (define (if-alternative sexpr)
-  (if (null? (cdddr sexpr)) 'false
+  (if (null? (cdddr sexpr)) 'false ;; unspecified
       (cadddr sexpr)))
 
 ;; @NOTE: anything not equal to the symbol false is "true"
@@ -396,7 +392,6 @@
 
 
 (define (make-let associations body)
-  (debug-log 'Letting associations 'into 'scope 'of body)
   (list 'let associations body))
 
 (define (let-associations sexpr)
@@ -410,50 +405,6 @@
 
 (define (let-inits expr)
   (map cadr (let-associations expr)))
-
-
-; (lambda <vars>
-;   (define u <e1>)
-;   (define v <e2>)
-;   <e3>)
-;; =>
-; (lambda <vars>
-; (let ((u '*unassigned*)
-;       (v '*unassigned*))
-;   (set! u <e1>)
-;   (set! v <e2>)
-;   <e3>))
-; (define (scan-out-defines body)
-;   (define (declare-defs defines)
-;       (map (lambda (def) (list (definition-variable def)
-;                                '(quote *unassigned*)))
-;            defines))
-;   (define (initialize-defs defines)
-;     (map (lambda (def) (make-set (definition-variable def)
-;                                  (definition-value def)))
-;          defines))
-;   (define (defines->let sexprs defs ndefs)
-;     (debug-log "DEFINES->LET" "\n  " sexprs "\n  " defs "\n  " ndefs)
-;     (cond ((null? sexprs)
-;            (if (null? defs) body
-;                (let* ((_ (debug-log "**DEFINES->MAKING-LET**"))
-;                       (declarations (declare-defs defs))
-;                       (initializations (initialize-defs defs))
-;                       (rest-of-body (reverse ndefs)))
-;                 (debug-log "  " declarations (append initializations rest-of-body))
-;                 (let->combination (make-let declarations (append initializations rest-of-body))))))
-;           ((definition? (car sexprs))
-;            (debug-log "Internalizing" (car sexprs) "into" (cdr sexprs))
-;            (defines->let (cdr sexprs)
-;                          (cons (car sexprs) defs)
-;                          ndefs))
-;           (else (defines->let (cdr sexprs)
-;                               defs
-;                               (cons (car sexprs) ndefs)))))
-;   (let ((out (defines->let body '() '())))
-;     (debug-log "DEFINES->LET result:" out)
-;     out))
-;; @DELETE
 
 
 ;; ****************************** ENVIRONMENT **********************************
@@ -472,10 +423,18 @@
   (cadddr sexpr))
 
 (define (apply-compound-procedure procedure arguments)
-  ((procedure-body procedure)
-   (extend-environment (procedure-environment procedure)
-                       (procedure-parameters procedure)
-                       arguments)))
+  (let ((proc (procedure-body procedure))
+        (parameters (procedure-parameters procedure))
+        (base-env (procedure-environment procedure)))
+    (let ((num-params (length parameters))
+          (num-args (length arguments)))
+      (cond ((< num-args num-params)
+               (warn-log "Too few arguments supplied" parameters arguments))
+            ((> num-args num-params)
+               (warn-log "Too many arguments supplied" parameters arguments))
+            (else
+               (info-log 'Executing 'compound proc 'with parameters)
+               (proc (extend-environment base-env parameters arguments)))))))
 
 
 (define the-empty-environment
@@ -493,15 +452,7 @@
 
 ;; a frame binds local variables to their values
 (define (make-frame variables values)
-  (let ((numvars (length variables))
-        (numvals (length values)))
-    (cond ((= numvars numvals)
-             (cons variables values))
-          ((< numvars numvals)
-             (warn-log "Too many arguments supplied" variables values))
-          ((> numvars numvals)
-             (warn-log "Too few arguments supplied" variables values)))))
-;; @TODO this check elsewhere?
+  (cons variables values))
 
 (define (frame-variables frame)
   (car frame))
@@ -511,7 +462,7 @@
 
 (define (add-binding-to-frame! var val frame)
   (set-car! frame (cons var (frame-variables frame)))
-  (set-cdr! frame (cons val (frame-values frame))))
+  (set-cdr! frame (cons val (frame-values frame))) (voidn))
 
 (define (lookup-variable var env)
   (define (env-loop env)
@@ -519,9 +470,7 @@
       (cond ((null? vars) ;; crawl up to the outermost scope
                (env-loop (enclosing-environment env)))
             ((eq? var (car vars))
-               (if (eq? (car vals) '*unassigned*)
-                   (error-log "Unassigned variable" var)
-                   (car vals)))
+               (car vals))
             (else (scan (cdr vars) (cdr vals)))))
     (if (equal? env the-empty-environment)
         (warn-log "Unbound variable" var)
@@ -536,10 +485,10 @@
       (cond ((null? vars) ;; set variable not found locally? check outer scope
                (env-loop (enclosing-environment env)))
             ((eq? var (car vars))
-               (set-car! vals val) '*void*)
+               (set-car! vals val) (voidn))
             (else (scan (cdr vars) (cdr vals)))))
     (if (equal? env the-empty-environment)
-        (warn-log "Unbound variable!" var)
+        (warn-log "Unbound variable" var)
         (let ((frame (first-frame env)))
           (scan (frame-variables frame)
                 (frame-values frame)))))
@@ -549,9 +498,9 @@
   (let ((frame (first-frame env)))
     (define (scan vars vals)
       (cond ((null? vars) ;; when var is undefined, locally bind it to val
-               (add-binding-to-frame! var val frame) '*void*)
+               (add-binding-to-frame! var val frame))
             ((eq? var (car vars))
-               (set-car! vals val) '*void*)
+               (set-car! vals val) (voidn))
             (else (scan (cdr vars) (cdr vals)))))
     (scan (frame-variables frame)
           (frame-values frame))))
@@ -582,20 +531,20 @@
   (let ((primpl (primitive-implementation proc)))
     (info-log 'Applying 'primitive primpl 'to args)
     (let ((result (apply primpl args)))
-      ;; @XXX: necessary conversion of primitive representation of truth
+      ;; @NOTE: necessary conversion of primitive representation of truth
       (cond ((eq? result '#f) 'false)
             ((eq? result '#t) 'true)
             (else result)))))
 
 (define primitive-procedures
-  (list ; minimal
+  (list ;; minimal
         (cons '+ +)
         (cons '- -)
         (cons '= =)
         (cons '< <)
         (cons '> >)
         (cons 'not not)
-        ; reduced
+        ;; reduced
         (cons '<= <=)
         (cons '>= >=)
         (cons '* *)
@@ -603,17 +552,19 @@
         (cons 'zero? zero?)
         (cons 'negative? negative?)
         (cons 'positive? positive?)
+        (cons '1+ (lambda (x) (+ x 1)))
+        (cons '1- (lambda (x) (- x 1)))
         (cons 'quotient quotient)
         (cons 'remainder remainder)
         (cons 'modulo modulo)
-        ; symbolic
+        ;; symbolic
         (cons 'equal? equal?)
         (cons 'eqv? eqv?)
         (cons 'eq? eq?)
         (cons 'symbol? symbol?)
         (cons 'pair? pair?)
         (cons 'boolean? (lambda (s) (or (eq? s 'true) (eq? s 'false))))
-        ; numeric
+        ;; numeric
         (cons 'number? number?)
         (cons 'inexact? inexact?)
         (cons 'exact? exact?)
@@ -623,31 +574,86 @@
         (cons 'real? real?)
         (cons 'rational? rational?)
         (cons 'integer? integer?)
+        (cons 'floor floor)
+        (cons 'ceiling ceiling)
+        (cons 'truncate truncate)
+        (cons 'round round)
         (cons 'nan? (lambda (x) (not (= x x))))
-        ; system
-        (cons 'exit exit)
-        (cons 'error error)
-        ; io; for more info see https://www.scheme.com/tspl3/io.html
+        ;; lists
+        (cons 'cons cons)
+        (cons 'car car)
+        (cons 'cdr cdr)
+        (cons 'set-car! set-car!) ;
+        (cons 'set-cdr! set-cdr!) ;
+        (cons 'list list)
+        (cons 'list? list?)
+        (cons 'null? null?)
+        (cons 'length length)
+        (cons 'append append)
+        (cons 'reverse reverse)
+        (cons 'list-tail list-tail)
+        (cons 'list-ref list-ref)
+        (cons 'assq assq)
+        (cons 'assv assv)
+        (cons 'assoc assoc)
+        (cons 'memq memq)
+        (cons 'memv memv)
+        (cons 'member member)
+        (cons 'string->list string->list)
+        (cons 'list->string list->string)
+        ;; math
+        (cons 'square (lambda (x) (* x x)))
+        (cons 'abs abs)
+        (cons 'gcd gcd)
+        (cons 'lcm lcm)
+        (cons 'expt expt)
+        (cons 'sqrt sqrt)
+        (cons 'odd? odd?)
+        (cons 'even? even?)
+        (cons 'max max)
+        (cons 'min min)
+        (cons 'exp exp)
+        (cons 'log log)
+        (cons 'sin sin)
+        (cons 'cos cos)
+        (cons 'tan tan)
+        (cons 'asin asin)
+        (cons 'acos acos)
+        (cons 'atan atan)
+        ;; system
+        (cons 'exit exit) ;
+        (cons 'error error) ;
+        (cons 'set-log-verbosity! set-log-verbosity!) ;
+        ;; io, for more info see https://www.scheme.com/tspl3/io.html
         (cons 'read read)
-        (cons 'write write)
+        (cons 'write write) ;
         (cons 'port? port?)
         (cons 'eof-object? eof-object?)
-        (cons 'display display)
-        (cons 'newline newline)
+        (cons 'display display) ;
+        (cons 'newline newline) ;
         (cons 'input-port? input-port?)
         (cons 'open-input-file open-input-file)
-        (cons 'close-input-port close-input-port)
+        (cons 'close-input-port close-input-port) ;
+        (cons 'call-with-input-file call-with-input-file)
+        (cons 'current-input-port current-input-port)
+        (cons 'with-input-from-file with-input-from-file)
         (cons 'output-port? output-port?)
         (cons 'open-output-file open-output-file)
-        (cons 'close-output-port close-output-port)
+        (cons 'close-output-port close-output-port) ;
+        (cons 'call-with-output-file call-with-output-file)
+        (cons 'current-output-port current-output-port)
+        (cons 'with-output-to-file with-output-to-file)
         (cons 'read-char read-char)
-        (cons 'write-char write-char)
+        (cons 'write-char write-char) ;
         (cons 'peek-char peek-char)
-        ; strings
+        (cons 'char-ready? char-ready?)
+        ;; strings
         (cons 'string? string?)
+        (cons 'make-string make-string)
         (cons 'string-length string-length)
         (cons 'string-ref string-ref)
-        (cons 'string-set! string-set!)
+        (cons 'string-set! string-set!) ;
+        (cons 'string-fill! string-fill!) ;
         (cons 'string=? string=?)
         (cons 'string-ci=? string-ci=?)
         (cons 'string<? string<?)
@@ -665,7 +671,7 @@
         (cons 'number->string number->string)
         (cons 'symbol->string symbol->string)
         (cons 'string->symbol string->symbol)
-        ; characters
+        ;; characters
         (cons 'char? char?)
         (cons 'char-upcase char-upcase)
         (cons 'char-downcase char-downcase)
@@ -688,58 +694,23 @@
         (cons 'char->integer char->integer)
         (cons 'char-alphanumeric? (lambda (c) (or (char-alphabetic? c)
                                                   (char-numeric? c))))
-        ; lists
-        (cons 'cons cons)
-        (cons 'car car)
-        (cons 'cdr cdr)
-        (cons 'set-car! set-car!)
-        (cons 'set-cdr! set-cdr!)
-        (cons 'list list)
-        (cons 'list? list?)
-        (cons 'null? null?)
-        (cons 'length length)
-        (cons 'append append)
-        (cons 'reverse reverse)
-        (cons 'list-tail list-tail)
-        (cons 'list-ref list-ref)
-        (cons 'assq assq)
-        (cons 'assv assv)
-        (cons 'assoc assoc)
-        (cons 'memq memq)
-        (cons 'memv memv)
-        (cons 'member member)
-        (cons 'string->list string->list)
-        (cons 'list->string list->string)
-        ; math
-        (cons 'floor floor)
-        (cons 'ceiling ceiling)
-        (cons 'truncate truncate)
-        (cons 'round round)
-        (cons 'square (lambda (x) (* x x)))
-        (cons 'abs abs)
-        (cons 'gcd gcd)
-        (cons 'lcm lcm)
-        (cons 'expt expt)
-        (cons 'sqrt sqrt)
-        (cons 'odd? odd?)
-        (cons 'even? even?)
-        (cons 'max max)
-        (cons 'min min)
-        (cons 'exp exp)
-        (cons 'log log)
-        (cons 'sin sin)
-        (cons 'cos cos)
-        (cons 'tan tan)
-        (cons 'asin asin)
-        (cons 'acos acos)
-        (cons 'atan atan)
-        ; extra CAR-CDRing
-        ; 2
+        ;; vectors
+        (cons 'vector? vector?)
+        (cons 'vector vector)
+        (cons 'make-vector make-vector)
+        (cons 'vector-length vector-length)
+        (cons 'vector-ref vector-ref)
+        (cons 'vector-set! vector-set!) ;
+        (cons 'vector-fill! vector-fill!) ;
+        (cons 'vector->list vector->list)
+        (cons 'list->vector list->vector)
+        ;; extra CAR-CDRing
+        ;; 2
         (cons 'caar caar)
         (cons 'cadr cadr)
         (cons 'cdar cdar)
         (cons 'cddr cddr)
-        ; 3
+        ;; 3
         (cons 'caaar caaar)
         (cons 'caadr caadr)
         (cons 'cadar cadar)
@@ -748,7 +719,7 @@
         (cons 'cdadr cdadr)
         (cons 'cddar cddar)
         (cons 'cdddr cdddr)
-        ; 4
+        ;; 4
         (cons 'caaaar caaaar)
         (cons 'caaadr caaadr)
         (cons 'caadar caadar)
@@ -770,12 +741,12 @@
 
 ;; ************************ Command Line Interface *****************************
 
-(define (repl)
+(define (read-eval-print-loop) ;; REPL
   (define (loop)
     (repl-prompt)
-    (let ((input (simplify (read)))) ;; read
+    (let ((input (read))) ;; read
       (if (not (eof-object? input))
-          (let ((output (evaln input global-environment))) ;; eval
+          (let ((output (evaln (simplify input) global-environment))) ;; eval
             (repl-print output) ;; print
             (loop))))) ;; loop
   (info-log 'Greetings!)
@@ -785,6 +756,22 @@
   (info-log 'Shut-down...)
   (display repl-bye)
   (exit))
+
+(define (repl-print obj)
+  (cond ((compound-procedure? obj)
+           (write (procedure-body obj))
+           (newline))
+        ((primitive-procedure? obj)
+           (write (primitive-implementation obj))
+           (newline))
+        ((eq? obj (voidn))
+           (display ""))
+        (else (write (prettify obj))
+              (newline))))
+
+
+(define (voidn)
+  '*void*)
 
 (define (simplify msg)
   (let-replace '((λ lambda)) msg))
@@ -802,18 +789,6 @@
       (let-replace (cdr swaps)
                       (let-replace-unary (caar swaps) (cadar swaps) sexpr))))
 
-(define (repl-print obj)
-  (cond ((compound-procedure? obj)
-           (write (procedure-body obj))
-           (newline))
-        ((primitive-procedure? obj)
-           (write (primitive-implementation obj))
-           (newline))
-        ((eq? obj '*void*)
-           (display ""))
-        (else (write (prettify obj))
-              (newline))))
-
 
 (define repl-greet
 "  ___ ____________  ___  _____  ___ ______  ___ ____________  ___
@@ -830,8 +805,8 @@ Version 0.3.bb\n")
 (define repl-bye "*** bye! ***\n")
 
 
-(set-log-verbosity! 'DEBUG) ;; QUIET < ERROR < [WARN] < INFO < @DEBUG
+; (set-log-verbosity! 'INFO) ;; QUIET < ERROR < [WARN] < INFO < @DEBUG
 
 (define global-environment (setup-environment))
 
-(repl)
+(read-eval-print-loop)
