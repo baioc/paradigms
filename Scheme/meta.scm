@@ -26,9 +26,17 @@
 ;; SOFTWARE.
 
 ;; @Tested with:
-;; - chez-9.5.2
-;; - guile-2.2.6
-;; - bigloo-4.3e
+;; - chez-9.5.2 (Manjaro Linux, x86_64)
+;; - guile-2.2.6 (Manjaro Linux, x86_64)
+;; - bigloo-4.3e (Manjaro Linux, x86_64)
+
+;; @TODO
+;; - more primitives
+;;   - procedure?, apply, map, for-each, filter
+;;   - force, delay
+;;   - eval, apply, load
+;; - [letrec](https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book-Z-H-26.html#%_thm_4.20)
+;; - Fix some primitives! that print `#<void>`, `#<unspecified>` or such
 
 
 ;; ******************************** LOGGER *************************************
@@ -162,6 +170,8 @@
         (unroll (car procs) (cdr procs)))))
 
 
+;; @NOTE: in this simplified evaluation, internal definitions will actually
+;; happen 'sequentially', see SICP 4.1.6 - Internal Definitions, for more detail
 (define (analyze-definition expr)
   (let ((var (definition-variable expr))
         (vproc (analyze (definition-value expr))))
@@ -549,14 +559,14 @@
         (cons '>= >=)
         (cons '* *)
         (cons '/ /)
+        (cons 'quotient quotient)
+        (cons 'remainder remainder)
+        (cons 'modulo modulo)
         (cons 'zero? zero?)
         (cons 'negative? negative?)
         (cons 'positive? positive?)
         (cons '1+ (lambda (x) (+ x 1)))
         (cons '1- (lambda (x) (- x 1)))
-        (cons 'quotient quotient)
-        (cons 'remainder remainder)
-        (cons 'modulo modulo)
         ;; symbolic
         (cons 'equal? equal?)
         (cons 'eqv? eqv?)

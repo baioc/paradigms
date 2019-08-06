@@ -83,14 +83,3 @@ An evaluator that is written in the same language that it evaluates is said to b
 The evaluator, which determines the meaning of expressions in a programming language, is just another program.
 To appreciate this point is to change our images of ourselves as programmers.
 We come to see ourselves as designers of languages, rather than only users of languages designed by others.
-
-# @METACIRCULAR EVALUATOR:
-
-- more primitives
-  - procedure?, apply, map, for-each, filter
-  - force, delay
-  - eval, apply, load
-- [simultaneous scope](https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book-Z-H-26.html#%_thm_4.16)
-  - See [The Y Operator](https://dreamsongs.com/Files/WhyOfY.pdf)
-- [letrec](https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book-Z-H-26.html#%_thm_4.20)
-- bigloo -v -O3 -Wall -cc COMPILER
