@@ -1,12 +1,12 @@
 #ifndef STRUCTURES_GRAPH_HPP
 #define STRUCTURES_GRAPH_HPP
 
-#include <vector>
 #include <unordered_map>
-#include <utility> // pair, move
+#include <utility> // move, pair
 #include <limits> // infinity
-#include <algorithm> // remove_if, find_if
+#include <vector>
 #include <iterator> // back_inserter
+#include <cassert>
 
 
 namespace structures {
@@ -14,78 +14,57 @@ namespace structures {
 template <typename Label>
 class Graph {
  public:
+	using Weight = double;
+
 	Graph() = default;
 
-	Graph(int vertice_number) {
-		adjacencies_.reserve(vertice_number);
+	Graph(int initial_vertice_number) {
+		assert(initial_vertice_number >= 0);
+		adjacencies_.reserve(initial_vertice_number);
 	}
 
 
 	bool insert(Label node) {
-		std::vector<std::pair<Label,double>> empty{};
-		return adjacencies_.emplace(std::move(node), std::move(empty)).second;
+		std::unordered_map<Label,Weight> empty{};
+		const auto ret = adjacencies_.emplace(std::move(node), std::move(empty));
+		return ret.second; // map's signaling if emplace occurred
 	}
 
-	bool erase(const Label& node) {
-		if (adjacencies_.erase(node) == 0)
-			return false;
+	int erase(const Label& node) {
+		if (!contains(node)) return 0;
 
-		for (auto& assoc : adjacencies_) {
-			auto& adj = assoc.second;
-			adj.erase(
-				std::remove_if(
-					adj.begin(), adj.end(),
-					[node](auto p){return p.first == node;}
-				),
-				adj.end()
-			);
+		int erased = adjacencies_[node].size();
+		adjacencies_.erase(node);
+
+		for (auto& assoc: adjacencies_)
+			erased += assoc.second.erase(node);
+
+		return erased; // number of erased edges
+	}
+
+
+	int link(const Label& node_from, const Label& node_to, Weight weight=weight_unit) {
+		// remove "unlinks", see criteria for contains(link) method
+		if (weight >= weight_inf)
+			return -1 * unlink(node_from, node_to); // -number of removed links
+
+		// inserts any unregistered nodes before linking
+		const int inserted = insert(node_from) + insert(node_to);
+		if (!contains(node_from, node_to)) ++edges_;
+		adjacencies_[node_from][node_to] = weight;
+		adjacencies_[node_to][node_from] = weight; // @undirected
+
+		return inserted; // number of implicitly created nodes
+	}
+
+	int unlink(const Label& node_from, const Label& node_to) {
+		int disconnected = 0;
+		if (contains(node_from) && contains(node_to)) {
+			disconnected += adjacencies_[node_from].erase(node_to);
+			if (disconnected) --edges_;
+			disconnected += adjacencies_[node_to].erase(node_from); // @undirected
 		}
-
-		return true;
-	}
-
-
-	bool link(const Label& node_from, const Label& node_to, double weight=1.0) { // @weighted
-		// @NOTE: inserts any unregistered nodes before linking
-		const auto f = insert(node_from);
-		const auto t = insert(node_to);
-
-		adjacencies_[node_from].emplace_back(node_to, weight);
-		++edges_;
-
-		adjacencies_[node_to].emplace_back(node_from, weight); // @undirected
-
-		return !f && !t;
-	}
-
-	bool unlink(const Label& node_from, const Label& node_to, double weight=1.0) { // @weighted
-		if (!contains(node_from) || !contains(node_to))
-			return false;
-
-		auto& from_adj = adjacencies_[node_from];
-		const auto to_pos = std::find_if(
-			from_adj.begin(), from_adj.end(),
-			[node_to, weight](auto p){
-				return p.first == node_to && p.second == weight;
-			}
-		);
-		if (to_pos != from_adj.end()) {
-			from_adj.erase(to_pos);
-			--edges_;
-		}
-
-		// @undirected
-		auto& to_adj = adjacencies_[node_to];
-		const auto from_pos = std::find_if(
-			to_adj.begin(), to_adj.end(),
-			[node_from, weight](auto p) {
-				return p.first == node_from && p.second == weight;
-			}
-		);
-		if (from_pos != to_adj.end())
-			to_adj.erase(from_pos);
-
-		return true;
+		return disconnected; // number of removed links
 	}
 
 
@@ -99,7 +78,7 @@ class Graph {
 
 	template <typename OutputIterator>
 	void vertices(OutputIterator out) const {
-		for (const auto& assoc : adjacencies_)
+		for (const auto& assoc: adjacencies_)
 			*out++ = assoc.first;
 	}
 
@@ -110,19 +89,19 @@ class Graph {
 	}
 
 
-	int degree(const Label& node) const { // @undirected
-		if (contains(node))
-			return adjacencies_.at(node).size();
-		else
-			return -1;
+	bool contains(const Label& node) const {
+		return adjacencies_.find(node) != adjacencies_.end();
 	}
 
+	int degree(const Label& node) const { // @undirected
+		return contains(node) ? adjacencies_.at(node).size() : -1;
+	}
 
 	template <typename OutputIterator>
 	void neighbours(const Label& node, OutputIterator out) const {
 		if (!contains(node)) return;
-		for (const auto& p : adjacencies_.at(node))
-			*out++ = p.first;
+		for (const auto& adjacency: adjacencies_.at(node))
+			*out++ = adjacency.first;
 	}
 
 	std::vector<Label> neighbours(const Label& node) const {
@@ -131,28 +110,38 @@ class Graph {
 		return result;
 	}
 
-
-	bool contains(const Label& node) const {
-		return adjacencies_.find(node) != adjacencies_.end();
+	template <typename OutputIterator>
+	void edges(const Label& node, OutputIterator out) const {
+		if (!contains(node)) return;
+		for (const auto& edge: adjacencies_.at(node))
+			*out++ = edge;
 	}
 
-	double weight(const Label& node_from, const Label& node_to) const {
-		if (contains(node_from)) {
-			for (const auto& p : adjacencies_.at(node_from)) {
-				if (p.first == node_to)
-					return p.second;
-			}
-		}
-		return std::numeric_limits<double>::infinity();
+	std::unordered_map<Label,Weight> edges(const Label& node) const {
+		std::unordered_map<Label,Weight> empty{};
+		return contains(node) ? adjacencies_.at(node) : empty;
 	}
+
 
 	bool contains(const Label& node_from, const Label& node_to) const {
-		return weight(node_from, node_to) < std::numeric_limits<double>::infinity();
+		return weight(node_from, node_to) < weight_inf;
+	}
+
+	Weight weight(const Label& node_from, const Label& node_to) const {
+		if (contains(node_from)) {
+			const auto& adj = adjacencies_.at(node_from);
+			const auto& pos = adj.find(node_to);
+			if (pos != adj.end())
+				return pos->second;
+		}
+		return weight_inf;
 	}
 
  private:
-	std::unordered_map<Label,std::vector<std::pair<Label,double>>> adjacencies_;
+	std::unordered_map<Label,std::unordered_map<Label,Weight>> adjacencies_;
 	int edges_{0};
+	static constexpr Weight weight_unit = 1;
+	static constexpr Weight weight_inf{std::numeric_limits<Weight>::infinity()};
 };
 
 } // namespace structures
