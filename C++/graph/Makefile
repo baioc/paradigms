@@ -1,6 +1,6 @@
 APP_NAME=graphs
 
-CC = g++
+CC = g++ -std=c++17
 CFLAGS = -Wall -O2
 TEST_CFLAGS = -fsanitize=leak
 BUILD_CFLAGS = -fpic -DNDEBUG=1

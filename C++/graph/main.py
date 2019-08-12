@@ -1,11 +1,11 @@
-import graphs as gr
+from graphs import Graph, Digraph
 from math import inf
 
 
-def grprint(g: gr.Graph):
+def grprint(g: Graph):
 	print("Graph has a total of", g.vertice_number(), "vertices and", g.edge_number(), "edges")
 	for a in g.vertices():
-		print("Degree of", a, "is", g.degree(a))
+		print("Degree of", a, "is", g.degree(a), "(out: {})".format(g.degree_out(a)), "(in: {})".format(g.degree_in(a)))
 		for b in g.neighbours(a):
 			print("  |->", b, "(w: {})".format(g.edges(a)[b])) # g.edges(a)[b] === g.weight(a,b)
 
@@ -13,7 +13,7 @@ def grprint(g: gr.Graph):
 V = ['a', 'b', 'c', 'd', 'e']
 E = [('a','b'), ('b','c',2), ('c','d',-3.25), ('d','b',3.75), ('d','e'), ('e','c',0.0)]
 
-G = gr.Graph()
+G = Digraph()
 
 grprint(G)
 print("")
@@ -42,8 +42,8 @@ print("")
 
 print(G.edge_number())
 # next two lines should be equivalent
-# print(G.link('b', 'a', inf))
-print(G.unlink('b', 'a'))
+# print(G.link('a', 'b', inf))
+print(G.unlink('a', 'b'))
 print(G.edge_number())
 print(G.weight('a', 'b'))
 
