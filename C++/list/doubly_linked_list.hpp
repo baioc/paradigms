@@ -45,7 +45,7 @@ class DoublyLinkedList : public structures::List<T> {
 	int remove(const T& element);
 	unsigned count(const T& element) const;
 
- private:
+ protected:
 	struct DoublyLinkedNode {
 		T data;
 		DoublyLinkedNode* next{nullptr};

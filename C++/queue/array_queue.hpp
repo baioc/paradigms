@@ -25,7 +25,7 @@ class Queue {
 	//! DO NOT use if T is a raw pointer, WILL LEAK MEMORY
 	void clear() { current_size_ = 0; }
 
- private:
+ protected:
 	std::unique_ptr<T[]> content_; // does not allow copy
 	int current_size_{0};
 	int allocated_size_{0};

@@ -46,10 +46,10 @@ class ArrayList : public structures::List<T> {
 	//! when find() fails, it returns a number equal to size()
 	using List<T>::find;
 	using List<T>::remove;
-    using List<T>::contains;
+	using List<T>::contains;
 	using List<T>::count;
 
- private:
+ protected:
 	T* content_{nullptr};
 	int tail_{-1};
 	int allocated_size_{0};

@@ -1,0 +1,10 @@
+
+*.o
+*.out
+
+*_wrap.cxx
+
+_graphs.so
+graphs.py
+
+__pycache__/

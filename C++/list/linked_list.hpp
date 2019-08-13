@@ -44,7 +44,7 @@ class LinkedList : public structures::List<T> {
 	virtual int remove(const T& element);
 	virtual unsigned count(const T& element) const;
 
- private:
+ protected:
 	struct LinkedNode {
 		T data;
 		LinkedNode* next{nullptr};

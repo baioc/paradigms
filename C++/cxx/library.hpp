@@ -28,7 +28,7 @@ class object {
 		x.self_->draw_(out, position);
 	}
 
- private:
+ protected:
 	struct concept {
 		virtual ~concept() = default;
 		virtual void draw_(std::ostream& out, std::size_t position) const = 0;

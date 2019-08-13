@@ -1,3 +1,25 @@
+// Copyright (c) 2019 Gabriel B. Sant'Anna
+//
+// @License MIT <https://gitlab.com/baioc/paradigms>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 #ifndef STRUCTURES_GRAPH_HPP
 #define STRUCTURES_GRAPH_HPP
 
@@ -25,22 +47,22 @@ class Graph {
 	Graph() = default;
 	Graph(int initial_vertice_number);
 
-	int vertice_number() const;
-	int edge_number() const;
+	int vertice_number() const; // O(1)
+	int edge_number() const; // O(1)
 
-	bool insert(Label);
+	bool insert(Label); // O(1)
 	int erase(const Label&); // O(V)
 
-	int link(const Label&, const Label&, Weight=1);
-	int unlink(const Label&, const Label&);
+	int link(const Label&, const Label&, Weight=1); // O(1)
+	int unlink(const Label&, const Label&); // O(1)
 
-	bool contains(const Label&) const;
+	bool contains(const Label&) const; // O(1)
 	int degree(const Label&) const; // directed ? O(V) : O(1)
 	int degree_out(const Label&) const; // O(1)
 	int degree_in(const Label&) const; // directed ? O(V) : O(1)
 
-	bool contains(const Label&, const Label&) const;
-	Weight weight(const Label&, const Label&) const;
+	bool contains(const Label&, const Label&) const; // O(1)
+	Weight weight(const Label&, const Label&) const; // O(1)
 
 	template <typename OutputIterator>
 	void vertices(OutputIterator) const; // O(V)
@@ -55,7 +77,7 @@ class Graph {
 	std::vector<Label> neighbours(const Label&) const; // O(E(v))
 	std::unordered_map<Label,Weight> edges(const Label&) const; // O(E(v))
 
- private:
+ protected:
 	std::unordered_map<Label,std::unordered_map<Label,Weight>> adjacencies_;
 	static constexpr Weight infinity_{std::numeric_limits<Weight>::infinity()};
 	int edges_{0};

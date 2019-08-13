@@ -33,7 +33,7 @@ class Stack {
 	//! DO NOT use if T is a raw pointer, WILL LEAK MEMORY
 	void clear() { current_size_ = 0; }
 
- private:
+ protected:
 	T* content_{nullptr};
 	int current_size_{0};
 	int allocated_size_{0};

@@ -11,7 +11,7 @@ class Range {
 		RangeIterator operator++() { value_ += range_.step_; return *this; }
 		bool operator!=(const RangeIterator& other) { return value_ not_eq other.value_; }
 
-	 private:
+	 protected:
 		int value_;
 		const Range& range_;
 	};
@@ -21,7 +21,7 @@ class Range {
 	RangeIterator begin() const { return RangeIterator(*this, begin_); }
 	RangeIterator end() const { return RangeIterator(*this, end_); }
 
- private:
+ protected:
 	int begin_, end_, step_;
 };
 

@@ -7,18 +7,18 @@
 	#include "graph.hpp"
 %}
 
-// parse files to generate wrappers
-%include "graph.hpp"
+// wrap standard headers
+%include "std_string.i"
+%include "std_vector.i"
+%include "std_unordered_map.i"
 
 // ignores
 // @note: method templates that take generic iterators as arguments are not
 // instantiated, thus not included in the wrapper
 //
 
-// wrap standard headers
-%include "std_string.i"
-%include "std_vector.i"
-%include "std_unordered_map.i"
+// parse files to generate wrappers
+%include "graph.hpp"
 
 // explicit template instantiation
 %template(Graph) structures::Graph<std::string,double>;
