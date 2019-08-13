@@ -33,8 +33,7 @@
 ;; @TODO
 ;; - more primitives
 ;;   - procedure?, apply, map, for-each, filter
-;;   - force, delay
-;;   - eval, apply, load
+;;   - force, delay, eval, apply, load
 ;; - [letrec](https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book-Z-H-26.html#%_thm_4.20)
 ;; - Fix some primitives! that print `#<void>`, `#<unspecified>` or such
 
@@ -119,10 +118,10 @@
 (define (analyze-application expr)
   (define (eval-args procargs env)
     (if (null? procargs) procargs
-        ;; @NOTE: right to left order of evaluation for procedure arguments
+        ;; @NOTE: imposes the order of evaluation for procedure arguments
         (let* (
-               (rest (eval-args (cdr procargs) env))
                (first ((car procargs) env))
+               (rest (eval-args (cdr procargs) env))
               )
           (cons first rest))))
   (info-log 'Application expr)
@@ -283,13 +282,6 @@
 (define (application? sexpr) ;; untagged
   (pair? sexpr))
 
-
-(define (compound-procedure? sexpr)
-  (tagged-list? sexpr 'procedure))
-
-(define (primitive-procedure? sexpr)
-  (tagged-list? sexpr 'primitive))
-
 (define (tagged-list? sexpr tag)
   (and (pair? sexpr)
        (eq? (car sexpr) tag)))
@@ -419,6 +411,23 @@
 
 ;; ****************************** ENVIRONMENT **********************************
 
+(define (apply-compound-procedure procedure arguments)
+  (let ((proc (procedure-body procedure))
+        (params (procedure-parameters procedure))
+        (base-env (procedure-environment procedure)))
+    (let ((num-params (length params))
+          (num-args (length arguments)))
+      (cond ((< num-args num-params)
+               (warn-log "Too few arguments supplied" params arguments))
+            ((> num-args num-params)
+               (warn-log "Too many arguments supplied" params arguments))
+            (else
+               (info-log 'Executing 'compound proc 'with params)
+               (proc (extend-environment base-env params arguments)))))))
+
+(define (compound-procedure? sexpr)
+  (tagged-list? sexpr 'procedure))
+
 ;; lambdas/procedures reference the frame where they were defined
 (define (make-procedure parameters body env)
   (list 'procedure parameters body env))
@@ -432,19 +441,43 @@
 (define (procedure-environment sexpr)
   (cadddr sexpr))
 
-(define (apply-compound-procedure procedure arguments)
-  (let ((proc (procedure-body procedure))
-        (parameters (procedure-parameters procedure))
-        (base-env (procedure-environment procedure)))
-    (let ((num-params (length parameters))
-          (num-args (length arguments)))
-      (cond ((< num-args num-params)
-               (warn-log "Too few arguments supplied" parameters arguments))
-            ((> num-args num-params)
-               (warn-log "Too many arguments supplied" parameters arguments))
-            (else
-               (info-log 'Executing 'compound proc 'with parameters)
-               (proc (extend-environment base-env parameters arguments)))))))
+
+(define (lookup-variable var env)
+  (define (env-loop env)
+    (define (scan vars vals)
+      (cond ((null? vars) (env-loop (enclosing-environment env)))
+            ((eq? var (car vars)) (car vals))
+            (else (scan (cdr vars) (cdr vals)))))
+    (if (equal? env the-empty-environment)
+        (warn-log "Unbound variable" var)
+        (let ((frame (first-frame env)))
+          (scan (frame-variables frame)
+                (frame-values frame)))))
+  (env-loop env))
+
+(define (set-variable-value! var val env)
+  (define (env-loop env)
+    (define (scan vars vals)
+      (cond ((null? vars) (env-loop (enclosing-environment env)))
+            ((eq? var (car vars)) (set-car! vals val) (voidn))
+            (else (scan (cdr vars) (cdr vals)))))
+    (if (equal? env the-empty-environment)
+        (warn-log "Unbound variable" var)
+        (let ((frame (first-frame env)))
+          (scan (frame-variables frame)
+                (frame-values frame)))))
+  (env-loop env))
+
+(define (define-variable! var val env)
+  (let ((frame (first-frame env)))
+    (define (scan vars vals)
+      (cond ((null? vars) ;; when var is undefined, locally bind it to val
+               (add-binding-to-frame! var val frame))
+            ((eq? var (car vars))
+               (set-car! vals val) (voidn))
+            (else (scan (cdr vars) (cdr vals)))))
+    (scan (frame-variables frame)
+          (frame-values frame))))
 
 
 (define the-empty-environment
@@ -474,46 +507,28 @@
   (set-car! frame (cons var (frame-variables frame)))
   (set-cdr! frame (cons val (frame-values frame))) (voidn))
 
-(define (lookup-variable var env)
-  (define (env-loop env)
-    (define (scan vars vals)
-      (cond ((null? vars) ;; crawl up to the outermost scope
-               (env-loop (enclosing-environment env)))
-            ((eq? var (car vars))
-               (car vals))
-            (else (scan (cdr vars) (cdr vals)))))
-    (if (equal? env the-empty-environment)
-        (warn-log "Unbound variable" var)
-        (let ((frame (first-frame env)))
-          (scan (frame-variables frame)
-                (frame-values frame)))))
-  (env-loop env))
 
-(define (set-variable-value! var val env)
-  (define (env-loop env)
-    (define (scan vars vals)
-      (cond ((null? vars) ;; set variable not found locally? check outer scope
-               (env-loop (enclosing-environment env)))
-            ((eq? var (car vars))
-               (set-car! vals val) (voidn))
-            (else (scan (cdr vars) (cdr vals)))))
-    (if (equal? env the-empty-environment)
-        (warn-log "Unbound variable" var)
-        (let ((frame (first-frame env)))
-          (scan (frame-variables frame)
-                (frame-values frame)))))
-  (env-loop env))
+(define (apply-primitive-procedure procedure arguments)
+  (let ((proc (primitive-implementation procedure)))
+    (info-log 'Applying 'primitive proc 'to arguments)
+    (let ((result (apply proc arguments)))
+      ;; @NOTE: necessary conversion of primitive representation of truth
+      (cond ((eq? result '#f) 'false)
+            ((eq? result '#t) 'true)
+            (else result)))))
 
-(define (define-variable! var val env)
-  (let ((frame (first-frame env)))
-    (define (scan vars vals)
-      (cond ((null? vars) ;; when var is undefined, locally bind it to val
-               (add-binding-to-frame! var val frame))
-            ((eq? var (car vars))
-               (set-car! vals val) (voidn))
-            (else (scan (cdr vars) (cdr vals)))))
-    (scan (frame-variables frame)
-          (frame-values frame))))
+(define (primitive-procedure? sexpr)
+  (tagged-list? sexpr 'primitive))
+
+(define (primitive-procedure-names)
+  (map car primitive-procedures))
+
+(define (primitive-procedure-objects)
+  (map (lambda (prim-proc) (list 'primitive (cdr prim-proc)))
+       primitive-procedures))
+
+(define (primitive-implementation proc)
+  (cadr proc))
 
 
 (define (setup-environment)
@@ -526,25 +541,6 @@
     (info-log 'Setting-up 'environment...
               (frame-variables (first-frame initial-env)))
     initial-env))
-
-(define (primitive-procedure-names)
-  (map car primitive-procedures))
-
-(define (primitive-procedure-objects)
-  (map (lambda (prim-proc) (list 'primitive (cdr prim-proc)))
-       primitive-procedures))
-
-(define (primitive-implementation proc)
-  (cadr proc))
-
-(define (apply-primitive-procedure proc args)
-  (let ((primpl (primitive-implementation proc)))
-    (info-log 'Applying 'primitive primpl 'to args)
-    (let ((result (apply primpl args)))
-      ;; @NOTE: necessary conversion of primitive representation of truth
-      (cond ((eq? result '#f) 'false)
-            ((eq? result '#t) 'true)
-            (else result)))))
 
 (define primitive-procedures
   (list ;; minimal

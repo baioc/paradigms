@@ -16,12 +16,12 @@ Version 0.3.bb
 >> (quote a)
 >> (a b c)
 >> #(1 2 3)
->> WARNING: Unbound variable #t 
+>> WARNING: Unbound variable #t
 >> true
->> WARNING: Unbound variable #f 
+>> WARNING: Unbound variable #f
 >> false
->> WARNING: Unbound variable k 
->> WARNING: Unbound variable k 
+>> WARNING: Unbound variable k
+>> WARNING: Unbound variable k
 >> >> 99
 >> >> -88
 >> #<procedure eq?>
@@ -32,16 +32,16 @@ Version 0.3.bb
 #<void>
 >> #FALSE
 #<void>
->> >> >> >> >> 
+>> >> >> >> >>
 
 16
 >> "hi"
 >> >> >> >> 0
 >> 3
->> 1
+>> 2
 >> >> 0
 >> 3
->> 2
+>> 1
 >> 15
 >> 7
 >> 8
@@ -53,7 +53,7 @@ Version 0.3.bb
 >> 3
 >> 2
 >> 2
->> WARNING: ELSE clause isn't last 
+>> WARNING: ELSE clause isn't last
 >> other-option
 >> false
 >> 1
@@ -70,5 +70,5 @@ Version 0.3.bb
 >> "ODD"
 >> "EVEN"
 >> 16
->> 
+>>
 *** bye! ***

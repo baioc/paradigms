@@ -102,15 +102,10 @@
 
 
 (define (sqrt-stream x)
-  (define (average a b)
-    (/ (+ a b) 2))
-
-  (define (improve guess x)
-    (average guess (/ x guess)))
-
+  (define (average a b) (/ (+ a b) 2))
+  (define (improve guess x) (average guess (/ x guess)))
   (stream 1.0
-          (smap (lambda (guess)
-                  (improve guess x))
+          (smap (lambda (guess) (improve guess x))
                 (sqrt-stream x))))
 
 (define (partial-sums s)

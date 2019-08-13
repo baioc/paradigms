@@ -53,11 +53,11 @@ eq? ; #<procedure eq?>
 (define x 0) ; *void*
 x ; 0
 (+ (x=1) (x=2)) ; 3
-x ; 1
+x ; 2
 (set! x 0)
 x ; 0
 (+ (x=2) (x=1)) ; 3
-x ; 2
+x ; 1
 
 ;; let
 (let ((x 7) (y 8)) (+ x y)) ; 15
