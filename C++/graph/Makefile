@@ -1,9 +1,9 @@
 APP_NAME=graphs
 
 CC = g++ -std=c++17
-CFLAGS = -Wall -O2
+CFLAGS = -Wall
 TEST_CFLAGS = -fsanitize=leak
-BUILD_CFLAGS = -fpic -DNDEBUG=1
+BUILD_CFLAGS = -fpic -DNDEBUG=1 -O2
 
 SC = swig
 SFLAGS = -python -c++
