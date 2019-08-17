@@ -9,14 +9,14 @@
 ''a ; (quote a)
 '(a b c) ; (a b c)
 #(1 2 3) ; #(1 2 3)
-#t ; Unbound variable #t
-true ; true
-#f ; Unbound variable #f
-false ; false
+#t ; Undefined variable #t
+(not (not true)) ; true
+#f ; Undefined variable #f
+(not (not false)) ; false
 
 ;; variables
-(set! k -1) ; Unbound variable k
-k ; Unbound variable k
+(set! k -1) ; Undefined variable k
+k ; Undefined variable k
 (define k 99) ; *void*
 k ; 99
 (set! k -88) ; *void*
@@ -29,8 +29,8 @@ eq? ; #<procedure eq?>
 ;; lambda & define && if
 (define (test b)
   (if b (display "#TRUE\n") (display "#FALSE\n"))) ; *void*
-(test '#f) ; #TRUE\n#<void>
-(test false) ; #FALSE\n#<void>
+(test '#f) ; #TRUE\n
+(test false) ; #FALSE\n
 ; (define l0 (λ b b)) (l0 0) ; Improper formal argument list b
 (define l1 (lambda (b) b)) ; *void*
 (define (l2 b) b) ; *void*
@@ -105,7 +105,7 @@ x ; 2
 (or 'a false) ; a
 (or false 'b) ; b
 
-; internal definitions
+;; internal definitions
 (define (f x)
   (define (even? n)
     (if (= n 0) true
@@ -125,3 +125,34 @@ x ; 2
     (define a 5)
     (+ a b))
   (f 10)) ; 16
+
+;; nondeterministic computing
+(define (require pred)
+  (if (not pred) (amb) 'ok)) ; *void*
+(define (distinct? items)
+  (cond ((null? items) true)
+        ((null? (cdr items)) true)
+        ((member (car items) (cdr items)) false)
+        (else (distinct? (cdr items))))) ; *void*
+(define (multiple-dwelling)
+  ;; In an apartment house that contains only five floors,
+  ;; Baker, Cooper, Fletcher, Miller, and Smith ...
+  (let ((baker (amb 1 2 3 4 5))
+        (cooper (amb 1 2 3 4 5))
+        (fletcher (amb 1 2 3 4 5))
+        (miller (amb 1 2 3 4 5))
+        (smith (amb 1 2 3 4 5)))
+    (require (distinct? (list baker cooper fletcher miller smith))) ;; ... live on different floors
+    (require (not (= baker 5))) ;; Baker does not live on the top floor.
+    (require (not (= cooper 1))) ;; Cooper does not live on the bottom floor.
+    (require (not (= fletcher 5))) ;; Fletcher does not live on either the top ...
+    (require (not (= fletcher 1))) ;; ... or the bottom floor.
+    (require (> miller cooper)) ;; Miller lives on a higher floor than does Cooper.
+    (require (not (= (abs (- smith fletcher)) 1))) ;; Smith does not live on a floor adjacent to Fletcher's
+    (require (not (= (abs (- fletcher cooper)) 1))) ;; Fletcher does not live on a floor adjacent to Cooper's
+    (list (list 'baker baker)
+          (list 'cooper cooper)
+          (list 'fletcher fletcher)
+          (list 'miller miller)
+          (list 'smith smith)))) ; *void*
+(multiple-dwelling) ; ((baker 3) (cooper 2) (fletcher 4) (miller 5) (smith 1))

@@ -1,11 +1,11 @@
-  ___ ____________  ___  _____  ___ ______  ___ ____________  ___
- / _ \| ___ | ___ \/ _ \/  __ \/ _ \|  _  \/ _ \| ___ | ___ \/ _ \
-/ /_\ | |_/ | |_/ / /_\ | /  \/ /_\ | | | / /_\ | |_/ | |_/ / /_\ \
-|  _  | ___ |    /|  _  | |   |  _  | | | |  _  | ___ |    /|  _  |
-| | | | |_/ | |\ \| | | | \__/| | | | |/ /| | | | |_/ | |\ \| | | |
-\_| |_\____/\_| \_\_| |_/\____\_| |_|___/ \_| |_\____/\_| \_\_| |_/
-(c) 2019, Gabriel B. Sant'Anna
-Version 0.3.bb
+ _   _______ _____ _____  _   _  ________  ___ _____
+| | | |  ___/  ___/  __ \| | | ||  ___|  \/  ||  ___|
+| | | | |_  \ `--.| /  \/| |_| || |__ | .  . || |__
+| | | |  _|  `--. \ |    |  _  ||  __|| |\/| ||  __|
+| |_| | |   /\__/ / \__/\| | | || |___| |  | || |___
+ \___/\_|   \____/ \____/\_| |_/\____/\_|  |_/\____/
+;;; UFSCheme Version 0.3.bb
+;;; (c) 2019, Gabriel B. Sant'Anna <baiocchi.gabriel@gmail.com>
 >> 42
 >> 0.03
 >> 0.0012
@@ -16,12 +16,12 @@ Version 0.3.bb
 >> (quote a)
 >> (a b c)
 >> #(1 2 3)
->> WARNING: Unbound variable #t
+>> ;;; WARNING: Undefined variable #t 
 >> true
->> WARNING: Unbound variable #f
+>> ;;; WARNING: Undefined variable #f 
 >> false
->> WARNING: Unbound variable k
->> WARNING: Unbound variable k
+>> ;;; WARNING: Undefined variable k 
+>> ;;; WARNING: Undefined variable k 
 >> >> 99
 >> >> -88
 >> #<procedure eq?>
@@ -29,10 +29,8 @@ Version 0.3.bb
 >> true
 >> 10
 >> >> #TRUE
-#<void>
 >> #FALSE
-#<void>
->> >> >> >> >>
+>> >> >> >> >> 
 
 16
 >> "hi"
@@ -53,7 +51,7 @@ Version 0.3.bb
 >> 3
 >> 2
 >> 2
->> WARNING: ELSE clause isn't last
+>> ;;; WARNING: ELSE clause isn't last 
 >> other-option
 >> false
 >> 1
@@ -70,5 +68,6 @@ Version 0.3.bb
 >> "ODD"
 >> "EVEN"
 >> 16
->>
-*** bye! ***
+>> >> >> >> ((baker 3) (cooper 2) (fletcher 4) (miller 5) (smith 1))
+>> 
+;;; bye!
