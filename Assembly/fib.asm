@@ -8,10 +8,10 @@ main:
 	j end
 
 
-# P&H 5ed. 2.31: int fib(int n)
+# Patterson & Henessy 5ed. ex2.31: int fib(int n)
 fib:
 	slti $t0, $a0, 2	# t0 = (n < 2)
-	beq $t0, $zero, fib_rec	# if !(), goto fib_rec
+	beq $t0, $zero, fib_rec	# if !(t0), goto fib_rec
 
 	# else, return n
 	add $v0, $zero, $a0

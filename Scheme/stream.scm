@@ -62,28 +62,27 @@
       (op (head s)
           (accumulate op init (tail s)))))
 
-(define (sappend s1 s2)
-  (if (empty? s1) s2
-      (stream (head s1)
-              (sappend (tail s1) s2))))
-
-(define (range lo hi)
-  (if (> lo hi) empty
-      (stream lo (range (+ lo 1) hi))))
-
 (define (foreach proc s)
   (if (not (empty? s))
       (begin (proc (head s))
              (foreach proc (tail s)))))
 
-(define (sprint seq)
-  (foreach (lambda (x) (display x) (newline)) seq))
+(define (sappend s1 s2)
+  (if (empty? s1) s2
+      (stream (head s1)
+              (sappend (tail s1) s2))))
 
 (define (nth n s)
   (cond ((empty? s) '())
         ((= n 0) (head s))
         (else (nth (- n 1) (tail s)))))
 
+(define (range lo hi)
+  (if (> lo hi) empty
+      (stream lo (range (+ lo 1) hi))))
+
+(define (sprint seq)
+  (foreach (lambda (x) (display x) (newline)) seq))
 
 (define (ints-from n)
   (stream n (ints-from (+ n 1))))

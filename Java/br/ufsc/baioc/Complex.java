@@ -1,6 +1,5 @@
 package br.ufsc.baioc;
 
-
 import java.lang.Math;
 import java.util.Locale;
 

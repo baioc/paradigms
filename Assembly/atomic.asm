@@ -1,3 +1,6 @@
+# Copyright (c) 2019 Gabriel B. Sant'Anna <baiocchi.gabriel@gmail.com>
+# @License Apache <https://gitlab.com/baioc/paradigms>
+
 .text
 
 
