@@ -19,28 +19,24 @@
 #include <unordered_map>
 #include <utility> // move, pair
 #include <limits> // infinity
-#include <cassert> // assert
-#include <vector>
-#include <iterator> // back_inserter
 
 
 namespace structures {
 
+using std::unordered_map;
+
+
 template <typename Label, typename Weight, bool directed=false>
-	// requires Hashable<Label>
-	//          => CopyConstructible<Label>
-	//             => MoveConstructible<Label>
-	// requires std::numeric_limits<Weight>::has_infinity(),
+	// requires Hashable<Label>,
 	//          LessThanComparable<Weight>,
 	//          Assignable<Weight,1>,
-	//          CopyConstructible<Weight>,
-	//          MoveAssignable<Weight>
+	//          std::numeric_limits<Weight>::has_infinity(),
 class Graph {
  public:
 	Graph() = default;
-	Graph(int initial_vertice_number);
+	explicit Graph(int);
 
-	int vertice_number() const; // O(1)
+	int node_number() const; // O(1)
 	int edge_number() const; // O(1)
 
 	bool insert(Label); // O(1)
@@ -57,34 +53,25 @@ class Graph {
 	bool contains(const Label&, const Label&) const; // O(1)
 	Weight weight(const Label&, const Label&) const; // O(1)
 
-	template <typename OutputIterator>
-	void vertices(OutputIterator) const; // O(V)
+	// returning vectors or using output iterators would be cleaner; these
+	// methods' signatures are such only in order to get O(1) time complexity
+	const unordered_map<Label,unordered_map<Label,Weight>>& nodes() const;
+	const unordered_map<Label,Weight>& neighbours(const Label&) const;
 
-	template <typename OutputIterator>
-	void neighbours(const Label&, OutputIterator) const; // O(E(v))
-
-	template <typename OutputIterator>
-	void edges(const Label&, OutputIterator) const; // O(E(v))
-
-	std::vector<Label> vertices() const; // O(V)
-	std::vector<Label> neighbours(const Label&) const; // O(E(v))
-	std::unordered_map<Label,Weight> edges(const Label&) const; // O(E(v))
-
- protected:
-	std::unordered_map<Label,std::unordered_map<Label,Weight>> adjacencies_;
-	static constexpr Weight infinity_{std::numeric_limits<Weight>::infinity()};
+ private:
+	unordered_map<Label,unordered_map<Label,Weight>> adjacencies_;
 	int edges_{0};
+	static constexpr Weight infinity_{std::numeric_limits<Weight>::infinity()};
 };
 
 
 template <typename L, typename W, bool d>
-Graph<L,W,d>::Graph(int initial_vertice_number) {
-	assert(initial_vertice_number >= 0);
-	adjacencies_.reserve(initial_vertice_number);
+Graph<L,W,d>::Graph(int initial_node_capacity) {
+	adjacencies_.reserve(initial_node_capacity);
 }
 
 template <typename L, typename W, bool d>
-inline int Graph<L,W,d>::vertice_number() const {
+inline int Graph<L,W,d>::node_number() const {
 	return adjacencies_.size();
 }
 
@@ -95,7 +82,7 @@ inline int Graph<L,W,d>::edge_number() const {
 
 template <typename L, typename W, bool d>
 inline bool Graph<L,W,d>::insert(L node) {
-	std::unordered_map<L,W> empty{};
+	unordered_map<L,W> empty = {};
 	const auto ret = adjacencies_.emplace(std::move(node), std::move(empty));
 	return ret.second; // map's signaling if emplace occurred
 }
@@ -206,45 +193,13 @@ W Graph<L,W,d>::weight(const L& node_from, const L& node_to) const {
 }
 
 template <typename L, typename W, bool d>
-template <typename OutIter>
-void Graph<L,W,d>::vertices(OutIter out) const {
-	for (const auto& assoc: adjacencies_)
-		*out++ = assoc.first;
+const unordered_map<L,unordered_map<L,W>>& Graph<L,W,d>::nodes() const {
+	return adjacencies_;
 }
 
 template <typename L, typename W, bool d>
-template <typename OutIter>
-void Graph<L,W,d>::neighbours(const L& node, OutIter out) const {
-	if (!contains(node)) return;
-	for (const auto& adjacency: adjacencies_.at(node))
-		*out++ = adjacency.first;
-}
-
-template <typename L, typename W, bool d>
-template <typename OutIter>
-void Graph<L,W,d>::edges(const L& node, OutIter out) const {
-	if (!contains(node)) return;
-	for (auto& edge: adjacencies_.at(node))
-		*out++ = edge;
-}
-
-template <typename L, typename W, bool d>
-inline std::vector<L> Graph<L,W,d>::vertices() const {
-	std::vector<L> result{};
-	vertices(std::back_inserter(result));
-	return result;
-}
-
-template <typename L, typename W, bool d>
-inline std::vector<L> Graph<L,W,d>::neighbours(const L& node) const {
-	std::vector<L> result{};
-	neighbours(node, std::back_inserter(result));
-	return result;
-}
-
-template <typename L, typename W, bool d>
-inline std::unordered_map<L,W> Graph<L,W,d>::edges(const L& node) const {
-	std::unordered_map<L,W> empty{};
+const unordered_map<L,W>& Graph<L,W,d>::neighbours(const L& node) const {
+	unordered_map<L,W> empty = {};
 	return contains(node) ? adjacencies_.at(node) : empty;
 }
 

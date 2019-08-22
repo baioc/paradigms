@@ -37,7 +37,7 @@ class BinaryTree {
 	std::deque<T> in_order() const;
 	std::deque<T> post_order() const;
 
- protected:
+ private:
 	struct TreeNode {
 		T data_;
 		std::unique_ptr<TreeNode> left_{nullptr};

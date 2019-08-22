@@ -7,16 +7,19 @@
 template <typename L, typename W, bool d>
 std::ostream& operator<<(std::ostream&  out, const structures::Graph<L,W,d>& g) {
 	out << "Graph has a total of "
-	    << g.vertice_number() << " vertices" << " and "
+	    << g.node_number() << " nodes" << " and "
 	    << g.edge_number() << " edges" << '\n';
 
-	for (auto a : g.vertices()) {
-		out << "Degree of " << a << " is " << g.degree(a)
-		    << " (out: " << g.degree_out(a) << ")"
-		    << " (in: " << g.degree_in(a) << ")\n";
-		for (auto b : g.neighbours(a))
-			out << "  |-> " << b
-			    << " (w: " << g.edges(a)[b] << ")" << '\n'; // g.edges(a)[b] === g.weight(a,b)
+	for (auto a : g.nodes()) {
+		auto u = a.first;
+		out << "Degree of " << u << " is " << g.degree(u)
+		    << " (out: " << g.degree_out(u) << ")"
+		    << " (in: " << g.degree_in(u) << ")\n";
+		for (auto b : g.neighbours(u)) {
+			auto v = b.first;
+			out << "  |-> " << v
+			    << " (w: " << g.weight(u,v) << ")" << '\n';
+		}
 	}
 
 	return out;

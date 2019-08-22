@@ -33,11 +33,12 @@ class Stack {
 	//! DO NOT use if T is a raw pointer, WILL LEAK MEMORY
 	void clear() { current_size_ = 0; }
 
- protected:
+ private:
 	T* content_{nullptr};
 	int current_size_{0};
 	int allocated_size_{0};
 
+ protected:
 	void grow(float = 2.0);
 
 	// rule of three/five and a half

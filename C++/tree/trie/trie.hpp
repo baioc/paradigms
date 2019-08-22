@@ -181,7 +181,7 @@ class Trie {
 	 */
 	void clear();
 
- protected:
+ private:
 	//! Nodo da Trie.
 	struct TrieNode {
 		std::unique_ptr<TrieNode> next_[R]; //!< Arranjo com os próximos nodos.

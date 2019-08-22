@@ -3,11 +3,11 @@ from math import inf
 
 
 def grprint(g: Graph):
-	print("Graph has a total of", g.vertice_number(), "vertices and", g.edge_number(), "edges")
-	for a in g.vertices():
+	print("Graph has a total of", g.node_number(), "nodes and", g.edge_number(), "edges")
+	for a in g.nodes():
 		print("Degree of", a, "is", g.degree(a), "(out: {})".format(g.degree_out(a)), "(in: {})".format(g.degree_in(a)))
 		for b in g.neighbours(a):
-			print("  |->", b, "(w: {})".format(g.edges(a)[b])) # g.edges(a)[b] === g.weight(a,b)
+			print("  |->", b, "(w: {})".format(g.weight(a,b)))
 
 
 V = ['a', 'b', 'c', 'd', 'e']

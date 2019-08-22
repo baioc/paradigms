@@ -8,16 +8,16 @@ namespace util {
 template <typename T>
 class unique_ptr {
  public:
-	unique_ptr(): ptr_{nullptr} {}
-	unique_ptr(T* ptr): ptr_{ptr} {}
+	unique_ptr(): raw_ptr_{nullptr} {}
+	unique_ptr(T* ptr): raw_ptr_{ptr} {}
 
-	~unique_ptr() { delete ptr_; }
+	~unique_ptr() { delete raw_ptr_; }
 
-	T& operator*() { return *ptr_; }
-	const T& operator*() const { return *ptr_; }
+	T& operator*() { return *raw_ptr_; }
+	const T& operator*() const { return *raw_ptr_; }
 
-	T* operator->() { return ptr_; }
-	const T* operator->() const { return ptr_; }
+	T* operator->() { return raw_ptr_; }
+	const T* operator->() const { return raw_ptr_; }
 
 	// no copies allowed
 	unique_ptr(const unique_ptr& ptr) = delete;
@@ -27,7 +27,7 @@ class unique_ptr {
 	friend void swap(unique_ptr& lhs, unique_ptr& rhs)
 	{
 		using std::swap;
-		swap(lhs.ptr_, rhs.ptr_);
+		swap(lhs.raw_ptr_, rhs.raw_ptr_);
 	}
 
 	// same-type move assignment via move-and-swap idiom
@@ -44,7 +44,7 @@ class unique_ptr {
 	{
 		using std::swap;
 		T* p = nullptr;
-		swap(p, ptr_);
+		swap(p, raw_ptr_);
 		return p;
 	}
 
@@ -54,7 +54,7 @@ class unique_ptr {
 
 	template <typename Other>
 	unique_ptr(unique_ptr<Other>&& other):
-		ptr_{other.release()}
+		raw_ptr_{other.release()}
 	{}
 
 	// reconstructs unique_ptr with given argument
@@ -72,8 +72,8 @@ class unique_ptr {
 		return *this;
 	}
 
- protected:
-	T* ptr_;
+ private:
+	T* raw_ptr_;
 };
 
 // variadic template arguments

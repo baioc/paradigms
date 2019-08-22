@@ -49,11 +49,12 @@ class ArrayList : public structures::List<T> {
 	using List<T>::contains;
 	using List<T>::count;
 
- protected:
+ private:
 	T* content_{nullptr};
 	int tail_{-1};
 	int allocated_size_{0};
 
+ protected:
 	int insertion(int, T);
 	void grow(float = 2.0);
 
