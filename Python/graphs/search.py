@@ -19,22 +19,22 @@ def breadth_first_search(graph: Graph, root: Node) -> Tuple[Dict[Node, float],
     """
 
     distance: Dict[Node, float] = {node: inf for node in graph.nodes()}
-    tree_parent: Dict[Node, Node] = {}
+    ancestor: Dict[Node, Node] = {}
     queue: List[Node] = []
 
     distance[root] = 0
-    tree_parent[root] = None
+    ancestor[root] = None
     queue.append(root)
 
     while len(queue) > 0:
         u = queue.pop(0)
         for v in graph.neighbours(u):
-            if v not in tree_parent:
+            if v not in ancestor:  # hasn't been visited
                 distance[v] = distance[u] + 1.0
-                tree_parent[v] = u
+                ancestor[v] = u
                 queue.append(v)
 
-    return (distance, tree_parent)
+    return (distance, ancestor)
 
 
 def depth_first_search(graph: Graph, root: Node) -> Tuple[Dict[Node, float],
@@ -47,21 +47,21 @@ def depth_first_search(graph: Graph, root: Node) -> Tuple[Dict[Node, float],
     """
 
     time: Dict[Node, float] = {v: inf for v in graph.nodes()}
-    tree_parent: Dict[Node, Node] = {}
+    ancestor: Dict[Node, Node] = {}
     stack: List[Node] = []
 
-    tree_parent[root] = None
+    ancestor[root] = None
     stack.append(root)
 
     t = -1  # next t is 0
     while len(stack) > 0:
         u = stack.pop()
         time[u] = t = t+1
-        for v in [w for w in graph.neighbours(u) if w not in tree_parent]:
-            tree_parent[v] = u
+        for v in [w for w in graph.neighbours(u) if w not in ancestor]:
+            ancestor[v] = u
             stack.append(v)
 
-    return (time, tree_parent)
+    return (time, ancestor)
 
 
 V: Set[Node] = {'1', '2', '3', '4', '5', '6', '7', '8'}

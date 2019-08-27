@@ -66,29 +66,34 @@ class Graph {
 
 
 template <typename L, typename W, bool d>
-Graph<L,W,d>::Graph(int initial_node_capacity) {
+Graph<L,W,d>::Graph(int initial_node_capacity)
+{
 	adjacencies_.reserve(initial_node_capacity);
 }
 
 template <typename L, typename W, bool d>
-inline int Graph<L,W,d>::node_number() const {
+inline int Graph<L,W,d>::node_number() const
+{
 	return adjacencies_.size();
 }
 
 template <typename L, typename W, bool d>
-inline int Graph<L,W,d>::edge_number() const {
+inline int Graph<L,W,d>::edge_number() const
+{
 	return edges_;
 }
 
 template <typename L, typename W, bool d>
-inline bool Graph<L,W,d>::insert(L node) {
+inline bool Graph<L,W,d>::insert(L node)
+{
 	unordered_map<L,W> empty = {};
 	const auto ret = adjacencies_.emplace(std::move(node), std::move(empty));
 	return ret.second; // map's signaling if emplace occurred
 }
 
 template <typename L, typename W, bool d>
-int Graph<L,W,d>::erase(const L& node) {
+int Graph<L,W,d>::erase(const L& node)
+{
 	if (!contains(node))
 		return 0;
 
@@ -102,10 +107,13 @@ int Graph<L,W,d>::erase(const L& node) {
 }
 
 template <typename L, typename W, bool directed>
-int Graph<L,W,directed>::link(const L& node_from, const L& node_to, W weight) {
+int Graph<L,W,directed>::link(const L& node_from, const L& node_to, W weight)
+{
 	// remove "unlinks", see criteria for contains(link) method
 	if (!(weight < infinity_))
-		return -1 * unlink(node_from, node_to); // -number of removed links
+		return -1 * unlink(node_from, node_to); // -no. of removed links
+	else if (node_from == node_to)
+		return 0; // ignore reflexive edges
 
 	// inserts any unregistered nodes before linking
 	const int inserted = insert(node_from) + insert(node_to);
@@ -123,7 +131,8 @@ int Graph<L,W,directed>::link(const L& node_from, const L& node_to, W weight) {
 }
 
 template <typename L, typename W, bool directed>
-int Graph<L,W,directed>::unlink(const L& node_from, const L& node_to) {
+int Graph<L,W,directed>::unlink(const L& node_from, const L& node_to)
+{
 	int disconnected = 0;
 
 	if (contains(node_from) && contains(node_to)) {
@@ -140,12 +149,14 @@ int Graph<L,W,directed>::unlink(const L& node_from, const L& node_to) {
 }
 
 template <typename L, typename W, bool d>
-inline bool Graph<L,W,d>::contains(const L& node) const {
+inline bool Graph<L,W,d>::contains(const L& node) const
+{
 	return adjacencies_.find(node) != adjacencies_.end();
 }
 
 template <typename L, typename W, bool directed>
-inline int Graph<L,W,directed>::degree(const L& node) const {
+inline int Graph<L,W,directed>::degree(const L& node) const
+{
 	if constexpr (!directed)
 		return degree_out(node);
 	else
@@ -153,12 +164,14 @@ inline int Graph<L,W,directed>::degree(const L& node) const {
 }
 
 template <typename L, typename W, bool directed>
-inline int Graph<L,W,directed>::degree_out(const L& node) const {
+inline int Graph<L,W,directed>::degree_out(const L& node) const
+{
 	return contains(node) ? adjacencies_.at(node).size() : -1;
 }
 
 template <typename L, typename W, bool directed>
-int Graph<L,W,directed>::degree_in(const L& node) const {
+int Graph<L,W,directed>::degree_in(const L& node) const
+{
 	if constexpr (!directed) {
 		return degree_out(node);
 
@@ -177,12 +190,14 @@ int Graph<L,W,directed>::degree_in(const L& node) const {
 }
 
 template <typename L, typename W, bool d>
-inline bool Graph<L,W,d>::contains(const L& node_from, const L& node_to) const {
+inline bool Graph<L,W,d>::contains(const L& node_from, const L& node_to) const
+{
 	return weight(node_from, node_to) < infinity_;
 }
 
 template <typename L, typename W, bool d>
-W Graph<L,W,d>::weight(const L& node_from, const L& node_to) const {
+W Graph<L,W,d>::weight(const L& node_from, const L& node_to) const
+{
 	if (contains(node_from)) {
 		const auto& adj = adjacencies_.at(node_from);
 		const auto& pos = adj.find(node_to);
@@ -193,12 +208,14 @@ W Graph<L,W,d>::weight(const L& node_from, const L& node_to) const {
 }
 
 template <typename L, typename W, bool d>
-const unordered_map<L,unordered_map<L,W>>& Graph<L,W,d>::nodes() const {
+const unordered_map<L,unordered_map<L,W>>& Graph<L,W,d>::nodes() const
+{
 	return adjacencies_;
 }
 
 template <typename L, typename W, bool d>
-const unordered_map<L,W>& Graph<L,W,d>::neighbours(const L& node) const {
+const unordered_map<L,W>& Graph<L,W,d>::neighbours(const L& node) const
+{
 	unordered_map<L,W> empty = {};
 	return contains(node) ? adjacencies_.at(node) : empty;
 }

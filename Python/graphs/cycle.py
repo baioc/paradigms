@@ -2,7 +2,7 @@
 # @License Apache <https://gitlab.com/baioc/paradigms>
 
 from graphs import Graph
-from typing import Set, List, Tuple, Sequence, TypeVar, Generator, Dict, \
+from typing import Set, Tuple, List, Sequence, TypeVar, Generator, Dict, \
                    FrozenSet
 from itertools import combinations
 
