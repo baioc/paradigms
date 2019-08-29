@@ -1,37 +1,29 @@
-import Prelude hiding (gcd, lcm, map, filter)
+import Prelude hiding (gcd, lcm)
 
 
-avaliar :: Float -> Float -> Float -> String
-avaliar p1 p2 p3 = if m < 6.0 then "reprovado" else "aprovado"
-                    where m = (p1 + p2 + p3) / 3
+hasPassed :: (Float, Float, Float) -> String
+hasPassed (p1, p2, p3) = if m < 6.0 then "No" else "Yes"
+                            where m = (p1 + p2 + p3) / 3
 
-fib :: Int -> Int
+fib :: Int -> Integer -- Int: fixnum, Integer: flonum
 fib 0 = 0
 fib 1 = 1
 fib n = fib(n-1) + fib(n-2)
 
-gcd :: Int -> Int -> Int
+gcd :: Integral t => t -> t -> t
 gcd a b | b == 0 = a
         | otherwise = gcd b (a `mod` b)
 
-lcm :: Int -> Int -> Int
+lcm :: Integral t => t -> t -> t
 lcm a b = (abs a*b) `div` (gcd a b)
-
-map :: (x -> y) -> [x] -> [y]
-map func [] = []
-map func (a:b) = func a : map func b
-
-filter :: (t -> Bool) -> [t] -> [t]
-filter pred [] = []
-filter pred (a:b) = let rest = filter pred b in
-                        if pred a then a : rest else rest
 
 
 main = do
     putStr "Hello, World!\n"
     -- line <- getLine
-    -- let val = (read line :: Int)
-    -- val <- readLn :: IO Int
+    -- let val = (read line :: Integer)
+    -- print (val)
+    -- val <- readLn :: IO Integer
     -- print (val)
     print(fib(16))
     print (lcm 4 (gcd 24 (gcd 54 9)))
