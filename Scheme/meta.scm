@@ -29,8 +29,14 @@
   ;;   - see SICP 4.1.6 - Internal Definitions
   ;; - letrec (see SICP Exercise 4.20)
   ;; - more primitives
-  ;;   - procedure?, apply, map, for-each, filter
-  ;;   - force, delay, eval, apply, load
+  ;;   - procedure?, apply, map, for-each, filter, ...
+  ;;   - force, delay, eval, apply, call-with-current-continuation
+  ;;     - https://schemers.org/Documents/Standards/R5RS/HTML/r5rs-Z-H-9.html
+  ;;   - load, transcript-on, transcript-off
+  ;; - command-line options
+  ;;   - help, version, quiet, transcript, debug, file, eval
+  ;;     - script: quiet + file
+  ;;     - eval: quiet + eval
 
 
 ;; ******************************** LOGGER *************************************
@@ -66,9 +72,9 @@
     (info-log 'Logger 'verbosity 'at 'level level))
 
 
-;; ************************* GENERIC INTERPRETER *******************************
+;; ************************** GENERIC INTERPRETER ******************************
 
-  (define (ambevaln expr env success failure)
+  (define (evaln expr env success failure)
     ((analyze expr) env success failure))
 
   ;; data-directed style dispatch
@@ -77,106 +83,82 @@
     (cond ;; primitives
           ((self-evaluating? expr) (analyze-self-evaluating expr))
           ((variable? expr) (analyze-variable expr))
-          ;; special forms
-          ((reserved? expr) (analyze-reserved expr))
-          ((ambiguous? expr) (analyze-ambiguous expr))
           ;; combinations
+          ((special-form? expr) (analyze-special-form expr))
           ((application? expr) (analyze-application expr))
           ;; unknown
           (else (error-log "Unknown expression type -- ANALYZE" expr))))
 
-  (define (execute procedure arguments succeed fail)
+  (define (execute procedure arguments success fail)
     (cond ;; goto primitive routine
           ((primitive-procedure? procedure)
-             (succeed (apply-primitive-procedure procedure arguments) fail))
+             (success (apply-primitive-procedure procedure arguments) fail))
           ;; or execute compund procedure
           ((compound-procedure? procedure)
-             (apply-compound-procedure procedure arguments succeed fail))
+             (apply-compound-procedure procedure arguments success fail))
           ;; fail
           (else (error-log "Unknown procedure type -- EXECUTE" procedure))))
 
 
-;; *********************** SYNTACTIC ANALYSIS RULES ****************************
+;; *************************** SEMANTIC ANALYSIS *******************************
 
   (define (analyze-self-evaluating thing)
     (info-log 'Atom thing)
-    (lambda (env succeed fail)
-      (succeed thing fail)))
+    (lambda (env success fail)
+      (success thing fail)))
 
   (define (analyze-variable var)
     (info-log 'Variable var)
-    (lambda (env succeed fail)
+    (lambda (env success fail)
       (debug-log 'Looking 'up var)
-      (succeed (lookup-variable var env) fail)))
+      (success (lookup-variable var env) fail)))
 
-  (define (analyze-reserved expr)
+  (define (analyze-special-form expr)
     (let ((keyword (reserved-word expr)))
       (debug-log 'Fetching 'syntax 'rules keyword)
       ((reserved-rule keyword) expr)))
 
-
-  (define (analyze-ambiguous expr)
-    (debug-log 'Nondeterministic expr)
-    (let ((cprocs (map analyze (amb-choices expr))))
-      (lambda (env succeed fail)
-        (define (try-next choice-procs choice-list)
-          (info-log 'Ambiguously choice-list)
-          (if (null? choice-procs)
-              (fail)
-              ((car choice-procs) env
-                                  succeed
-                                  (lambda ()
-                                    (try-next (cdr choice-procs)
-                                              (cdr choice-list))))))
-        (try-next cprocs (amb-choices expr)))))
-
-
   (define (analyze-application expr)
-    (define (eval-args procargs env succeed fail-args)
+    (define (eval-args procargs env success fail-args)
       (if (null? procargs)
-          (succeed procargs fail-args)
+          (success procargs fail-args)
           ;; @NOTE: imposes the order of evaluation for procedure arguments (RL)
           ((car procargs) env
                           (lambda (first fail-rest)
                             (eval-args (cdr procargs)
                                        env
                                        (lambda (rest fail)
-                                         (succeed (cons first rest) fail))
+                                         (success (cons first rest) fail))
                                        fail-rest))
                           fail-args)))
     (info-log 'Application expr)
     (let ((funcproc (analyze (operator expr)))
           (argprocs (map analyze (operands expr))))
-      (lambda (env succeed fail-func)
+      (lambda (env success fail-func)
         (funcproc env
                   (lambda (func fail-args)
                     (eval-args argprocs
                                env
                                (lambda (args fail-execute)
-                                 (execute func args succeed fail-execute))
+                                 (execute func args success fail-execute))
                                fail-args))
                   fail-func))))
 
 
-  (define reserved-word-rules
-    (list
-      ;; simple
-      (cons 'lambda (lambda (expr) (analyze-lambda expr)))
-      (cons 'define (lambda (expr) (analyze-definition expr)))
-      (cons 'set! (lambda (expr) (analyze-assignment expr)))
-      (cons 'quote (lambda (expr) (analyze-quotation expr)))
-      (cons 'if (lambda (expr) (analyze-if expr)))
-      (cons 'begin (lambda (expr) (analyze-sequence (begin-actions expr))))
-      ;; derived
-      (cons 'cond (lambda (expr) (analyze (cond->if (condition-clauses expr)))))
-      (cons 'and (lambda (expr) (analyze (and->if (condition-clauses expr)))))
-      (cons 'or (lambda (expr) (analyze (or->if (condition-clauses expr)))))
-      (cons 'let (lambda (expr) (analyze (let->combination expr))))
-      (cons 'let* (lambda (expr) (analyze (let*->let expr))))
-  ))
-
-  (define (reserved-rule keyword)
-    (cdr (assq keyword reserved-word-rules)))
+  (define (analyze-ambiguous expr)
+    (debug-log 'Nondeterministic expr)
+    (let ((cprocs (map analyze (amb-choices expr))))
+      (lambda (env success fail)
+        (define (try-next choice-procs choice-list)
+          (info-log 'Ambiguously choice-list)
+          (if (null? choice-procs)
+              (fail)
+              ((car choice-procs) env
+                                  success
+                                  (lambda ()
+                                    (try-next (cdr choice-procs)
+                                              (cdr choice-list))))))
+        (try-next cprocs (amb-choices expr)))))
 
 
   (define (analyze-lambda expr)
@@ -184,16 +166,16 @@
           (bodyproc (analyze-sequence (lambda-body expr))))
       (if (not (list? params))
           (error-log "Improper formal argument list" params)
-          (lambda (env succeed fail)
-            (succeed (make-procedure params bodyproc env) fail)))))
+          (lambda (env success fail)
+            (success (make-procedure params bodyproc env) fail)))))
 
   ;; expression sequentialization is done by nesting
   (define (analyze-sequence exprs)
     (define (sequentially aproc bproc)
-      (lambda (env succeed fail-first)
+      (lambda (env success fail-first)
         (aproc env
                (lambda (a-value fail-second)
-                 (bproc env succeed fail-second))
+                 (bproc env success fail-second))
                fail-first)))
     (define (unroll first-proc rest-procs)
       (if (null? rest-procs) first-proc
@@ -208,23 +190,23 @@
   (define (analyze-definition expr)
     (let ((var (definition-variable expr))
           (vproc (analyze (definition-value expr))))
-      (lambda (env succeed fail-definiens)
+      (lambda (env success fail-definiens)
         (vproc env
                (lambda (val fail-definition)
-                 (succeed (define-variable! var val env)
+                 (success (define-variable! var val env)
                           fail-definition))
                fail-definiens))))
 
   (define (analyze-assignment expr)
     (let ((var (assignment-variable expr))
           (vproc (analyze (assignment-value expr))))
-      (lambda (env succeed fail-value)
+      (lambda (env success fail-value)
         (vproc env
                (lambda (val fail-continuation)
                  (let ((old-val (lookup-variable var env)))
                    (if (eq? old-val (voidn))
-                       (succeed old-val fail-continuation)
-                       (succeed (set-variable-value! var val env)
+                       (success old-val fail-continuation)
+                       (success (set-variable-value! var val env)
                                 (lambda () ;; undo assignment on failure
                                    (set-variable-value! var old-val env)
                                    (fail-continuation))))))
@@ -233,21 +215,21 @@
 
   (define (analyze-quotation expr)
     (let ((qval (quotation expr)))
-      (lambda (env succeed fail)
-        (succeed qval fail))))
+      (lambda (env success fail)
+        (success qval fail))))
 
 
   (define (analyze-if expr)
     (let ((pproc (analyze (if-predicate expr)))
           (cproc (analyze (if-consequent expr)))
           (aproc (analyze (if-alternative expr))))
-      (lambda (env succeed fail-pred)
+      (lambda (env success fail-pred)
         (pproc env
                (lambda (pred-value fail-branch)
                  ;; truth value of expression may differ in separate languages
                  (if (true? pred-value)
-                     (cproc env succeed fail-branch)
-                     (aproc env succeed fail-branch)))
+                     (cproc env success fail-branch)
+                     (aproc env success fail-branch)))
                fail-pred))))
 
 
@@ -314,7 +296,30 @@
     (let-reduce (let-associations expr) (let-body expr)))
 
 
-;; *********************** SYMBOLIC REPRESENTATION *****************************
+  (define reserved-word-rules
+    (list
+      ;; simple
+      (cons 'lambda analyze-lambda)
+      (cons 'define analyze-definition)
+      (cons 'set! analyze-assignment)
+      (cons 'quote analyze-quotation)
+      (cons 'if analyze-if)
+      (cons 'begin (lambda (expr) (analyze-sequence (begin-actions expr))))
+      ;; derived
+      (cons 'cond (lambda (expr) (analyze (cond->if (condition-clauses expr)))))
+      (cons 'and (lambda (expr) (analyze (and->if (condition-clauses expr)))))
+      (cons 'or (lambda (expr) (analyze (or->if (condition-clauses expr)))))
+      (cons 'let (lambda (expr) (analyze (let->combination expr))))
+      (cons 'let* (lambda (expr) (analyze (let*->let expr))))
+      ;; special
+      (cons 'amb analyze-ambiguous)
+  ))
+
+  (define (reserved-rule keyword)
+    (cdr (assq keyword reserved-word-rules)))
+
+
+;; ************************ SYMBOLIC REPRESENTATION ****************************
 
   (define (self-evaluating? sexpr)
     (or (number? sexpr)
@@ -326,12 +331,9 @@
     (or (symbol? sexpr)
         (boolean? sexpr)))
 
-  (define (reserved? sexpr)
+  (define (special-form? sexpr)
     (and (application? sexpr) ;; "tagged application"
          (assq (reserved-word sexpr) reserved-word-rules)))
-
-  (define (ambiguous? sexpr)
-    (tagged-list? sexpr 'amb))
 
   (define (application? sexpr)
     (pair? sexpr)) ;; "untagged application"
@@ -467,9 +469,9 @@
     (map cadr (let-associations expr)))
 
 
-;; ***************************** ENVIRONMENTS **********************************
+;; ************************* EXECUTION ENVIRONMENT *****************************
 
-  (define (apply-compound-procedure procedure arguments succeed fail)
+  (define (apply-compound-procedure procedure arguments success fail)
     (let ((proc (procedure-body procedure))
           (params (procedure-parameters procedure))
           (base-env (procedure-environment procedure)))
@@ -482,7 +484,7 @@
               (else
                  (info-log 'Executing 'compound proc 'with params)
                  (proc (extend-environment base-env params arguments)
-                       succeed
+                       success
                        fail))))))
 
   (define (compound-procedure? sexpr)
@@ -699,7 +701,7 @@
           ;; system
           (cons 'exit
             (lambda (code) (bye code)))
-          (cons 'meta-set-log-verbosity! set-log-verbosity!)
+          (cons '*set-log-verbosity!* set-log-verbosity!)
           ;; io, for more info see https://www.scheme.com/tspl3/io.html
           (cons 'read read)
           (cons 'write
@@ -837,23 +839,23 @@
   ))
 
 
-;; ************************ COMMAND LINE INTERFACE *****************************
+;; ********************************** CLI **************************************
 
   (define (read-eval-print-loop) ;; REPL
-    (define (loop retry)
+    (define (loop retry-cont)
       (display ">> ")
       (let ((input (read)))
         (cond ((eof-object? input) (bye 0))
-              ((eq? input 'retry) (retry))
-              (else (ambevaln (simplify input)
-                              global-environment
-                              (lambda (output continue)
-                                (repl-print output)
-                                (loop continue))
-                              (lambda ()
-                                (display ";;; No more possible outcomes for ")
-                                (repl-print input)
-                                (read-eval-print-loop)))))))
+              ((eq? input 'retry) (retry-cont))
+              (else (evaln (simplify input)
+                           global-environment
+                           (lambda (output backtrack)
+                             (repl-print output)
+                             (loop backtrack))
+                           (lambda ()
+                             (display ";;; No more possible outcomes for ")
+                             (repl-print input)
+                             (read-eval-print-loop)))))))
     (loop (lambda ()
             (display ";;; There are no currently unresolved ambiguities\n")
             (read-eval-print-loop))))
