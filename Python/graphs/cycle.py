@@ -1,19 +1,18 @@
 # Copyright (c) 2019 Gabriel B. Sant'Anna <baiocchi.gabriel@gmail.com>
 # @License Apache <https://gitlab.com/baioc/paradigms>
 
-from graphs import Graph
+from graphs import Digraph, Graph
 from typing import Set, Tuple, List, Sequence, TypeVar, Generator, Dict, \
                    FrozenSet
+from math import inf
 from itertools import combinations
 
 Node = str
 T = TypeVar('T')  # generic Type
 
 
-def eulerian_cycle(graph: Graph,
-                   begin: Node = None,
-                   traversed: Set[Tuple[Node, Node]] = None) -> List[Node]:
-    """Finds a Graph's Eulerian cycle, if present, with Hierholzer's algorithm.
+def eulerian_cycle(graph: Digraph, begin: Node = None) -> List[Node]:
+    """Finds an Eulerian cycle on a Digraph using Hierholzer's algorithm.
 
     Returns either a list representing the node path order of the Eulerian
     cycle; or None when no such cycle is found.
@@ -23,12 +22,12 @@ def eulerian_cycle(graph: Graph,
         for x in seq:
             return x
 
-    def graph_edges(graph: Graph) -> Generator[Tuple[Node, Node], None, None]:
-        for u in graph.nodes():
-            for v in graph.neighbours(u):
+    def graph_edges(g: Digraph) -> Generator[Tuple[Node, Node], None, None]:
+        for u in g.nodes():
+            for v in g.neighbours(u):
                 yield (u, v)
 
-    def Hierholzer(graph: Graph,
+    def Hierholzer(graph: Digraph,
                    begin: Node,
                    traversed: Set[Tuple[Node, Node]]) -> List[Node]:
         def splicycle(cycle: List[T], subcycle: List[T]) -> List[T]:
@@ -46,9 +45,9 @@ def eulerian_cycle(graph: Graph,
             else:  # no break: every edge (u,v) has already been traversed
                 return None
 
-            (u, v) = e
-            traversed[(u, v)] = True
-            traversed[(v, u)] = True  # undirected
+            (_, v) = e
+            traversed[e] = True
+            # traversed[(v, u)] = True  # @NOTE: only for undirected graphs
             cycle.append(v)
             u = v
             if u == begin:
@@ -65,29 +64,32 @@ def eulerian_cycle(graph: Graph,
 
         return cycle
 
-    traversed = {} if traversed is None else traversed
+    traversed = {}
     begin = arbitrary(graph.nodes()) if begin is None else begin
     cycle = Hierholzer(graph, begin, traversed)
     if cycle is None:
         return None
     else:
-        for (a, b) in graph_edges(graph):
-            if (a, b) not in traversed:
+        for (u, v) in graph_edges(graph):
+            if (u, v) not in traversed:
                 return None
         else:  # no break
             return cycle
 
 
 def hamiltonian_circuit(graph: Graph, start: Node) -> float:
-    """Finds a Graph's minimal Hamiltonian cycle through Bellman-Held-Karp.
+    """Finds a Graph's minimal Hamiltonian circuit through Bellman-Held-Karp.
 
     Supposes the Graph is connected and has at least one Hamiltonian cycle.
-    Returns the total cost of the optimal circuit path.
+    Returns the total cost of the optimal circuit path; or infinity when none
+    is found.
     """
 
-    Visits, Last, Cost = FrozenSet[Node], Node, float
-    cost: Dict[Tuple[Visits, Last], Cost] = {}
-    dests = frozenset({v for v in graph.nodes() if v != start})
+    Visits, FinalDestination, Cost = FrozenSet[Node], Node, float
+    cost: Dict[Tuple[Visits, FinalDestination], Cost] = {}
+    dests = dict.fromkeys(graph.nodes())
+    dests.pop(start)
+    dests = frozenset(dests)
 
     for place in dests:
         cost[(frozenset({place}), place)] = graph.weight(start, place)
@@ -97,23 +99,27 @@ def hamiltonian_circuit(graph: Graph, start: Node) -> float:
             route = frozenset(itinerary)
             for final in route:
                 sub = route - {final}
-                paths = {cost[(sub, m)] + graph.weight(m, final) for m in sub}
-                cost[(route, final)] = min(paths)
+                opt = inf  # optimal solution for problem subset
+                for mid in sub:
+                    opt = min(opt, cost[(sub, mid)] + graph.weight(mid, final))
+                cost[(route, final)] = opt
 
-    dist_sum = {cost[(dests, end)] + graph.weight(end, start) for end in dests}
-    return min(dist_sum)
+    minimum = inf
+    for end in dests:
+        minimum = min(minimum, cost[(dests, end)] + graph.weight(end, start))
+    return minimum
 
 
 V: Set[Node] = {'a', 'b', 'c', 'd', 'e'}
-E: Set[Tuple[Node, Node, float]] = {('a', 'e', 4), ('a', 'c', 3),
-                                    ('d', 'b', 1),  # ('d', 'e', 1.5),
-                                    ('c', 'd', 2.5),  # ('b', 'a', 2.5),
-                                    ('e', 'b', 1.5)}  # , ('e', 'c', 1)}
+E: Set[Tuple[Node, Node, float]] = {('b', 'a', 2.5),  # ('a', 'c', 3),
+                                    ('c', 'd', 2.5),  # ('d', 'b', 1),
+                                    ('a', 'e', 4), ('e', 'c', 2),
+                                    ('e', 'b', 1.5), ('d', 'e', 2)}
 
-G: Graph = Graph(len(V))
+G: Digraph = Digraph(len(V))
 
 for (u, v, w) in E:
     G.link(u, v, w)
 
-C = eulerian_cycle(G, 'e')
+C = eulerian_cycle(G, 'a')
 print(C)

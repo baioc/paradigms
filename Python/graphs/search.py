@@ -18,23 +18,27 @@ def breadth_first_search(graph: Graph, root: Node) -> Tuple[Dict[Node, float],
     search tree.
     """
 
-    distance: Dict[Node, float] = {node: inf for node in graph.nodes()}
-    ancestor: Dict[Node, Node] = {}
+    distances: Dict[Node, float] = dict.fromkeys(graph.nodes(), inf)
+    ancestors: Dict[Node, Node] = {}
     queue: List[Node] = []
 
-    distance[root] = 0
-    ancestor[root] = None
+    distances[root] = 0
+    ancestors[root] = None
     queue.append(root)
 
     while len(queue) > 0:
         u = queue.pop(0)
         for v in graph.neighbours(u):
-            if v not in ancestor:  # hasn't been visited
-                distance[v] = distance[u] + 1.0
-                ancestor[v] = u
+            if v not in ancestors:  # hasn't been visited
+                distances[v] = distances[u] + 1
+                ancestors[v] = u
                 queue.append(v)
 
-    return (distance, ancestor)
+    for v in distances:
+        if v not in ancestors:
+            ancestors[v] = None
+
+    return (distances, ancestors)
 
 
 def depth_first_search(graph: Graph, root: Node) -> Tuple[Dict[Node, float],
@@ -46,26 +50,31 @@ def depth_first_search(graph: Graph, root: Node) -> Tuple[Dict[Node, float],
     nodes as keys that map to their parent node in the search tree.
     """
 
-    time: Dict[Node, float] = {v: inf for v in graph.nodes()}
-    ancestor: Dict[Node, Node] = {}
+    times: Dict[Node, float] = dict.fromkeys(graph.nodes(), inf)
+    ancestors: Dict[Node, Node] = {}
     stack: List[Node] = []
 
-    ancestor[root] = None
+    ancestors[root] = None
     stack.append(root)
 
     t = -1  # next t is 0
     while len(stack) > 0:
         u = stack.pop()
-        time[u] = t = t+1
-        for v in [w for w in graph.neighbours(u) if w not in ancestor]:
-            ancestor[v] = u
-            stack.append(v)
+        times[u] = t = t + 1
+        for v in graph.neighbours(u):
+            if v not in ancestors:  # hasn't been visited
+                ancestors[v] = u
+                stack.append(v)
 
-    return (time, ancestor)
+    for v in times:
+        if v not in ancestors:
+            ancestors[v] = None
+
+    return (times, ancestors)
 
 
 V: Set[Node] = {'1', '2', '3', '4', '5', '6', '7', '8'}
-E: Set[Tuple[Node, Node]] = {('8', '3'), ('8', '4'), ('8', '5'),
+E: Set[Tuple[Node, Node]] = {('8', '3'), ('8', '4'), ('8', '5'), ('8', '1'),
                              ('3', '1'), ('3', '2'), ('4', '6'), ('5', '7')}
 
 G: Graph = Graph(len(V))
@@ -74,13 +83,14 @@ for (u, v) in E:
     G.link(u, v)
 
 D, T = breadth_first_search(G, '8')
+print(D)
 print(T)
 
 level = 0
 while True:
     nodes = [v for v, d in D.items() if d == level]
     if (len(nodes) > 0):
-        # nodes.sort()
+        nodes.sort()
         print('%d: %s' % (level, ', '.join(nodes)))
         level += 1
     else:
