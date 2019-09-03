@@ -1,25 +1,25 @@
 # Copyright (c) 2019 Gabriel B. Sant'Anna <baiocchi.gabriel@gmail.com>
 # @License Apache <https://gitlab.com/baioc/paradigms>
 
-from graphs import Graph
+from graphs import Graph, Digraph
+from typing import Set, Tuple, Dict, Optional, List, Union
 from math import inf
-from typing import Set, Tuple, Dict, List
 
 Node = str
 
 
-def breadth_first_search(graph: Graph, root: Node) -> Tuple[Dict[Node, float],
-                                                            Dict[Node, Node]]:
+def breadth_first_search(graph: Union[Graph, Digraph], root: Node) \
+        -> Tuple[Dict[Node, float], Dict[Node, Optional[Node]]]:
     """Perform Breadth-First Search on a Graph starting from a given vertex.
 
     Returns a dictionary tuple whose first element contains nodes as keys that
-    map to their distance from the starting one, in edge units; and whose
-    second element contains nodes as keys that map to their parent node in the
-    search tree.
+    map to their distance from the start, in edge units; and whose second
+    element contains nodes as keys that map to their parent node in the search
+    tree.
     """
 
     distances: Dict[Node, float] = dict.fromkeys(graph.nodes(), inf)
-    ancestors: Dict[Node, Node] = {}
+    ancestors: Dict[Node, Optional[Node]] = {}
     queue: List[Node] = []
 
     distances[root] = 0
@@ -34,6 +34,7 @@ def breadth_first_search(graph: Graph, root: Node) -> Tuple[Dict[Node, float],
                 ancestors[v] = u
                 queue.append(v)
 
+    # disconnected vertices
     for v in distances:
         if v not in ancestors:
             ancestors[v] = None
@@ -41,8 +42,8 @@ def breadth_first_search(graph: Graph, root: Node) -> Tuple[Dict[Node, float],
     return (distances, ancestors)
 
 
-def depth_first_search(graph: Graph, root: Node) -> Tuple[Dict[Node, float],
-                                                          Dict[Node, Node]]:
+def depth_first_search(graph: Union[Graph, Digraph], root: Node) \
+        -> Tuple[Dict[Node, float], Dict[Node, Optional[Node]]]:
     """Perform Depth-First Search on a Graph starting from a given vertex.
 
     Returns a dictionary tuple whose first element contains nodes as keys that
@@ -51,7 +52,7 @@ def depth_first_search(graph: Graph, root: Node) -> Tuple[Dict[Node, float],
     """
 
     times: Dict[Node, float] = dict.fromkeys(graph.nodes(), inf)
-    ancestors: Dict[Node, Node] = {}
+    ancestors: Dict[Node, Optional[Node]] = {}
     stack: List[Node] = []
 
     ancestors[root] = None
@@ -66,6 +67,7 @@ def depth_first_search(graph: Graph, root: Node) -> Tuple[Dict[Node, float],
                 ancestors[v] = u
                 stack.append(v)
 
+    # disconnected vertices
     for v in times:
         if v not in ancestors:
             ancestors[v] = None
@@ -74,11 +76,9 @@ def depth_first_search(graph: Graph, root: Node) -> Tuple[Dict[Node, float],
 
 
 V: Set[Node] = {'1', '2', '3', '4', '5', '6', '7', '8'}
-E: Set[Tuple[Node, Node]] = {('8', '3'), ('8', '4'), ('8', '5'), ('8', '1'),
+E: Set[Tuple[Node, Node]] = {('8', '3'), ('8', '4'), ('8', '5'),  # ('1', '8'),
                              ('3', '1'), ('3', '2'), ('4', '6'), ('5', '7')}
-
-G: Graph = Graph(len(V))
-
+G: Union[Graph, Digraph] = Graph(len(V))
 for (u, v) in E:
     G.link(u, v)
 
