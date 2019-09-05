@@ -13,9 +13,9 @@ T = TypeVar('T')  # generic Type
 
 def eulerian_cycle(graph: Digraph, initial: Optional[Node] = None) \
         -> List[Node]:
-    """Finds an Eulerian cycle on a Digraph using Hierholzer's algorithm.
+    """Finds an eulerian cycle on a digraph using Hierholzer's algorithm.
 
-    Returns a list representing the node path order of the Eulerian cycle, it
+    Returns a list representing the node path order of the eulerian cycle, it
     is empty when no such cycle is found.
     """
 
@@ -80,9 +80,9 @@ def eulerian_cycle(graph: Digraph, initial: Optional[Node] = None) \
 
 
 def hamiltonian_circuit(graph: Union[Graph, Digraph], begin: Node) -> float:
-    """Finds a Graph's minimal Hamiltonian circuit through Bellman-Held-Karp.
+    """Finds a graph's minimal hamiltonian circuit through Bellman-Held-Karp.
 
-    Supposes the Graph is connected and has at least one Hamiltonian cycle.
+    Supposes the graph is connected and has at least one hamiltonian cycle.
 
     Returns the total cost of the optimal circuit path; or infinity when none
     is found.

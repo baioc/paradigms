@@ -29,7 +29,7 @@ using std::unordered_map;
 template <typename Label, typename Weight, bool directed=false>
 	// requires Hashable<Label>,
 	//          LessThanComparable<Weight>,
-	//          Assignable<Weight,1>,
+	//          Assignable<Weight,1>, Assignable<Weight,0>,
 	//          std::numeric_limits<Weight>::has_infinity(),
 class Graph {
  public:
@@ -66,9 +66,9 @@ class Graph {
 
 
 template <typename L, typename W, bool d>
-Graph<L,W,d>::Graph(int initial_node_capacity)
+Graph<L,W,d>::Graph(int node_capacity)
 {
-	adjacencies_.reserve(initial_node_capacity);
+	adjacencies_.reserve(node_capacity);
 }
 
 template <typename L, typename W, bool d>
@@ -192,13 +192,16 @@ int Graph<L,W,directed>::degree_in(const L& node) const
 template <typename L, typename W, bool d>
 inline bool Graph<L,W,d>::contains(const L& node_from, const L& node_to) const
 {
-	return weight(node_from, node_to) < infinity_;
+	return weight(node_from, node_to) < infinity_ && !(node_from == node_to);
 }
 
 template <typename L, typename W, bool d>
 W Graph<L,W,d>::weight(const L& node_from, const L& node_to) const
 {
-	if (contains(node_from)) {
+	if (node_from == node_to) {
+		W w = 0;
+		return w;
+	} else if (contains(node_from)) {
 		const auto& adj = adjacencies_.at(node_from);
 		const auto& pos = adj.find(node_to);
 		if (pos != adj.end())

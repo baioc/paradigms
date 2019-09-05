@@ -10,7 +10,7 @@ Node = str
 
 def breadth_first_search(graph: Union[Graph, Digraph], root: Node) \
         -> Tuple[Dict[Node, float], Dict[Node, Optional[Node]]]:
-    """Perform Breadth-First Search on a Graph starting from a given vertex.
+    """Breadth-first search a graph starting from a given vertex.
 
     Returns a dictionary tuple whose first element contains nodes as keys that
     map to their distance from the start, in edge units; and whose second
@@ -44,7 +44,7 @@ def breadth_first_search(graph: Union[Graph, Digraph], root: Node) \
 
 def depth_first_search(graph: Union[Graph, Digraph], root: Node) \
         -> Tuple[Dict[Node, float], Dict[Node, Optional[Node]]]:
-    """Perform Depth-First Search on a Graph starting from a given vertex.
+    """Depth-first search a graph starting from a given vertex.
 
     Returns a dictionary tuple whose first element contains nodes as keys that
     map to the time taken to reach them; and whose second element contains

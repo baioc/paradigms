@@ -4,6 +4,7 @@
 from graphs import Digraph, Graph
 from typing import Set, Tuple, Dict, Optional, Generator, Union
 from math import inf
+from pprint import pprint
 
 Node = str
 
@@ -92,6 +93,27 @@ def shortest_path(graph: Union[Graph, Digraph], source: Node) \
     return (distances, antecessors)
 
 
+def shortest_network(graph: Union[Graph, Digraph]) \
+        -> Dict[Node, Dict[Node, float]]:
+    """Find shortest paths for all vertex pairs in a graph via Floyd–Warshall.
+
+    Returns a bidimensional dictionary D that uses node labels as indexes such
+    that D[u][v] is the shortest circuit going from u to v.
+    """
+
+    vertices = graph.nodes()
+    dist = {u: {v: graph.weight(u, v) for v in vertices} for u in vertices}
+
+    # for every vertex, check if it is a shortcut between two pairs
+    for interm in vertices:
+        for source in vertices:
+            for destination in vertices:
+                shc = dist[source][interm] + dist[interm][destination]
+                dist[source][destination] = min(dist[source][destination], shc)
+
+    return dist
+
+
 V: Set[Node] = {'A', 'B', 'C', 'S'}
 E: Set[Tuple[Node, Node, float]] = {('S', 'A', 5), ('S', 'B', 3),
                                     ('B', 'A', 1),
@@ -100,9 +122,7 @@ G: Union[Graph, Digraph] = Digraph(len(V))
 for (u, v, w) in E:
     G.link(u, v, w)
 
-p = shortest_path(G, 'S')
-(D, T) = p
-
+(D, T) = shortest_path(G, 'S')
 for v in V:
     path = []
     tail = v
@@ -111,3 +131,6 @@ for v in V:
         u = T[tail]
         tail = u
     print('<%s> = %g' % (', '.join(path), D[v]))
+
+N = shortest_network(G)
+pprint(N)
