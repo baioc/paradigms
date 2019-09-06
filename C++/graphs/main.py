@@ -3,15 +3,21 @@ from math import inf
 
 
 def grprint(g: Graph):
-	print("Graph has a total of", g.node_number(), "nodes and", g.edge_number(), "edges")
-	for a in g.nodes():
-		print("Degree of", a, "is", g.degree(a), "(out: {})".format(g.degree_out(a)), "(in: {})".format(g.degree_in(a)))
-		for b in g.neighbours(a):
-			print("  |->", b, "(w: {})".format(g.weight(a,b)))
+    print("Graph has a total of",
+          g.node_number(), "nodes and",
+          g.edge_number(), "edges")
+    for a in g.nodes():
+        print("Degree of", a, "is", g.degree(a),
+              "(out: {})".format(g.degree_out(a)),
+              "(in: {})".format(g.degree_in(a)))
+        for b in g.neighbours(a):
+            print("  |->", b, "(w: {})".format(g.weight(a, b)))
 
 
 V = ['a', 'b', 'c', 'd', 'e']
-E = [('a','b'), ('b','c',2), ('c','d',-3.25), ('d','b',3.75), ('d','e'), ('e','c',0.0)]
+E = [('a', 'b'), ('b', 'c', 2),
+     ('c', 'd', -3.25), ('d', 'b', 3.75),
+     ('d', 'e'), ('e', 'c', 0.0)]
 
 G = Digraph()
 
@@ -20,7 +26,7 @@ print("")
 
 
 for v in V:
-	print(G.insert(v))
+    print(G.insert(v))
 
 print(G.insert('a'))
 
@@ -29,13 +35,15 @@ print("")
 
 
 for e in E:
-	if len(e) == 2:
-		x, y = e
-		print(G.link(x, y))
-	elif len(e) == 3:
-		x, y, w = e
-		print(G.link(x, y, w))
+    if len(e) == 2:
+        x, y = e
+        print(G.link(x, y))
+    elif len(e) == 3:
+        x, y, w = e
+        print(G.link(x, y, w))
 
+G.link('a', 'a')  # should do nothing
+print(G.contains('a', 'a'))
 grprint(G)
 print("")
 

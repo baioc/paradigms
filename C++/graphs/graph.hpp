@@ -29,8 +29,8 @@ using std::unordered_map;
 template <typename Label, typename Weight, bool directed=false>
 	// requires Hashable<Label>,
 	//          LessThanComparable<Weight>,
-	//          Assignable<Weight,1>, Assignable<Weight,0>,
 	//          std::numeric_limits<Weight>::has_infinity(),
+	//          Assignable<Weight,1>, Assignable<Weight,0>,
 class Graph {
  public:
 	Graph() = default;

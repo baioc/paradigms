@@ -11,7 +11,8 @@ Node = str
 
 def shortest_route(graph: Digraph, start: Node) \
         -> Tuple[Dict[Node, float], Dict[Node, Optional[Node]]]:
-    """Compute Shortest Paths from a single vertex to all others in a Digraph.
+    """Compute shortest paths from a single vertex to all others in a Digraph
+    using the Bellman-Ford algorithm.
 
     Returns a dictionary tuple whose first element contains nodes as keys that
     map to their distance from the start; and whose second element contains

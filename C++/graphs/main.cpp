@@ -40,6 +40,7 @@ int main(int argc, char const *argv[])
 	g.insert('e');
 	std::cout << g << '\n';
 
+	g.link('a', 'a'); // should do nothing
 	g.link('a', 'b');
 	g.link('b', 'c', 2);
 	g.link('c', 'd', -3.25);

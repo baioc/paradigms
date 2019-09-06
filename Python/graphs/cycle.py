@@ -49,7 +49,7 @@ def eulerian_cycle(graph: Digraph, initial: Optional[Node] = None) \
 
             (_, v) = e
             traversed.add(e)
-            # traversed.add((v, u))  # XXX: only for undirected graphs
+            # traversed.add((v, u))  # XXX: for undirected graphs
             cycle.append(v)
             u = v
             if u == initial:
