@@ -1,7 +1,7 @@
 # Copyright (c) 2019 Gabriel B. Sant'Anna <baiocchi.gabriel@gmail.com>
 # @License Apache <https://gitlab.com/baioc/paradigms>
 
-from graphs import Digraph, Graph
+from .graphs import Digraph, Graph
 from typing import Set, Tuple, Dict, Optional, Generator, Union
 from math import inf
 from pprint import pprint
@@ -63,8 +63,7 @@ def shortest_path(graph: Union[Graph, Digraph], source: Node) \
     Use Dijkstra's Shortest Path First algorithm to find the shortest path
     between a given origin and all other nodes in a Graph.
 
-    Does not guarantee a Shortest Path when presented with edges of negative
-    weights.
+    Does not guarantee a shortest path when presented with negative weights.
 
     Returns a dictionary tuple whose first element contains nodes as keys that
     map to their distance from the source; and whose second element contains
@@ -115,23 +114,24 @@ def shortest_network(graph: Union[Graph, Digraph]) \
     return dist
 
 
-V: Set[Node] = {'A', 'B', 'C', 'S'}
-E: Set[Tuple[Node, Node, float]] = {('S', 'A', 5), ('S', 'B', 3),
-                                    ('B', 'A', 1),
-                                    ('A', 'C', 6), ('B', 'C', 4)}
-G: Union[Graph, Digraph] = Digraph(len(V))
-for (u, v, w) in E:
-    G.link(u, v, w)
+def _path_test():
+    V: Set[Node] = {'A', 'B', 'C', 'S'}
+    E: Set[Tuple[Node, Node, float]] = {('S', 'A', 5), ('S', 'B', 3),
+                                        ('B', 'A', 1),
+                                        ('A', 'C', 6), ('B', 'C', 4)}
+    G: Union[Graph, Digraph] = Digraph(len(V))
+    for (u, v, w) in E:
+        G.link(u, v, w)
 
-(D, T) = shortest_path(G, 'S')
-for v in V:
-    path = []
-    tail = v
-    while tail is not None:
-        path.insert(0, tail)
-        u = T[tail]
-        tail = u
-    print('<%s> = %g' % (', '.join(path), D[v]))
+    (D, T) = shortest_path(G, 'S')
+    for v in V:
+        path = []
+        tail = v
+        while tail is not None:
+            path.insert(0, tail)
+            u = T[tail]
+            tail = u
+        print('<%s> = %g' % (', '.join(path), D[v]))
 
-N = shortest_network(G)
-pprint(N)
+    N = shortest_network(G)
+    pprint(N)

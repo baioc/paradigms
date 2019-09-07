@@ -1,7 +1,7 @@
 # Copyright (c) 2019 Gabriel B. Sant'Anna <baiocchi.gabriel@gmail.com>
 # @License Apache <https://gitlab.com/baioc/paradigms>
 
-from graphs import Digraph, Graph
+from .graphs import Digraph, Graph
 from typing import Set, Tuple, List, Optional, Sequence, TypeVar, Generator, \
                    Union, Dict, FrozenSet
 from math import inf
@@ -111,14 +111,15 @@ def hamiltonian_circuit(graph: Union[Graph, Digraph], begin: Node) -> float:
     return minimum
 
 
-V: Set[Node] = {'a', 'b', 'c', 'd', 'e'}
-E: Set[Tuple[Node, Node, float]] = {('b', 'a', 2.5),  # ('a', 'c', 3),
-                                    ('c', 'd', 2.5),  # ('d', 'b', 1),
-                                    ('a', 'e', 4), ('e', 'c', 2),
-                                    ('e', 'b', 1.5), ('d', 'e', 2)}
-G: Union[Graph, Digraph] = Digraph(len(V))
-for (u, v, w) in E:
-    G.link(u, v, w)
+def _cycle_test():
+    V: Set[Node] = {'a', 'b', 'c', 'd', 'e'}
+    E: Set[Tuple[Node, Node, float]] = {('b', 'a', 2.5),  # ('a', 'c', 3),
+                                        ('c', 'd', 2.5),  # ('d', 'b', 1),
+                                        ('a', 'e', 4), ('e', 'c', 2),
+                                        ('e', 'b', 1.5), ('d', 'e', 2)}
+    G: Union[Graph, Digraph] = Digraph(len(V))
+    for (u, v, w) in E:
+        G.link(u, v, w)
 
-C = eulerian_cycle(G, 'a')
-print(C)
+    C = eulerian_cycle(G, 'a')
+    print(C)

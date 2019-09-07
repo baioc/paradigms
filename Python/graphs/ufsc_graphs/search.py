@@ -1,7 +1,7 @@
 # Copyright (c) 2019 Gabriel B. Sant'Anna <baiocchi.gabriel@gmail.com>
 # @License Apache <https://gitlab.com/baioc/paradigms>
 
-from graphs import Graph, Digraph
+from .graphs import Graph, Digraph
 from typing import Set, Tuple, Dict, Optional, List, Union
 from math import inf
 
@@ -75,23 +75,26 @@ def depth_first_search(graph: Union[Graph, Digraph], root: Node) \
     return (times, ancestors)
 
 
-V: Set[Node] = {'1', '2', '3', '4', '5', '6', '7', '8'}
-E: Set[Tuple[Node, Node]] = {('8', '3'), ('8', '4'), ('8', '5'),  # ('1', '8'),
-                             ('3', '1'), ('3', '2'), ('4', '6'), ('5', '7')}
-G: Union[Graph, Digraph] = Graph(len(V))
-for (u, v) in E:
-    G.link(u, v)
+def _search_test():
+    V: Set[Node] = {'1', '2', '3', '4', '5', '6', '7', '8'}
+    E: Set[Tuple[Node, Node]] = {('8', '3'), ('8', '4'),
+                                 ('8', '5'),  # ('1', '8'),
+                                 ('3', '1'), ('3', '2'),
+                                 ('4', '6'), ('5', '7')}
+    G: Union[Graph, Digraph] = Graph(len(V))
+    for (u, v) in E:
+        G.link(u, v)
 
-D, T = breadth_first_search(G, '8')
-print(D)
-print(T)
+    D, T = breadth_first_search(G, '8')
+    print(D)
+    print(T)
 
-level = 0
-while True:
-    nodes = [v for v, d in D.items() if d == level]
-    if (len(nodes) > 0):
-        nodes.sort()
-        print('%d: %s' % (level, ', '.join(nodes)))
-        level += 1
-    else:
-        break
+    level = 0
+    while True:
+        nodes = [v for v, d in D.items() if d == level]
+        if (len(nodes) > 0):
+            nodes.sort()
+            print('%d: %s' % (level, ', '.join(nodes)))
+            level += 1
+        else:
+            break
