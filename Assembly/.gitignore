@@ -1,0 +1,10 @@
+# Created by https://www.gitignore.io/api/assembler
+# Edit at https://www.gitignore.io/?templates=assembler
+
+### Assembler ###
+*.exe
+*.o
+*.obj
+*.bc
+
+# End of https://www.gitignore.io/api/assembler

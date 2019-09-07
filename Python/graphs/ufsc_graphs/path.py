@@ -130,8 +130,8 @@ def _path_test():
         tail = v
         while tail is not None:
             path.insert(0, tail)
-            u = T[tail]
-            tail = u
+            tail = T[tail]
+
         print('<%s> = %g' % (', '.join(path), D[v]))
 
     N = shortest_network(G)

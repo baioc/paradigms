@@ -92,7 +92,7 @@ def _search_test():
     level = 0
     while True:
         nodes = [v for v, d in D.items() if d == level]
-        if (len(nodes) > 0):
+        if len(nodes) > 0:
             nodes.sort()
             print('%d: %s' % (level, ', '.join(nodes)))
             level += 1
