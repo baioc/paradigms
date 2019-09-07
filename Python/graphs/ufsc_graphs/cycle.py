@@ -8,16 +8,18 @@ from math import inf
 from itertools import combinations
 
 Node = str
-T = TypeVar('T')  # generic Type
 
 
-def eulerian_cycle(graph: Digraph, initial: Optional[Node] = None) \
-        -> List[Node]:
-    """Finds an eulerian cycle on a digraph using Hierholzer's algorithm.
+def eulerian_cycle(graph: Union[Graph, Digraph],
+                   initial: Optional[Node] = None,
+                   directed: bool = False) -> List[Node]:
+    """Finds an eulerian cycle on a graph using Hierholzer's algorithm.
 
     Returns a list representing the node path order of the eulerian cycle, it
     is empty when no such cycle is found.
     """
+
+    T = TypeVar('T')  # generic Type
 
     def arbitrary(seq: Sequence[T]) -> T:
         for x in seq:
@@ -29,9 +31,10 @@ def eulerian_cycle(graph: Digraph, initial: Optional[Node] = None) \
             for v in g.neighbours(u):
                 yield (u, v)
 
-    def Hierholzer(graph: Digraph,
+    def Hierholzer(graph: Union[Graph, Digraph],
                    initial: Node,
-                   traversed: Set[Tuple[Node, Node]]) -> List[Node]:
+                   traversed: Set[Tuple[Node, Node]],
+                   directed: bool) -> List[Node]:
         def splicycle(cycle: List[T], subcycle: List[T]) -> List[T]:
             pos = cycle.index(subcycle[0])
             return cycle[:pos] + subcycle + cycle[pos+1:]
@@ -47,9 +50,10 @@ def eulerian_cycle(graph: Digraph, initial: Optional[Node] = None) \
             else:  # no break: every edge (u,v) has already been traversed
                 return []
 
-            (_, v) = e
+            (u, v) = e
             traversed.add(e)
-            # traversed.add((v, u))  # XXX: for undirected graphs
+            if not directed:
+                traversed.add((v, u))
             cycle.append(v)
             u = v
             if u == initial:
@@ -58,7 +62,7 @@ def eulerian_cycle(graph: Digraph, initial: Optional[Node] = None) \
         for v in cycle:
             for w in graph.neighbours(v):
                 if (v, w) not in traversed:
-                    subcycle = Hierholzer(graph, v, traversed)
+                    subcycle = Hierholzer(graph, v, traversed, directed)
                     if len(subcycle) == 0:
                         return []
                     else:
@@ -68,7 +72,7 @@ def eulerian_cycle(graph: Digraph, initial: Optional[Node] = None) \
 
     traversed: Set[Tuple[Node, Node]] = set()
     initial = arbitrary(graph.nodes()) if initial is None else initial
-    cycle = Hierholzer(graph, initial, traversed)
+    cycle = Hierholzer(graph, initial, traversed, directed)
     if len(cycle) == 0:
         return []
     else:
@@ -117,7 +121,7 @@ def _cycle_test():
                                         ('c', 'd', 2.5),  # ('d', 'b', 1),
                                         ('a', 'e', 4), ('e', 'c', 2),
                                         ('e', 'b', 1.5), ('d', 'e', 2)}
-    G: Union[Graph, Digraph] = Digraph(len(V))
+    G: Union[Graph, Digraph] = Graph(len(V))
     for (u, v, w) in E:
         G.link(u, v, w)
 

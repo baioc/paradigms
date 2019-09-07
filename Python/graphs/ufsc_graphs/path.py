@@ -9,10 +9,11 @@ from pprint import pprint
 Node = str
 
 
-def shortest_route(graph: Digraph, start: Node) \
+def shortest_route(graph: Union[Graph, Digraph], start: Node) \
         -> Tuple[Dict[Node, float], Dict[Node, Optional[Node]]]:
-    """Compute shortest paths from a single vertex to all others in a Digraph
-    using the Bellman-Ford algorithm.
+    """
+    Compute shortest paths from a single vertex to all others in a graph using
+    the Bellman-Ford algorithm.
 
     Returns a dictionary tuple whose first element contains nodes as keys that
     map to their distance from the start; and whose second element contains
@@ -61,7 +62,7 @@ def shortest_path(graph: Union[Graph, Digraph], source: Node) \
         -> Tuple[Dict[Node, float], Dict[Node, Optional[Node]]]:
     """
     Use Dijkstra's Shortest Path First algorithm to find the shortest path
-    between a given origin and all other nodes in a Graph.
+    between a given origin and all other nodes in a graph.
 
     Does not guarantee a shortest path when presented with negative weights.
 
@@ -98,7 +99,7 @@ def shortest_network(graph: Union[Graph, Digraph]) \
     """Find shortest paths for all vertex pairs in a graph via Floyd–Warshall.
 
     Returns a bidimensional dictionary D that uses node labels as indexes such
-    that D[u][v] is the shortest circuit going from u to v.
+    that D[u][v] is the shortest circuit cost going from u to v.
     """
 
     vertices = graph.nodes()
@@ -119,7 +120,7 @@ def _path_test():
     E: Set[Tuple[Node, Node, float]] = {('S', 'A', 5), ('S', 'B', 3),
                                         ('B', 'A', 1),
                                         ('A', 'C', 6), ('B', 'C', 4)}
-    G: Union[Graph, Digraph] = Digraph(len(V))
+    G: Union[Graph, Digraph] = Graph(len(V))
     for (u, v, w) in E:
         G.link(u, v, w)
 
