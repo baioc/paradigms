@@ -22,7 +22,7 @@ A computer language, however, is not just a way of getting a computer to perform
 Thus, **"programs must be written for people to read, and only incidentally for machines to execute."**
 
 Among the programs we write, some (but never enough) perform a precise mathematical function such as sorting or finding the maximum of a sequence of numbers, determining primality, or finding the square root.
-We call such programs algorithms
+We call such programs algorithms.
 
 ### Managing Complexity
 
@@ -32,7 +32,7 @@ Here, computer science behaves as an abstract form of engineering: the real-worl
 
 The most fundamental of such techniques is **the Black-box abstraction**.
 Being able to define and name new pieces of knowledge and expose them as a black box entity in the language which can be used without knowing the inner details is crucial thing in managing complexity.
-That way, wecreate levels of abstractions and minimize number of items that we have to deal with on certain level.
+That way, we create levels of abstractions and minimize the number of items that we have to deal with on a certain level.
 
 ## Programming
 
@@ -60,7 +60,7 @@ We say that an action A had an effect on an object X (or equivalently, that X wa
 
 We say that two objects X and Y are the same if any action which has an effect on X has the same effect on Y.
 
-> "As assignment and thus change actions are introduced into our programming, we have opened ourselves up to all the horrible questions that have been plaguing philosophers for thousands of years" - Gerald Jay Sussman, MIT 6.001 (1968)
+> "As assignment and thus change actions are introduced into our programming, we have opened ourselves up to all the horrible questions that have been plaguing philosophers for thousands of years." - Gerald Jay Sussman, MIT 6.001 (1968)
 
 ## LISP
 
