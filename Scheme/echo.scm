@@ -1,5 +1,9 @@
-#! /usr/bin/scheme --script
+#! /usr/bin/guile -s
+; !#
 
-(let ([args (cdr (command-line))]) ; (cdr (command-line))
-  (write args)
+(let ([args (cdr (command-line))])
+  (for-each (lambda (arg)
+              (display arg)
+              (display " "))
+            args)
   (newline))

@@ -96,7 +96,7 @@ def shortest_path(graph: Union[Graph, Digraph], source: Node) \
 
 def shortest_network(graph: Union[Graph, Digraph]) \
         -> Dict[Node, Dict[Node, float]]:
-    """Find shortest paths for all vertex pairs in a graph via Floyd–Warshall.
+    """Find shortest paths for all vertex pairs in a graph via Floyd-Warshall.
 
     Returns a bidimensional dictionary D that uses node labels as indexes such
     that D[u][v] is the shortest circuit cost going from u to v.

@@ -33,9 +33,10 @@
   ;;   - force, delay, eval, apply, call-with-current-continuation
   ;;     - https://schemers.org/Documents/Standards/R5RS/HTML/r5rs-Z-H-9.html
   ;;   - load, transcript-on, transcript-off
+  ;; - macro support
   ;; - command-line options
-  ;;   - help, version, quiet, transcript, debug, file, eval
-  ;;     - script: quiet + file
+  ;;   - help, version, quiet, transcript, debug=, [loadfile], eval
+  ;;     - script: quiet + loadfile <- pass args
   ;;     - eval: quiet + eval
 
 
@@ -348,7 +349,21 @@
 
 
   (define (amb-choices sexpr)
-    (cdr sexpr))
+    (shuffle (cdr sexpr)))
+
+  ;; Fisher-Yates-Knuth shuffle
+  (define (shuffle lst)
+    (let ((n (length lst))
+          (vec (list->vector lst)))
+      (let loop ((i (- n 1)))
+        (if (> i 0)
+            (let ((j (random (+ i 1))))
+              (if (not (= i j))
+                (let ((x (vector-ref vec i)))
+                  (vector-set! vec i (vector-ref vec j))
+                  (vector-set! vec j x)))
+              (loop (- i 1)))))
+      (vector->list vec)))
 
 
   (define (operator sexpr)

@@ -110,7 +110,7 @@
 (define (partial-sums s)
   (smap + s (stream 0 (partial-sums s))))
 
-;; Madhava's formula: the Gregory–Leibniz series for arctan(z=1)
+;; Madhava's formula: the Gregory-Leibniz series for arctan(z=1)
 (define (pi-summands n)
   (stream (/ 1.0 n)
           (smap - (pi-summands (+ n 2)))))
