@@ -71,6 +71,7 @@ tags
 # Persistent undo
 [._]*.un~
 
+
 ### VisualStudioCode ###
 .vscode/*
 !.vscode/settings.json
@@ -78,7 +79,7 @@ tags
 !.vscode/launch.json
 !.vscode/extensions.json
 
-### VisualStudioCode Patch ###
+## VisualStudioCode Patch ##
 # Ignore all local history of files
 .history
 
