@@ -128,7 +128,7 @@ x ; 2
 
 ;; nondeterministic computing
 (define (require pred)
-  (if (not pred) (amb) 'ok)) ; *void*
+  (if (not pred) (amb))) ; *void*
 (define (distinct? items)
   (cond ((null? items) true)
         ((null? (cdr items)) true)
@@ -156,3 +156,8 @@ x ; 2
           (list 'miller miller)
           (list 'smith smith)))) ; *void*
 (multiple-dwelling) ; ((baker 3) (cooper 2) (fletcher 4) (miller 5) (smith 1))
+(try-catch
+  (let ((x (amb 1 3 5)))
+    (require (even? x))
+    x)
+  'all-odd) ; all-odd

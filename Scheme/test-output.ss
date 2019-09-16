@@ -69,5 +69,6 @@
 >> "EVEN"
 >> 16
 >> >> >> >> ((baker 3) (cooper 2) (fletcher 4) (miller 5) (smith 1))
+>> all-odd
 >> 
 ;;; bye!

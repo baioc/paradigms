@@ -123,7 +123,7 @@
     (define (eval-args procargs env success fail-args)
       (if (null? procargs)
           (success procargs fail-args)
-          ;; @NOTE: imposes the order of evaluation for procedure arguments (RL)
+          ;; @NOTE: imposes the order of evaluation for procedure arguments (LR)
           ((car procargs) env
                           (lambda (first fail-rest)
                             (eval-args (cdr procargs)
@@ -160,6 +160,16 @@
                                     (try-next (cdr choice-procs)
                                               (cdr choice-list))))))
         (try-next cprocs (amb-choices expr)))))
+
+  (define (analyze-try-catch expr)
+    (let ((try (analyze (try-clause expr)))
+          (treat (analyze (catch-clause expr))))
+      (lambda (env success fail-catch)
+        (try env
+             (lambda (value fail-throw)
+               (success value fail-throw))
+             (lambda ()
+               (treat env success fail-catch))))))
 
 
   (define (analyze-lambda expr)
@@ -314,6 +324,7 @@
       (cons 'let* (lambda (expr) (analyze (let*->let expr))))
       ;; special
       (cons 'amb analyze-ambiguous)
+      (cons 'try-catch analyze-try-catch)
   ))
 
   (define (reserved-rule keyword)
@@ -364,6 +375,12 @@
                   (vector-set! vec j x)))
               (loop (- i 1)))))
       (vector->list vec)))
+
+  (define (try-clause sexpr)
+    (cadr sexpr))
+
+  (define (catch-clause sexpr)
+    (caddr sexpr))
 
 
   (define (operator sexpr)
