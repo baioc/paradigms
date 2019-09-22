@@ -34,6 +34,7 @@
   ;;     - https://schemers.org/Documents/Standards/R5RS/HTML/r5rs-Z-H-9.html
   ;;   - load, transcript-on, transcript-off
   ;; - macro support
+  ;; - dot notation
   ;; - command-line options
   ;;   - help, version, quiet, transcript, debug=, [loadfile], eval
   ;;     - script: quiet + loadfile <- pass args
@@ -75,7 +76,7 @@
 
 ;; ************************** GENERIC INTERPRETER ******************************
 
-  (define (evaln expr env success failure)
+  (define (ambeval expr env success failure)
     ((analyze expr) env success failure))
 
   ;; data-directed style dispatch
@@ -879,15 +880,15 @@
       (let ((input (read)))
         (cond ((eof-object? input) (bye 0))
               ((eq? input 'retry) (retry-cont))
-              (else (evaln (simplify input)
-                           global-environment
-                           (lambda (output backtrack)
-                             (repl-print output)
-                             (loop backtrack))
-                           (lambda ()
-                             (display ";;; No more possible outcomes for ")
-                             (repl-print input)
-                             (read-eval-print-loop)))))))
+              (else (ambeval (simplify input)
+                             global-environment
+                             (lambda (output backtrack)
+                               (repl-print output)
+                               (loop backtrack))
+                             (lambda ()
+                               (display ";;; No more possible outcomes for ")
+                               (repl-print input)
+                               (read-eval-print-loop)))))))
     (loop (lambda ()
             (display ";;; There are no currently unresolved ambiguities\n")
             (read-eval-print-loop))))
