@@ -124,7 +124,8 @@
 (define (query-driver-loop)
   (display ";;; Query input: ")
   (let ((query (query-syntax-process (read))))
-    (cond ((assertion-to-be-added? query)
+    (cond ((eof-object? query) (exit 0))
+          ((assertion-to-be-added? query)
            (add-rule-or-assertion! (add-assertion-body query))
            (display "Assertion added to data base.\n")
            (query-driver-loop))
@@ -298,11 +299,22 @@
                                    frame)))
         (else 'failed)))
 
+(define (extend-if-possible var val frame)
+  (let ((binding (binding-in-frame var frame)))
+    (cond (binding (unify-match (binding-value binding) val frame))
+          ((var? val)                           ; ***
+           (let ((binding (binding-in-frame val frame)))
+             (if binding
+                 (unify-match var (binding-value binding) frame)
+                 (extend var val frame))))
+          ((depends-on? val var frame) 'failed) ; ***
+          (else (extend var val frame)))))
+
 (define (depends-on? exp var frame)
   (define (tree-walk e)
     (cond ((var? e)
            (if (equal? var e)
-               true
+               #t
                (let ((b (binding-in-frame e frame)))
                  (if b
                      (tree-walk (binding-value b))
@@ -378,7 +390,7 @@
 (define (store-rule-in-index rule)
   (let ((pattern (conclusion rule)))
     (if (indexable? pattern)
-        (let ((key (index-key-of pattern))
+        (let* ((key (index-key-of pattern))
               (current-rule-stream (get-stream key 'rule-stream)))
             (put key
                  'rule-stream

@@ -45,3 +45,7 @@
                      (computer programmer trainee)))
 (assert! (can-do-job (administration secretary)
                      (administration big wheel)))
+
+(assert! (rule (() ?y append-to-form ?y)))
+(assert! (rule ((?u . ?v) ?y append-to-form (?u . ?z))
+               (?v ?y append-to-form ?z)))
