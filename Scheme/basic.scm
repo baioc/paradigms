@@ -13,16 +13,16 @@
 
 ;; "dumb" fibonacci
 (define (fib n)
-  (if (< n 2) n
-      (+ (fib (- n 1))
-         (fib (- n 2)))))
+  (cond ((= n 0) 0)
+        ((= n 1) 1)
+        (else (+ (fib (- n 1))
+                 (fib (- n 2))))))
 
 ;; linear iteration / tail-end recursive fibonacci
-(define (fibonacci n)
-  (define (iter a b count)
-    (if (= count 0) a
-        (iter b (+ a b) (- count 1))))
-  (iter 0 1 n))
+(define (fibo n)
+  (let iter ((n n) (prev 1) (curr 0))
+    (if (= n 0) curr
+        (iter (- n 1) curr (+ prev curr)))))
 
 ;; the Euclidean algorithm
 (define (gcd a b)
