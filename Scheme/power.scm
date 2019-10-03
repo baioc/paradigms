@@ -1,65 +1,3 @@
-;; equivalent to the sigma notation \sum_{i=a}^{b} term_i
-(define (sum term a next b)
-  (if (> a b) 0
-      (+ (term a)
-         (sum term (next a) next b))))
-
-
-(define tolerance 1e-15)
-(define (average a b) (/ (+ a b) 2))
-(define (square x) (* x x))
-(define (halve x) (ash x -1))
-(define (double x) (ash x 1))
-(define (maybe-car lst alt)
-  (if (null? lst) alt
-      (car lst)))
-
-
-;; Heron's method for finding square roots
-(define (sqrt x)
-  (define (try guess)
-    (if (good-enough? guess) guess
-        (try (improve guess))))
-
-  (define (improve guess)
-    (average guess (/ x guess)))
-
-  (define (good-enough? guess)
-    (< (abs (- (square guess) x)) tolerance))
-
-  (try 1.0))
-
-;; fixed-point of f is x such that f(x) = x
-(define (fixpoint f x . opts-tol)
-  (let* ((tolerance (maybe-car opts-tol 1e-9))
-         (approx? (lambda (a b) (< (abs (- a b)) tolerance))))
-    (let try ((old x) (new (f x)))
-      (if (approx? old new) new
-          (try new (f new))))))
-
-;; takes a function as parameter and returns its dampened version
-(define (average-damp f)
-  (lambda (x) (average (f x) x)))
-
-;; the same Heron's method, with more abstraction underneath
-(define (sqrt x)
-  (fixpoint (average-damp (lambda (y) (/ x y))) 1.0))
-
-;; Newton's method
-(define (root f x . opts-tol) ;; metodo de Newton
-  (let* ((dx (maybe-car opts-tol 1e-8))
-         (df (deriv f dx)))
-    (fixpoint (lambda (x) (- x (/ (f x) (df x)))) x dx)))
-
-;; numerical derivative of a function
-(define (deriv f dx)
-  (lambda (x) (/ (- (f (+ x dx)) (f x)) dx)))
-
-;; square root yet again, but with Newton's method
-(define (sqrt x)
-  (root (lambda (y) (- x (square y))) 1.0))
-
-
 ;; slow exponentiation O(2^(n-1)) for base two
 ;; 2^n = 2 * 2^(n-1) = 2^(n-1) + 2^(n-1)
 (define (2^ n)
@@ -85,6 +23,7 @@
   (if (< n 0)
       (iter (/ 1 b) (- n) 1)
       (iter b n 1)))
+
 
 ;; recursive O(n) multiplication
 (define (times a n)
@@ -123,6 +62,7 @@
     (lambda (basis power)
       (pow power operation basis neutral succession))))
 
+
 (define times (empower + 0))
 
 (define (mul b n)
@@ -155,7 +95,7 @@
                          (let ((p (car coefs)) (q (cadr coefs)))
                            (list (+ (square q) (square p))
                                  (+ (square q) (* 2 (* p q))))))))))
-    ;; negafibonacci
+    ;; negafibonacci: F(-n) = Fn * (-1)^(n+1))
     (if (and (< n 0)
              (even? n))
         (- fn)
@@ -181,80 +121,8 @@
                      (- n 1)))))
 
 ;; closed form through eigen-stuff
-(define sqrt5 (sqrt 5))
-(define phi (/ (+ 1 sqrt5) 2)) ;; golden ration
+(define phi (/ (+ 1 (sqrt 5)) 2)) ;; golden ration
 (define fi (- 1 phi)) ;; golden ratio complement
 (define (fibonac n)
   (round (/ (- (^ phi n) (^ fi n))
             (sqrt 5))))
-
-
-(define (diff exp var)
-  (define (variable? x)
-    (symbol? x))
-  (define (same-variable? v1 v2)
-    (and (variable? v1) (variable? v2) (eq? v1 v2)))
-  (define (make-sum augend addend)
-    (cond ((and (number? addend) (number? augend)) (+ augend addend))
-          ((and (number? augend) (= augend 0)) addend)
-          ((and (number? addend) (= addend 0)) augend)
-          (else (list '+ augend addend))))
-  (define (sum? x)
-    (and (list? x) (eq? (car x) '+)))
-  (define (augend s)
-    (cadr s))
-  (define (addend s)
-    (caddr s))
-  (define (make-product multiplier multiplicand)
-    (define (=number? exp num)
-      (and (number? exp) (= exp num)))
-    (cond ((or (=number? multiplier 0)
-               (=number? multiplicand 0))
-            0)
-          ((and (number? multiplier)
-                (number? multiplicand))
-            (* multiplier multiplicand))
-          ((=number? multiplier 1) multiplicand)
-          ((=number? multiplicand 1) multiplier)
-          (else (list '* multiplier multiplicand))))
-  (define (product? x)
-    (and (list? x) (eq? (car x) '*)))
-  (define (multiplier p)
-    (cadr p))
-  (define (multiplicand p)
-    (caddr p))
-  ; todo: other rules
-  (cond ((number? exp) 0)
-        ((variable? exp)
-         (if (same-variable? exp var) 1 0))
-        ((sum? exp)
-         (make-sum (diff (augend exp) var)
-                   (diff (addend exp) var)))
-        ((product? exp)
-         (make-sum
-           (make-product (multiplier exp)
-                         (diff (multiplicand exp) var))
-           (make-product (diff (multiplier exp) var)
-                         (multiplicand exp))))
-        (else
-         (error "unknown expression type -- DERIV" exp))))
-
-(define foo
-  '(+ (+ (* a (* x x))
-         (* b x))
-      c))
-
-
-(define (divides? a b)
-  (= (remainder b a) 0))
-
-(define (prime? n)
-  (= n (smallest-divisor n)))
-
-(define (smallest-divisor n)
-  (find-divisor n 2))
-
-(define (find-divisor n test-divisor)
-  (cond ((divides? test-divisor n) test-divisor)
-        ((> (square test-divisor) n) n)
-        (else (find-divisor n (+ test-divisor 1)))))

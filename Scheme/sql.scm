@@ -221,7 +221,8 @@
 
 
 (define (execute exp)
-  (apply (eval (predicate exp)) (args exp)))
+  (apply (eval (predicate exp) (interaction-environment))
+         (args exp)))
 
 (define (always-true _ frame-stream)
   frame-stream)

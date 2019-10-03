@@ -55,4 +55,19 @@
            (sorted? (cdr sequence)))))
 
 
+(define (divides? a b)
+  (= (remainder b a) 0))
+
+(define (prime? n)
+  (= n (smallest-divisor n)))
+
+(define (smallest-divisor n)
+  (find-divisor n 2))
+
+(define (find-divisor n test-divisor)
+  (cond ((divides? test-divisor n) test-divisor)
+        ((> (square test-divisor) n) n)
+        (else (find-divisor n (+ test-divisor 1)))))
+
+
 (define test '("naught" 5 1 2 3 4))

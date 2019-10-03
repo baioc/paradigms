@@ -1,4 +1,3 @@
-
 (define (match pattern sexpr dictionary)
   (display "MATCHING:\n")
   (display pattern) (newline)
@@ -65,7 +64,7 @@
 (define (evaluate sexpr dictionary)
   (if (atom? sexpr)
       (lookup sexpr dictionary)
-      (apply (eval (lookup (car sexpr) dictionary))
+      (apply (eval (lookup (car sexpr) dictionary) (interaction-environment))
              (map (lambda (arg) (evaluate arg dictionary))
                   (cdr sexpr)))))
 

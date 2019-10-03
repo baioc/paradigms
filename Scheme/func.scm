@@ -1,3 +1,10 @@
+;; equivalent to the sigma notation \sum_{i=a}^{b} term_i
+(define (sum term a next b)
+  (if (> a b) 0
+      (+ (term a)
+         (sum term (next a) next b))))
+
+
 ;; cond works like a switch-case but with conditions & consequences
 ;; else works only with cond and always evaluates to true, like a default case
 (define (flatten sequence)
@@ -21,6 +28,7 @@
   (if (not (list? seq)) (list seq)
       (apply append (map flatten seq))))
 
+
 ;; lambda + let use case
 ;; using let with ps-rest avoids a duplicate recursive call
 (define (power-set set)
@@ -29,6 +37,7 @@
         (append ps-rest
                 (map (lambda (subset) (cons (car set) subset))
                      ps-rest)))))
+
 
 ;; needed in permute
 (define (remove x ls)
@@ -49,9 +58,11 @@
                        (permute (remove elem items))))
              items))))
 
+
 (define (map proc seq)
   (if (null? seq) seq
       (cons (proc (car seq))
             (map proc (cdr seq)))))
+
 
 (define test '(10 (1 2) ((3) () 4)))

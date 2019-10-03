@@ -1,64 +1,30 @@
-;; make a "monitored" procedure which tracks how many times it was called
-(define (make-monitored proc)
-  (define (count n)
-    (define (delegate . args)
-      (cond ((and (not (null? args))
-                  (eq? (car args) 'how-many-calls?))
-             n)
-            (else (begin (set! n (+ n 1))
-                         (apply proc args)))))
-    delegate)
-  (count 0))
+(define (make-wrapper)
+  (let ((x 'void))
+    (define (setter! y)
+      (set! x y)
+      'ok)
+    (define (self method)
+      (cond ((eq? method 'get) x)
+            ((eq? method 'set) setter!)
+            (else (error "Undefined operation" method))))
+    self))
 
-;; literally a dictionary/map
-(define (make-table)
-  (cons '*table* '()))
+(define (get-val w)
+  (w 'get))
 
-;; (assoc 'x '((a 1) (b 2) (x 3) (c 4))) -> '(x 3) : #f, uses equal?
-(define (lookup table key)
-  (let ((record (assoc key (cdr table))))
-    (cond (record => cdr)
-          (else #f))))
-
-(define (insert! table key value)
-  (cond ((assoc key (cdr table)) => (lambda (record) (set-cdr! record value)))
-        (else (set-cdr! table
-                        (cons (cons key value) (cdr table)))))
-  'ok)
-
-;; Guile only
-(define make-table make-hash-table)
-(define lookup hash-ref)
-(define insert! hash-set!)
-
-;; make a function that caches its past results
-(define (memoize f)
-  (let ((cache (make-table)))
-    (define (delegate x)
-      (let ((hit (lookup cache x)))
-        (or hit
-            (let ((y (f x)))
-              (insert! cache x y)
-              y))))
-    delegate))
-
-(define memo-fib
-  (memoize (lambda (n)
-             (cond ((= n 0) 0)
-                   ((= n 1) 1)
-                   (else (+ (memo-fib (- n 1))
-                            (memo-fib (- n 2))))))))
+(define (set-val! w x)
+  ((w 'set) x))
 
 
 (define (make-connector)
   (let ((value #f)
         (informant #f)
         (constraints '()))
-    (define (set-my-value newval setter)
+    (define (set-my-value newval source)
       (cond ((not (has-value? self))
              (set! value newval)
-             (set! informant setter)
-             (for-each-except setter
+             (set! informant source)
+             (for-each-except source
                               inform-about-value
                               constraints))
             ((not (= value newval))
@@ -66,10 +32,11 @@
             (else 'ignored)))
     (define (forget-my-value retractor)
       (if (eq? retractor informant)
-          (begin (set! informant #f)
-                 (for-each-except retractor
-                                  inform-about-no-value
-                                  constraints))
+          (begin
+            (set! informant #f)
+            (for-each-except retractor
+                             inform-about-no-value
+                             constraints))
           'ignored))
     (define (connect new-constraint)
       (if (not (memq new-constraint constraints))
@@ -84,20 +51,19 @@
             ((eq? request 'set-value!) set-my-value)
             ((eq? request 'forget) forget-my-value)
             ((eq? request 'connect) connect)
-            (else (error "Unknown operation -- CONNECTOR" request))))
+            (else (error "Unknown request -- CONNECTOR" request))))
     self))
 
 (define (for-each-except exception procedure list)
-  (define (loop items)
+  (let loop ((items list))
     (cond ((null? items) 'done)
           ((eq? (car items) exception) (loop (cdr items)))
           (else
            (procedure (car items))
-           (loop (cdr items)))))
-  (loop list))
+           (loop (cdr items))))))
 
 (define (has-value? connector)
-  (connector 'has-value?))
+  (if (connector 'has-value?) #t #f))
 (define (get-value connector)
   (connector 'value))
 (define (set-value! connector new-value informant)
@@ -107,6 +73,17 @@
 (define (connect connector new-constraint)
   ((connector 'connect) new-constraint))
 
+(define (inform-about-value constraint)
+  (constraint 'I-have-a-value))
+(define (inform-about-no-value constraint)
+  (constraint 'I-lost-my-value))
+
+(define (constant value connector)
+  (define (self request)
+    (error "Unknown request -- CONSTANT" request))
+  (connect connector self)
+  (set-value! connector value self)
+  self)
 
 (define (adder a1 a2 sum)
   (define (process-new-value)
@@ -128,12 +105,9 @@
     (forget-value! a2 self)
     (process-new-value))
   (define (self request)
-    (cond ((eq? request 'I-have-a-value)
-           (process-new-value))
-          ((eq? request 'I-lost-my-value)
-           (process-forget-value))
-          (else
-           (error "Unknown request -- ADDER" request))))
+    (cond ((eq? request 'I-have-a-value) (process-new-value))
+          ((eq? request 'I-lost-my-value) (process-forget-value))
+          (else (error "Unknown request -- ADDER" request))))
   (connect a1 self)
   (connect a2 self)
   (connect sum self)
@@ -162,27 +136,12 @@
     (forget-value! m2 self)
     (process-new-value))
   (define (self request)
-    (cond ((eq? request 'I-have-a-value)
-           (process-new-value))
-          ((eq? request 'I-lost-my-value)
-           (process-forget-value))
-          (else
-           (error "Unknown request -- MULTIPLIER" request))))
+    (cond ((eq? request 'I-have-a-value) (process-new-value))
+          ((eq? request 'I-lost-my-value) (process-forget-value))
+          (else (error "Unknown request -- MULTIPLIER" request))))
   (connect m1 self)
   (connect m2 self)
   (connect product self)
-  self)
-
-(define (inform-about-value constraint)
-  (constraint 'I-have-a-value))
-(define (inform-about-no-value constraint)
-  (constraint 'I-lost-my-value))
-
-(define (constant value connector)
-  (define (self request)
-    (error "Unknown request -- CONSTANT" request))
-  (connect connector self)
-  (set-value! connector value self)
   self)
 
 (define (probe name connector)
@@ -196,12 +155,9 @@
   (define (process-forget-value)
     (print-probe "?"))
   (define (self request)
-    (cond ((eq? request 'I-have-a-value)
-           (process-new-value))
-          ((eq? request 'I-lost-my-value)
-           (process-forget-value))
-          (else
-           (error "Unknown request -- PROBE" request))))
+    (cond ((eq? request 'I-have-a-value) (process-new-value))
+          ((eq? request 'I-lost-my-value) (process-forget-value))
+          (else (error "Unknown request -- PROBE" request))))
   (connect connector self)
   self)
 
@@ -232,61 +188,17 @@
 
 
 (define (celsius-fahrenheit-converter x)
-  (c+ (c* (c/ (cv 9) (cv 5))
-          x)
-      (cv 32)))
-(define C (make-connector))
-(define F (celsius-fahrenheit-converter C))
+  (c+ (c* (c/ (cv 9) (cv 5)) x) (cv 32)))
+(define c (make-connector)) (probe "Celsius" c)
+(define f (celsius-fahrenheit-converter c)) (probe "Fahrenheit" f)
 
-; (define (celsius-fahrenheit-converter c f)
-;   (let ((u (make-connector))
-;         (v (make-connector))
-;         (w (make-connector))
-;         (x (make-connector))
-;         (y (make-connector)))
-;     (constant 9 w)
-;     (constant 5 x)
-;     (constant 32 y)
-;     (multiplier c w u)
-;     (multiplier v x u)
-;     (adder v y f)
-;     'ok))
-; (define C (make-connector))
-; (define F (make-connector))
-; (celsius-fahrenheit-converter C F)
-
-(probe "Celsius" C)
-(probe "Fahrenheit" F)
+(define (ohms-law v r) (c/ v r))
+(define v (make-connector)) (probe "Voltage" v)
+(define r (make-connector)) (probe "Resistance" r)
+(define i (ohms-law v r)) (probe "Current" i)
 
 ; (set-value! c 0 'user)
 ; (set-value! f 212 'user)
 ; (forget-value! c 'user)
 ; (set-value! f 212 'user)
-
-
-;; pointers to head and tail
-(define (make-queue)
-  (cons '() '()))
-
-(define (empty-queue? queue)
-  (null? (car queue)))
-
-(define (front-queue queue)
-  (if (empty-queue? queue)
-      (error "Queue is empty" queue)
-      (caar queue)))
-
-(define (enqueue! queue item)
-  (let ((node (cons item '())))
-    (cond ((empty-queue? queue)
-           (set-car! queue node)
-           (set-cdr! queue node))
-          (else
-           (set-cdr! (cdr queue) node)
-           (set-cdr! queue node)))))
-
-(define (dequeue! queue)
-  (cond ((empty-queue? queue)
-         (error "Queue underflow" queue))
-        (else
-         (set-car! queue (cdar queue)))))
+; ...
