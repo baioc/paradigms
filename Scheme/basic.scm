@@ -11,14 +11,14 @@
               (+ counter 1))))
   (iter 1 1))
 
-;; "dumb" fibonacci
+;; "dumb" binary-recursive fibonacci
 (define (fib n)
   (cond ((= n 0) 0)
         ((= n 1) 1)
         (else (+ (fib (- n 1))
                  (fib (- n 2))))))
 
-;; linear iteration / tail-end recursive fibonacci
+;; linear iteration / tail-recursive fibonacci
 (define (fibo n)
   (let iter ((n n) (prev 1) (curr 0))
     (if (= n 0) curr
