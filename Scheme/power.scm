@@ -1,3 +1,10 @@
+;; iterative O(n) version of exponentiation
+(define (^ b n)
+  (define (iter b counter product)
+    (if (= counter 0) product
+        (iter b (- counter 1) (* b product))))
+  (iter b n 1))
+
 ;; slow exponentiation O(2^(n-1)) for base two
 ;; 2^n = 2 * 2^(n-1) = 2^(n-1) + 2^(n-1)
 (define (2^ n)
