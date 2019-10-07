@@ -5,6 +5,7 @@ module Matrix (
     submatrix,
     mapx,
     zipx,
+    anyx,
     toList,
     fromList,
     dimension,
@@ -20,7 +21,7 @@ newtype Matrix t = Matrix [[t]]
 -- pretty-printing
 instance Show t => Show (Matrix t) where
     show (Matrix []) = "[]"
-    show (Matrix m)  = "[" ++ auxShow m ++ "]" where
+    show (Matrix m)  = "\n[" ++ auxShow m ++ "]\n" where
         auxShow [row] = show row
         auxShow (h:t) = show h ++ ",\n " ++ auxShow t
 
@@ -99,6 +100,7 @@ get :: Matrix t -> (Int,Int) -> t
 get (Matrix m) (i,j) = m !! i !! j
 
 
+-- testing...
 main = do
     let t = Matrix [[1, 2, 3],
                     [4, 5, 6],

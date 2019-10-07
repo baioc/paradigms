@@ -20,6 +20,10 @@ removeFirstOf :: Eq t => [t] -> t -> [t]
 removeFirstOf [] x = []
 removeFirstOf (a:b) x = if a == x then b else a : removeFirstOf b x
 
+distinct :: Eq t => [t] -> Bool
+distinct []     = True
+distinct (x:xs) = not (elem x xs) && distinct xs
+
 powerSet :: [t] -> [[t]]
 powerSet [] = [[]]
 powerSet (first:rest) = let psRest = powerSet rest in
