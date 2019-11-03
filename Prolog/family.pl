@@ -49,3 +49,5 @@ sibling(X,Y) :- brother(X,Y); sister(X,Y).
 
 ascendant(X,Y) :- parent(X,Y).                 % recursion base case
 ascendant(X,Y) :- parent(X,Z), ascendant(Z,Y). % recursive step
+
+descendant(X,Y) :- ascendant(Y,X).
