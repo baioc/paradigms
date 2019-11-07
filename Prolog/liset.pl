@@ -4,7 +4,7 @@ append([U|V], Y, [U|Z]) :- append(V,Y,Z).
 length_([], 0).
 length_([_|T], L) :- length_(T,Lt), L is Lt+1.
 
-member(X, [X|_]) :- !.
+member(X, [X|_]).
 member(X, [_|T]) :- member(X,T), !.
 
 cons(X, L, [X|L]).

@@ -44,8 +44,7 @@ can_do_job(['Administration', 'Secretary'], ['Administration', 'Big Wheel']).
 
 lives_near(X,Y) :- address(X,[Town|_]), address(Y,[Town|_]), X \= Y.
 wheel(X) :- supervisor(Y,X), supervisor(_,Y).
-can_replace(X,Y) :- job(X,Jx), job(Y,Jy), X \= Y,
-                    (Jx = Jy; can_do_job(Jx,Jy)).
+can_replace(X,Y) :- job(X,Jx), job(Y,Jy), X \= Y, (Jx = Jy; can_do_job(Jx,Jy)).
 
 query :-
     forall(
