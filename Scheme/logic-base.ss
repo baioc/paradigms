@@ -50,3 +50,25 @@
 (assert! (rule (() ?y append-to-form ?y)))
 (assert! (rule ((?u . ?v) ?y append-to-form (?u . ?z))
                (?v ?y append-to-form ?z)))
+
+
+(assert! (greek Socrates))
+(assert! (greek Plato))
+(assert! (greek Zeus))
+
+(assert! (rule (mortal ?x) (human ?x)))
+(assert! (rule (fallible ?x) (human ?x)))
+
+(assert! (rule (human ?x)
+    (and (greek ?x) (not (god ?x)))))
+
+(assert! (rule (address ?x Olympus)
+    (and (greek ?x) (god ?x))))
+
+(assert! (rule (perfect ?x)
+    (and (not (mortal ?x))
+         (not (fallible ?x)))))
+
+; (and (address ?x ?y) (perfect ?x))
+; (and (perfect ?x) (address ?x ?y))
+; (not (likes-ice-cream Zeus))

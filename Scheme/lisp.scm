@@ -259,9 +259,9 @@
                         (warn-log "ELSE clause isn't last"))
                     (make-begin (cond-actions curr)))
                 ((cond-pipe-clause? curr)
-                    (make-let (list (list '*temp* (cond-predicate curr)))
-                              (make-if '*temp*
-                                       (list (cond-pipe-action curr) '*temp*)
+                    (make-let (list (list '__temp__ (cond-predicate curr)))
+                              (make-if '__temp__
+                                       (list (cond-pipe-action curr) '__temp__)
                                        (cond->if rest))))
                 (else (make-if (cond-predicate curr)
                                (make-begin (cond-actions curr))
@@ -273,9 +273,9 @@
   ;; when there are no clauses, returns true
   (define (and->if clauses)
     (if (empty-clauses? clauses) 'true
-        (make-let (list (list '*temp* (current-clause clauses)))
-                  (make-if '*temp*
-                           (if (at-last-clause? clauses) '*temp*
+        (make-let (list (list '__temp__ (current-clause clauses)))
+                  (make-if '__temp__
+                           (if (at-last-clause? clauses) '__temp__
                                (and->if (rest-clauses clauses)))
                            'false))))
 
@@ -284,9 +284,9 @@
   ;; when there are no clauses, returns false
   (define (or->if clauses)
     (if (empty-clauses? clauses) 'false
-        (make-let (list (list '*temp* (current-clause clauses)))
-                  (make-if '*temp*
-                           '*temp*
+        (make-let (list (list '__temp__ (current-clause clauses)))
+                  (make-if '__temp__
+                           '__temp__
                            (or->if (rest-clauses clauses))))))
 
 
