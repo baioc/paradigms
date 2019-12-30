@@ -83,3 +83,6 @@ An evaluator that is written in the same language that it evaluates is said to b
 The evaluator, which determines the meaning of expressions in a programming language, is just another program.
 To appreciate this point is to change our images of ourselves as programmers.
 We come to see ourselves as designers of languages, rather than only users of languages designed by others.
+
+> An interpreter raises the machine to the level of the user program; a compiler lowers the user program to the level of the machine language.
+> We can regard the Scheme language (or any programming language) as a coherent family of abstractions erected on the machine language.
