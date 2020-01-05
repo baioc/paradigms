@@ -60,7 +60,7 @@
       (error "not found -- ENCODE-SYMBOL" symbol)))
 
 
-(define (adjoin-set x set) ;; set as a sorted list (increasing order)
+(define (adjoin-set x set) ;; set as a sorted (descending) list
   (cond ((null? set) (list x))
         ((>= (weight x) (weight (car set))) (cons x set))
         (else (cons (car set) (adjoin-set x (cdr set))))))
