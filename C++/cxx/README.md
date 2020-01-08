@@ -6,7 +6,7 @@ By Sean Parent
 - Regular Types
     - Goal: No Incomplete Types
 - Algorithms
-    - Goal: No Raw Loops (??)
+    - Goal: No Raw Loops
 - Data Structures
     - Goal: No Incidental Data Structures
 - Runtime Polymorphism
@@ -44,7 +44,7 @@ This method is called the [**Runtime-Concept idiom**](https://www.youtube.com/wa
 
 [Data structures](https://www.youtube.com/watch?v=sWgDk-o-6ZE) consist of the semantic relationships between our data.
 These relationships and their properties must be thought of and never incidental (as in a shared variable) so as to provide us the ability to reason locally about the code, a fundamental [element of programming](http://elementsofprogramming.com/book.html).
-An architecture is the set of all these data structures and their relationships.
+**An architecture is the set of all these data structures and their relationships.**
 
 
 ## Concurrency

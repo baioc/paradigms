@@ -23,11 +23,17 @@
 #include <errno.h>  	// error codes
 
 
+struct stack {
+	void *elements;
+	int current_size;
+	size_t allocated_size;
+	size_t type_size;
+};
+
+
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-
-void stack_init(struct stack *s, int depth,
-                size_t type_size, void (*freefn)(void *))
+void stack_init(stack *s, int depth, size_t type_size)
 {
 	assert(depth > 0);
 	s->elements = malloc(depth * type_size);
@@ -36,19 +42,18 @@ void stack_init(struct stack *s, int depth,
 	s->current_size = 0;
 	s->allocated_size = depth;
 	s->type_size = type_size;
-	s->freefn = freefn;
 }
 
-void stack_destroy(struct stack *s)
+void stack_destroy(stack *s, void (*freefn)(void *))
 {
-	if (s->freefn != NULL) {
+	if (freefn != NULL) {
 		for (int i = 0; i < s->current_size; ++i)
-			s->freefn((char *) s->elements + i * s->type_size);
+			freefn((char *) s->elements + i * s->type_size);
 	}
 	free(s->elements);
 }
 
-static void stack_grow(struct stack *s)
+static void stack_grow(stack *s)
 {
 	assert(s->allocated_size > 0);
 	s->allocated_size *= 2;
@@ -62,7 +67,7 @@ static void stack_grow(struct stack *s)
 	s->elements = mem;
 }
 
-void stack_push(struct stack *s, void *source)
+void stack_push(stack *s, void *source)
 {
 	if (s->current_size >= s->allocated_size)
 		stack_grow(s);
@@ -72,7 +77,7 @@ void stack_push(struct stack *s, void *source)
 	s->current_size++;
 }
 
-void stack_pop(struct stack *s, void *sink)
+void stack_pop(stack *s, void *sink)
 {
 	assert(s->current_size > 0);
 	s->current_size--;
@@ -81,13 +86,13 @@ void stack_pop(struct stack *s, void *sink)
 	memcpy(sink, source, s->type_size);
 }
 
-void *stack_top(const struct stack *s)
+void *stack_top(const stack *s)
 {
 	assert(s->current_size > 0);
 	return (char *) s->elements + (s->current_size-1) * s->type_size;
 }
 
-bool stack_empty(const struct stack *s)
+bool stack_empty(const stack *s)
 {
 	return s->current_size <= 0;
 }
@@ -102,8 +107,8 @@ void strfree(void *str)
 
 bool balanced(const char *string)
 {
-	struct stack brackets;
-	stack_init(&brackets, 2, sizeof(char), NULL);
+	stack brackets;
+	stack_init(&brackets, 2, sizeof(char));
 
 	size_t length = strlen(string);
 	for (int i = 0; i < length; ++i) {
@@ -131,11 +136,11 @@ bool balanced(const char *string)
 	}
 
 	if (stack_empty(&brackets)) {
-		stack_destroy(&brackets);
+		stack_destroy(&brackets, NULL);
 		return true;
 	}
 
-	FAIL: stack_destroy(&brackets);
+	FAIL: stack_destroy(&brackets, NULL);
 	return false;
 }
 
@@ -143,8 +148,8 @@ int main(int argc, char const *argv[])
 {
 	{
 		int array[] = {-6, 0, 2, 3, 6, 7, 11};
-		struct stack s;
-		stack_init(&s, 4, sizeof(array[0]), NULL);
+		stack s;
+		stack_init(&s, 4, sizeof(array[0]));
 
 		for (int i = 0; i < ARRAY_SIZE(array); ++i)
 			stack_push(&s, &array[i]);
@@ -157,13 +162,13 @@ int main(int argc, char const *argv[])
 			#endif // DEBUG
 		}
 
-		stack_destroy(&s);
+		stack_destroy(&s, NULL);
 	}
 
 	{
 		const char *names[] = {"Al", "Bob", "Carl"};
-		struct stack s;
-		stack_init(&s, 1, sizeof(char *), strfree);
+		stack s;
+		stack_init(&s, 1, sizeof(char *));
 
 		for (int i = 0; i < ARRAY_SIZE(names); ++i) {
 			char *copy = (char*) malloc(sizeof(char*));	// no strdup
@@ -183,7 +188,7 @@ int main(int argc, char const *argv[])
 			printf("%s\n", name);
 		#endif // DEBUG
 
-		stack_destroy(&s);
+		stack_destroy(&s, strfree);
 
 		// stack top was freed, this pointer is now dangling
 		#if DEBUG

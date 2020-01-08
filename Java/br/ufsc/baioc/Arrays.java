@@ -89,9 +89,8 @@ public class Arrays {
 	 * Space: O(1).
 	 */
 	public static <T extends Comparable<T>> void insertionSort(T[] array) {
-		for (int i = 1; i < array.length; ++i) {
+		for (int i = 1; i < array.length; ++i)
 			insert(array, i - 1, array[i]);
-		}
 	}
 
 	/**
@@ -308,17 +307,6 @@ public class Arrays {
 		swap(array, endIndex, pivot);	// puts the pivot on the correct position
 
 		return pivot;
-
-		// partition(array, p, r)
-		// Compare array[j] with array[r], for j = p, p+1,...r-1 maintaining that:
-		// 	array[p..q-1] are values known to be <= to array[r]
-		// 	array[q..j-1] are values known to be > array[r]
-		// 	array[j..r-1] haven't been compared with array[r]
-		// If array[j] > array[r], just increment j.
-		// If array[j] <= array[r], swap array[j] with array[q], increment q and increment j.
-		// Once all elements in array[p..r-1] have been compared with array[r],
-		// 	swap array[r] with array[q]
-		// 	return q.
 	}
 
 

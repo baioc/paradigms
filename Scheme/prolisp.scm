@@ -63,8 +63,7 @@
 
 (define-syntax cons-stream
   (syntax-rules ()
-    ((_ x y)
-      (cons x (delay y)))))
+    ((_ x y) (cons x (delay y)))))
 
 (define (stream-car s)
   (car s))

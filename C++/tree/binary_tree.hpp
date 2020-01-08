@@ -42,6 +42,8 @@ class BinaryTree {
 		T data_;
 		std::unique_ptr<TreeNode> left_{nullptr};
 		std::unique_ptr<TreeNode> right_{nullptr};
+		mutable int height_{0};
+		mutable bool dirty_{false};
 
 		explicit TreeNode(T data);
 
@@ -67,8 +69,7 @@ class BinaryTree {
 
 template <typename T>
 BinaryTree<T>::TreeNode::TreeNode(T data):
-	data_(std::move(data)),
-	left_(nullptr), right_(nullptr)
+	data_(std::move(data))
 {}
 
 template <typename T>
@@ -98,13 +99,8 @@ template <typename T>
 int BinaryTree<T>::TreeNode::size() const
 {
 	int size = 1;
-
-	if (left_)
-		size += left_->size();
-
-	if (right_)
-		size += right_->size();
-
+	if (left_) size += left_->size();
+	if (right_) size += right_->size();
 	return size;
 }
 
@@ -246,6 +242,8 @@ void BinaryTree<T>::insert(std::unique_ptr<TreeNode>& node, T element)
 			rotate_right(node->right_);
 		rotate_left(node);
 	}
+
+	node->dirty_ = true;
 }
 
 template <typename T>
@@ -297,6 +295,8 @@ bool BinaryTree<T>::remove(std::unique_ptr<TreeNode>& node, const T& element)
 				rotate_right(node->right_);
 			rotate_left(node);
 		}
+
+		node->dirty_ = true;
 	}
 
 	return found;
@@ -311,8 +311,13 @@ int BinaryTree<T>::height() const
 template <typename T>
 int BinaryTree<T>::height(const std::unique_ptr<TreeNode>& node)
 {
-	if (node)
-		return std::max(height(node->left_), height(node->right_)) + 1;
+	if (node) {
+		if (node->dirty_) {
+			node->height_ = std::max(height(node->left_), height(node->right_)) + 1;
+			node->dirty_ = false;
+		}
+		return node->height_;
+	}
 	return -1;
 }
 

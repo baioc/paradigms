@@ -13,8 +13,7 @@
 ;; macro syntax in order to perform delayed evaluation of arguments
 (define-syntax lazy ;; aka delay
   (syntax-rules ()
-    ((lazy expr)
-      (memo-proc (lambda () expr)))))
+    ((_ expr) (memo-proc (lambda () expr)))))
 
 ;; aka force
 (define (thunk p) (p))
@@ -22,8 +21,7 @@
 ;; streams as "on-demand" data structures
 (define-syntax stream
   (syntax-rules ()
-    ((stream x y)
-      (cons x (lazy y)))))
+    ((_ x y) (cons x (lazy y)))))
 
 (define (head s) (car s))
 (define (tail s) (thunk (cdr s)))

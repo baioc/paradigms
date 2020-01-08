@@ -13,6 +13,11 @@ It is in fact about two things:
 1. How we define "what is true" - declarative knowledge
 2. How we define "how to" do something - imperative knowledge
 
+> Underlying our approach to this subject is our conviction that "computer science" is not a science and that its significance has little to do with computers.
+> The computer revolution is a revolution in the way we think and in the way we express what we think.
+> The essence of this change is the emergence of what might best be called procedural epistemology -- the study of the structure of knowledge from an imperative point of view, as opposed to the more declarative point of view taken by classical mathematical subjects.
+> Mathematics provides a framework for dealing precisely with notions of "what is." Computation provides a framework for dealing precisely with notions of "how to."
+
 Computer science brings us the **formalized knowledge about processes**, that is, to **convey with precision the imperative knowledge of how to do things**.
 
 The pattern of rules that direct a process is called a procedure.
