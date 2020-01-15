@@ -33,7 +33,7 @@ struct stack {
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-void stack_init(stack *s, int depth, size_t type_size)
+void stack_init(stack_t *s, int depth, size_t type_size)
 {
 	assert(depth > 0);
 	s->elements = malloc(depth * type_size);
@@ -44,7 +44,7 @@ void stack_init(stack *s, int depth, size_t type_size)
 	s->type_size = type_size;
 }
 
-void stack_destroy(stack *s, void (*freefn)(void *))
+void stack_destroy(stack_t *s, void (*freefn)(void *))
 {
 	if (freefn != NULL) {
 		for (int i = 0; i < s->current_size; ++i)
@@ -53,7 +53,7 @@ void stack_destroy(stack *s, void (*freefn)(void *))
 	free(s->elements);
 }
 
-static void stack_grow(stack *s)
+static void stack_grow(stack_t *s)
 {
 	assert(s->allocated_size > 0);
 	s->allocated_size *= 2;
@@ -67,7 +67,7 @@ static void stack_grow(stack *s)
 	s->elements = mem;
 }
 
-void stack_push(stack *s, void *source)
+void stack_push(stack_t *s, void *source)
 {
 	if (s->current_size >= s->allocated_size)
 		stack_grow(s);
@@ -77,7 +77,7 @@ void stack_push(stack *s, void *source)
 	s->current_size++;
 }
 
-void stack_pop(stack *s, void *sink)
+void stack_pop(stack_t *s, void *sink)
 {
 	assert(s->current_size > 0);
 	s->current_size--;
@@ -86,13 +86,13 @@ void stack_pop(stack *s, void *sink)
 	memcpy(sink, source, s->type_size);
 }
 
-void *stack_top(const stack *s)
+void *stack_top(const stack_t *s)
 {
 	assert(s->current_size > 0);
 	return (char *) s->elements + (s->current_size-1) * s->type_size;
 }
 
-bool stack_empty(const stack *s)
+bool stack_empty(const stack_t *s)
 {
 	return s->current_size <= 0;
 }
@@ -107,7 +107,7 @@ void strfree(void *str)
 
 bool balanced(const char *string)
 {
-	stack brackets;
+	stack_t brackets;
 	stack_init(&brackets, 2, sizeof(char));
 
 	size_t length = strlen(string);
@@ -148,7 +148,7 @@ int main(int argc, char const *argv[])
 {
 	{
 		int array[] = {-6, 0, 2, 3, 6, 7, 11};
-		stack s;
+		stack_t s;
 		stack_init(&s, 4, sizeof(array[0]));
 
 		for (int i = 0; i < ARRAY_SIZE(array); ++i)
@@ -167,7 +167,7 @@ int main(int argc, char const *argv[])
 
 	{
 		const char *names[] = {"Al", "Bob", "Carl"};
-		stack s;
+		stack_t s;
 		stack_init(&s, 1, sizeof(char *));
 
 		for (int i = 0; i < ARRAY_SIZE(names); ++i) {
