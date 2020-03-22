@@ -81,12 +81,11 @@ local function search (k, plist)
   end
 end
 
-function createClass (constructor, ...)
+function createClass (...)
   local c = {}   -- new class
   local arg = {...}
 
-  -- class will search for each method in the list of its
-  -- parents (`arg' is the list of parents)
+  -- class will search for each method in the list of its parents
   setmetatable(c, {__index = function (_, k)
     return search(k, arg)
   end})
@@ -96,7 +95,12 @@ function createClass (constructor, ...)
 
   -- define a new constructor for this new class
   function c:new (o)
-    o = constructor(o)
+    o = o or {}
+    for _,parent in pairs(arg) do
+      if parent.new then
+        o = parent:new(o)
+      end
+    end
     setmetatable(o, c)
     return o
   end
@@ -106,22 +110,27 @@ function createClass (constructor, ...)
 end
 
 -- Privacy: https://www.lua.org/pil/16.4.html
-function newNamed (arg)
-  local self = {name = arg.name}
-  local getName = function ()
-    return self.name
-  end
-  local setName = function (name)
-    self.name = name
-  end
-  return {   -- self.name is now "private"
-    getName = getName,
-    setName = setName
-  }
-end
 Named = {}
+function Named:new (o)
+  o = o or {}
+  setmetatable(o, Named)
+  Named.__index = Named
 
-NamedAccount = createClass(newNamed, Account, Named)
+  local name_ = o.name or ""
+  o.name = nil  -- name is now "private"
+
+  o.getName = function (self_)
+    return name_
+  end
+  o.setName = function (self_, name)
+    name_ = name
+  end
+
+  return o
+end
+
+NamedAccount = createClass(Account, Named)
 account = NamedAccount:new{name = "Paul"}
-print(account.getName())   --> Paul
+account:deposit(100.00)
+print(account:getName() .. " has $" .. account.balance)
 --]]
