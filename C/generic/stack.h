@@ -1,15 +1,15 @@
-/*
- * Copyright (c) 2019 Gabriel B. Sant'Anna <baiocchi.gabriel@gmail.com>
- * @License Apache <https://gitlab.com/baioc/paradigms>
- */
-
 #ifndef H_STACK
 #define H_STACK
 
 #include <stddef.h> 	// size_t
 #include <stdbool.h>
 
-typedef struct stack stack_t;
+typedef struct stack {
+	void *elements;
+	int current_size;
+	size_t allocated_size;
+	size_t type_size;
+} stack_t;
 
 void stack_init(stack_t *s, int depth, size_t type_size);
 
