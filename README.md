@@ -11,6 +11,7 @@ Code explored here may relate to any of the following learning resources:
 - [UFSC Numerical Analysis (INE5409) methods by Prof. Sergio Peters](http://sergiopeters.prof.ufsc.br/livro-calculo-numerico-computacional/)
 - [Sean Parent's "Better Code" talks](https://www.youtube.com/watch?v=QGcVXgEVMJg)
 - [Robert Nystrom's Game Programming Patterns designs](http://gameprogrammingpatterns.com/)
+- [Bisqwit's programming techniques](https://www.youtube.com/user/Bisqwit)
 - [NVIDIA DLI Fundamentals of Accelerated Computing with CUDA C/C++ workshop](https://courses.nvidia.com/courses/course-v1:DLI+C-AC-01+V1/info)
 - [UFSC Concurrent Programming (INE5410) activities](https://planos.inf.ufsc.br/modulos/planos/visualizar.php?id=3001)
 - [UFSC Graphs (INE5413) algorithms](https://www.geeksforgeeks.org/graph-data-structure-and-algorithms/)
