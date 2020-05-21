@@ -1,3 +1,6 @@
+(load "common.scm")
+
+
 ;; Heron's method for finding square roots
 (define (sqrt x)
   (define (try guess)
@@ -14,13 +17,18 @@
 
 
 ;; fixed-point of f is x such that f(x) = x
-(define (fixpoint f x . opts-tol)
-  (let* ((tolerance (maybe-car opts-tol 1e-9))
-         (approx? (lambda (a b) (< (abs (- a b)) tolerance))))
-    (let try ((old x) (new (f x)))
-      (if (approx? old new) new
-          (try new (f new))))))
-
+(define fixpoint
+  (case-lambda
+    ((f x) (fixpoint f x 1e-9))
+    ((f x tolerance)
+       (letrec ((approx?
+                  (lambda (a b)
+                    (< (abs (- a b)) tolerance)))
+                (try
+                  (lambda (old new)
+                    (if (approx? old new) new
+                        (try new (f new))))))
+         (try x (f x))))))
 
 (define (phi-rat tol)
   (fixpoint
@@ -42,15 +50,17 @@
   (fixpoint (average-damp (lambda (y) (/ x y))) 1.0))
 
 
-;; Newton's method
-(define (root f x . opts-tol)
-  (let* ((dx (maybe-car opts-tol 1e-8))
-         (df (deriv f dx)))
-    (fixpoint (lambda (x) (- x (/ (f x) (df x)))) x dx)))
-
 ;; numerical derivative of a function
 (define (deriv f dx)
   (lambda (x) (/ (- (f (+ x dx)) (f x)) dx)))
+
+;; Newton's method
+(define root
+  (case-lambda
+    ((f x) (root f x 1e-8))
+    ((f x dx)
+     (let ((df (deriv f dx)))
+       (fixpoint (lambda (x) (- x (/ (f x) (df x)))) x dx)))))
 
 
 ;; square root yet again, but with Newton's method

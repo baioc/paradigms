@@ -4,9 +4,10 @@
       (set! x y)
       'ok)
     (define (self method)
-      (cond ((eq? method 'get) x)
-            ((eq? method 'set) setter!)
-            (else (error "Undefined operation" method))))
+      (case method
+        ((get) x)
+        ((set) setter!)
+        (else (error "Undefined operation" method))))
     self))
 
 (define (get-val w)
@@ -46,12 +47,13 @@
           (inform-about-value new-constraint))
       'done)
     (define (self request)
-      (cond ((eq? request 'has-value?) informant)
-            ((eq? request 'value) value)
-            ((eq? request 'set-value!) set-my-value)
-            ((eq? request 'forget) forget-my-value)
-            ((eq? request 'connect) connect)
-            (else (error "Unknown request -- CONNECTOR" request))))
+      (case request
+        ((has-value?) informant)
+        ((value) value)
+        ((set-value!) set-my-value)
+        ((forget) forget-my-value)
+        ((connect) connect)
+        (else (error "Unknown request -- CONNECTOR" request))))
     self))
 
 (define (for-each-except exception procedure list)

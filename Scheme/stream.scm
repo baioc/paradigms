@@ -1,3 +1,6 @@
+(load "common.scm")
+
+
 ;; memo-proc'ed no-args procedure is only evaluated once, result is cached
 (define (memo-proc proc)
   (let ((run? #f)
@@ -30,10 +33,9 @@
 
 
 (define (stream-for-each proc seq)
-  (if (not (empty? seq))
-      (begin
-        (proc (head seq))
-        (stream-for-each proc (tail seq)))))
+  (unless (empty? seq)
+    (proc (head seq))
+    (stream-for-each proc (tail seq))))
 
 (define (stream-filter pred seq)
   (cond ((empty? seq) seq)

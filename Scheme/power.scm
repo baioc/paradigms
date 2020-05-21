@@ -1,3 +1,6 @@
+(load "common.scm")
+
+
 ;; iterative O(n) version of exponentiation
 (define (^ b n)
   (define (iter b counter product)
@@ -8,10 +11,11 @@
 ;; slow exponentiation O(2^(n-1)) for base two
 ;; 2^n = 2 * 2^(n-1) = 2^(n-1) + 2^(n-1)
 (define (2^ n)
-  (cond ((= n 0) 1)
-        ((= n 1) 2)
-        (else (+ (2^ (- n 1))
-                 (2^ (- n 1))))))
+  (case n
+    ((0) 1)
+    ((1) 2)
+    (else (+ (2^ (- n 1))
+             (2^ (- n 1))))))
 
 ;; recursive O(lg(n)) version, via successive squaring
 ;; b^n = (b^(n/2))^2
@@ -63,10 +67,13 @@
           ((even? n) (iter (succession b) (halve n) acc))
           (else (iter b (- n 1) (operation b acc))))))
 
-(define (empower operation neutral . opts-succ)
-  (let ((succession (maybe-car opts-succ (lambda (x) (operation x x)))))
-    (lambda (basis power)
-      (pow power operation basis neutral succession))))
+(define empower
+  (case-lambda
+    ((operation neutral)
+       (empower operation neutral (lambda (x) (operation x x))))
+    ((operation neutral succession)
+       (lambda (basis power)
+         (pow power operation basis neutral succession)))))
 
 
 (define times (empower + 0))
@@ -83,24 +90,24 @@
         (raise b n))))
 
 (define (fibonacci n)
-  (let ((fn (cadr (pow ;; nth power
-                       (abs n)
-                       ;; of the binary operation / transformation
-                       (lambda (coefs fibs)
-                         (let ((p (car coefs)) (q (cadr coefs))
-                               (a (car fibs)) (b (cadr fibs)))
-                           (list (+ (* b q) (* a (+ q p)))
-                                 (+ (* b p) (* a q)))))
-                       ;; starting from basis
-                       '(0 1)
-                       ;; accumulated over
-                       '(1 0)
-                       ;; where the successive squaring that empowers
-                       ;; the operation is given by
-                       (lambda (coefs)
-                         (let ((p (car coefs)) (q (cadr coefs)))
-                           (list (+ (square q) (square p))
-                                 (+ (square q) (* 2 (* p q))))))))))
+  (let-values
+    (((fn-1 fn) (pow ;; nth power
+                  (abs n)
+                  ;; of the binary operation / transformation
+                  (lambda (coefs fibs)
+                    (let-values (((p q) coefs) ((a b) fibs))
+                      (values (+ (* b q) (* a (+ q p)))
+                              (+ (* b p) (* a q)))))
+                  ;; starting from basis
+                  (values 0 1)
+                  ;; accumulated over
+                  (values 1 0)
+                  ;; where the successive squaring that empowers
+                  ;; the operation is given by
+                  (lambda (coefs)
+                    (let-values (((p q) coefs))
+                      (values (+ (square q) (square p))
+                              (+ (square q) (* 2 (* p q)))))))))
     ;; negafibonacci: F(-n) = Fn * (-1)^(n+1))
     (if (and (< n 0)
              (even? n))
