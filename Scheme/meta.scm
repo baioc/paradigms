@@ -1,3 +1,6 @@
+(import (scheme base) (scheme case-lambda) (scheme repl) (scheme eval))
+
+
 (define (horner x pn)
     (if (null? (cdr pn))
         (car pn)
@@ -88,4 +91,33 @@
 (define df
   (make-derivative 'x p))  ;; df(x) = p'(x) = 2x - 1
 
-;; @TODO analytical derivatives in Newton's method
+
+(define (curry args body . rest)
+  (cond ((null? args)
+         `(lambda () ,body ,@rest))
+        ((null? (cdr args))
+         `(lambda (,(car args)) ,body ,@rest))
+        (else
+         `(lambda (,(car args)) ,(apply curry `(,(cdr args) ,body ,@rest))))))
+
+(define car-cdring
+  (case-lambda ; takes an optional eqv predicate to find key, default is `eqv?`
+    ((lst key) (car-cdring lst key eqv?))
+    ((lst key eqv?)
+     ;; returns #f when key not found, or a list of 'cars and 'cdrs
+     (define (sexp-tree-path tree key)
+       (cond ((null? tree) #f)
+             ((not (pair? tree)) (if (eqv? tree key) '() #f))
+             ((sexp-tree-path (car tree) key) => (lambda (path) (cons 'car path)))
+             ((sexp-tree-path (cdr tree) key) => (lambda (path) (cons 'cdr path)))
+             (else #f)))
+
+     ;; converts something like '(cdr cdr car) to '(car (cdr (cdr arg)))
+     (define (path->car-cdring path arg)
+       (if (null? path)
+           arg
+           (path->car-cdring (cdr path) (list (car path) arg))))
+
+     (let ((path (sexp-tree-path lst key)))
+       (and path
+            `(lambda (lst) ,(path->car-cdring path 'lst)))))))

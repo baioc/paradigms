@@ -3,7 +3,6 @@
 
 (print
   (call/cc (lambda (k)
-
     (with-exception-handler
       (lambda (err)
         (display "catch: ")
