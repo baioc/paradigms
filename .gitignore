@@ -83,4 +83,8 @@ tags
 # Ignore all local history of files
 .history
 
+## F# Ionide plugin
+.fake
+.ionide
+
 # End of https://www.gitignore.io/api/vim,emacs,visualstudiocode
