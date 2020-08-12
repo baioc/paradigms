@@ -8,8 +8,7 @@ module PigLatin = begin
             match c with
             | 'a' | 'e' | 'i' |'o' |'u'
             | 'A' | 'E' | 'I' | 'O' | 'U' -> true
-            |_ -> false
-        in
+            |_ -> false in
         if isVowel word.[0] then
             word + "yay"
         else

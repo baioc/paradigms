@@ -17,4 +17,5 @@ Code explored here may relate to any of the following learning resources:
 - [UFSC Graphs (INE5413) algorithms](https://www.geeksforgeeks.org/graph-data-structure-and-algorithms/)
 - [Khan Academy Algorithms for Computer Science course](https://www.khanacademy.org/computing/computer-science/algorithms)
 - [Malhotra's Data Structures and Program Design Using C++ algorithms](https://styluspub.presswarehouse.com/browse/book/9781683923701/Data-Structures-and-Program-Design-Using-C)
+- [INRIA's "Développement d'Applications avec Objective Caml" book](https://packages.debian.org/buster/ocaml-book-fr)
 - [UFSC Programming Paradigms (INE5416) Prolog activities](https://www.metalevel.at/prolog)
