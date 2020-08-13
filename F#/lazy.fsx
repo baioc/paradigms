@@ -1,22 +1,25 @@
 #light "off"
 
+
 (* Complements the `lazy` special form. *)
 let force (x: Lazy<_>) = x.Force();;
 
-type 'T Stream = // odd streams
-    | Cons of 'T * Lazy<'T Stream>
+
+type 't Stream = // odd streams
+    | Cons of 't * Lazy<'t Stream>
     | Null;;
 
-let head (Cons(h, _)) = h;;
-let tail (Cons(_, t)) = force t;;
+let head = function
+    | Cons(h, _) -> h
+    | Null -> failwith "empty stream";;
 
-// an active pattern that unwraps Cons, automatically calling its head and tail
-let (|Seq|Nil|) stream =
-    match stream with
-    | Cons(h, _) -> Seq(h, tail stream)
-    | Null -> Nil;;
+let tail = function
+    | Cons(_, t) -> force t
+    | Null -> failwith "empty stream";;
 
-let rec map f seq =
-    match seq with
-    | Seq(h,t) -> Cons(f h, lazy (map f t))
-    | Nil -> Null;;
+
+let unfold gen seed = Cons(seed, lazy (gen seed));;
+
+let rec map f = function
+    | Cons(h,t) -> Cons(f h, lazy (map f (force t)))
+    | Null -> Null;;

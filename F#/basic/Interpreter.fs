@@ -1,5 +1,7 @@
 ﻿#light "off"
 
+open Basic
+
 
 type UnaryOp =
     | Negative
@@ -11,9 +13,9 @@ type BinaryOp =
     | And | Or;;
 
 type Expression =
-    | Integer of int
+    | Number of int
     | Variable of string
-    | String of string
+    | Text of string
     | Unary of UnaryOp * Expression
     | Binary of Expression * BinaryOp * Expression;;
 
@@ -29,7 +31,7 @@ type Line = { Number: int; Command: Command; };;
 
 type Program = Line list;;
 
-type Phrase = Line of Line | Run | List | End ;;
+type Phrase = Line of Line | Run | List | End;;
 
 
 (* Operator precedences, higher values mean stronger affinity to operands. *)
@@ -82,9 +84,9 @@ let showExpression =
                      (showRightTree newPrecedence rhs) in
         if cond newPrecedence then parenthesize result else result
     and showLeftTree precedence = function
-        | Integer i -> string i
+        | Number i -> string i
         | Variable v -> v
-        | String s -> "\"" + s + "\""
+        | Text s -> "\"" + s + "\""
         | Unary(op, expr) ->
             let newPrecedence = (precedenceUnary op) in
             let result = (showUnaryOp op) + (showLeftTree newPrecedence expr) in
@@ -108,47 +110,56 @@ let showCommand = function
 let showLine l = (string l.Number) + "\t" + (showCommand l.Command);;
 
 
-type Token =
-    | Number of int
-    | Identifier of string
-    | Symbol of string
-    | String of string
-    | Eof;;
-
-// ...
-
-
 [<EntryPoint>]
+/// Scans stdin and prints each token correctly lexed therein.
 let main argv =
+
+    (*
     [
-        Binary(Binary(Integer 3,
+        Binary(Binary(Number 3,
                       Minus,
-                      Integer 2),
+                      Number 2),
                Minus,
-               Integer 1);
-        Binary(Integer 3,
+               Number 1);
+        Binary(Number 3,
                Minus,
-               Binary(Integer 2,
+               Binary(Number 2,
                       Minus,
-                      Integer 1));
+                      Number 1));
         Unary(Negative,
-              Binary(Binary(Integer 3,
+              Binary(Binary(Number 3,
                             Modulo,
-                            Integer 4),
+                            Number 4),
                      Multiplication,
-                     Integer 1));
+                     Number 1));
         Unary(Negative,
-              Binary(Integer 3,
+              Binary(Number 3,
                      Modulo,
-                     Binary(Integer 4,
+                     Binary(Number 4,
                             Multiplication,
-                            Integer 1)));
-        Binary(Binary(Unary(Negative, Integer 3),
+                            Number 1)));
+        Binary(Binary(Unary(Negative, Number 3),
                       Modulo,
-                      Integer 4),
+                      Number 4),
                Multiplication,
-               Integer 1);
+               Number 1);
     ]
     |> List.map showExpression
     |> List.iter (printfn "%s");
+    *)
+
+    let err = ref false in
+    while not !err do
+        Lexer.tokenize (System.Console.ReadLine())
+        |> List.iter
+        (
+            function
+            | Error(src, pos) ->
+                let c = src.[pos] in
+                printfn "Lexical failure: found unexpected \'%c\'" c;
+                err := true;
+            | tok -> printfn "%s" (string tok)
+        )
+    done;
+
     0;;
