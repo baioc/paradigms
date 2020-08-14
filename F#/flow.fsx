@@ -12,13 +12,13 @@ let x = ref 3;;
 x := !x + 1;;
 
 for i = 10 downto 1 do
-    printf "%d " i;
+    printf "%i " i;
 done;
 printf "\n";;
 
 let r = ref 1 in
     while !r < 11  do
-        printf "%d " !r;
+        printf "%i " !r;
         r := !r + 1;
     done;
 printf "\n";;

@@ -9,83 +9,92 @@ type Lexer =
       Length: int; };;
 
 type Token =
-    | Constant of int
-    | Word of string
-    | Symbol of string
+    | Integer of int
     | String of string
-    | End
-    | Error of string * int;;
+    | Word of string
+    | Operator of string
+    | LeftParenthesis
+    | RightParenthesis
+    | EndOfText
+    | LexError of string;;
 
 
 /// A purely functional BASIC lexer.
-module Lexer = begin
+module Lexer =
+    begin
 
-    let private extractWhile pred lexer =
-        match lexer with
-        { Source = src; Length = len; Cursor = start } ->
-            let rec extractFrom current = if current < len && pred src.[current]
-                                          then extractFrom (current + 1)
-                                          else current in
-            let finish = extractFrom start in
-                { lexer with Cursor = finish }, src.[start .. finish - 1];;
+        /// Initializes a lexer from a given input.
+        let make str =
+            { Source = str; Length = String.length str; Cursor = 0 };;
 
-    let internal isDigit c = '0' <= c && c <= '9';;
-    let internal isLetter c = ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');;
-    let internal isLetterOrDigit c = isLetter c || isDigit c;;
+        /// Checks if the lexer has finished analyzing its input.
+        let internal isDone lexer = lexer.Cursor >= lexer.Length;;
 
-    let private extractInteger lexer =
-        let lexer, digits = extractWhile isDigit lexer in lexer, int digits;;
+        /// Looks at what's under the lexer's cursor.
+        let internal peek lexer =
+            lexer.Source.[lexer.Cursor];;
 
-    let private extractWord lexer =
-        extractWhile (fun c -> c = '_' || isLetterOrDigit c) lexer;;
+        /// Steps the lexer position forward.
+        let internal step lexer = { lexer with Cursor = lexer.Cursor + 1 };;
 
-    let private peek lexer = lexer.Source.[lexer.Cursor];;
+        /// Steps the lexer to its end or until a given predicate returns false,
+        /// extracting the string which was skipped over along the way.
+        let internal extractWhile pred lexer =
+            match lexer with
+            { Source = src; Length = len; Cursor = start } ->
+                let rec extractFrom current =
+                    if current < len && pred src.[current]
+                    then extractFrom (current + 1)
+                    else current in
+                let finish = extractFrom start in
+                    ( { lexer with Cursor = finish },
+                      src.[ min start (len - 1) .. finish - 1] );;
 
-    let private step lexer =
-        { lexer with Cursor = min (lexer.Cursor + 1) lexer.Length };;
+        /// Lex an integer starting from the given lexer state.
+        let internal readInteger lexer =
+            let lexer, digits = extractWhile System.Char.IsDigit lexer in
+            lexer, Integer (int digits);;
 
+        /// Lex a word (identifier or keyword) from the current lexer state.
+        let internal readWord lexer =
+            let lexer, id = extractWhile (fun c -> c = '_' ||
+                                                   System.Char.IsLetterOrDigit c)
+                                         lexer in
+            lexer, Word id;;
 
-    /// Builds a lexer from a given string.
-    let make (str: string) : Lexer =
-        { Source = str; Length = String.length str; Cursor = 0 };;
+        /// Advance to the next lexer state after lexing a token.
+        let rec advance lexer : Lexer * Token =
+            let lexWith c =
+                match c with
+                | ' ' | '\t' -> advance (step lexer)
+                | '(' -> (step lexer), LeftParenthesis
+                | ')' -> (step lexer), RightParenthesis
+                | c when System.Char.IsDigit c -> readInteger lexer
+                | c when System.Char.IsLetter c -> readWord lexer
+                | '+' | '-' | '*' | '/' | '%' | '&' | '|' | '!' | '=' ->
+                    (step lexer), Operator (string c)
+                | '<' | '>' ->
+                    let lexer = step lexer in
+                    if isDone lexer then
+                        lexer, Operator (string c)
+                    else
+                        ( // yup... ML syntax needs these parentheses
+                            match (c, (peek lexer)) with
+                            | ('<', '=') -> (step lexer), Operator "<="
+                            | ('>', '=') -> (step lexer), Operator ">="
+                            | ('<', '>') -> (step lexer), Operator "<>"
+                            | _ -> lexer, Operator (string c)
+                        )
+                | '"' ->
+                    let lexer, str = extractWhile (( <> ) '"') (step lexer) in
+                    if not (isDone lexer) && (peek lexer) = '"'
+                    then (step lexer), String str
+                    else ( lexer,
+                           LexError "text ends before closing string quotes" )
+                | c -> ( (step lexer),
+                         LexError (sprintf "found unexpected character '%c'" c) ) in
+            if isDone lexer
+            then lexer, EndOfText
+            else lexWith (peek lexer);;
 
-    /// Get the next lexer state after reading a token.
-    let rec next (lexer: Lexer) : Lexer * Token =
-        let lexWith c =
-            match c with
-            | ' ' | '\t' -> next (step lexer)
-            | c when isDigit c -> let lexer, int = extractInteger lexer in
-                                  lexer, Constant int
-            | c when isLetter c -> let lexer, id = extractWord lexer in
-                                   lexer, Word id
-            | '+' | '-' | '*' | '/' | '%' | '&' | '|' | '!' | '=' | '(' | ')' ->
-                (step lexer), Symbol (string c)
-            | '<' | '>' ->
-                let lexer = step lexer in
-                if lexer.Cursor >= lexer.Length then
-                    lexer, Symbol (string c)
-                else // yup... ML syntax needs this parenthesis
-                    (
-                        match (c, (peek lexer)) with
-                        | ('<', '=') -> (step lexer), Symbol "<="
-                        | ('>', '=') -> (step lexer), Symbol ">="
-                        | ('<', '>') -> (step lexer), Symbol "<>"
-                        | _ -> lexer, Symbol (string c)
-                    )
-            | '"' -> let lexer, str = extractWhile ((<>) '"') (step lexer) in
-                     (step lexer), String str
-            | _ -> // instead of throwing, return an Error token and keep going
-                (step lexer), Error(lexer.Source, lexer.Cursor) in
-        if lexer.Cursor >= lexer.Length
-        then lexer, End
-        else lexWith (peek lexer);;
-
-    /// Eagerly tokenizes the entire given string.
-    let tokenize (str: string) : Token list =
-        let rec lex lexer =
-            match next lexer with
-            | _, End -> []
-            | lexer, token -> token :: lex lexer in
-        lex (make str);;
-
-end
+    end
