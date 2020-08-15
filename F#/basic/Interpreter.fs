@@ -18,4 +18,4 @@ let rec main argv =
         | Help -> printfn "HELP"; main argv
         | Clear -> printfn "CLEAR"; main argv
         | Noop -> main argv
-        | Unknown err -> printfn "SYNTAX ERROR: %s" (toUpper err); main argv;;
+        | ParseError err -> printfn "SYNTAX ERROR: %s" (toUpper err); main argv;;

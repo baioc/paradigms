@@ -67,31 +67,29 @@ module Lexer =
             let lexWith c =
                 match c with
                 | ' ' | '\t' -> advance (step lexer)
-                | '(' -> (step lexer), LeftParenthesis
-                | ')' -> (step lexer), RightParenthesis
+                | '(' -> step lexer, LeftParenthesis
+                | ')' -> step lexer, RightParenthesis
                 | c when System.Char.IsDigit c -> readInteger lexer
                 | c when System.Char.IsLetter c -> readWord lexer
                 | '+' | '-' | '*' | '/' | '%' | '&' | '|' | '!' | '=' ->
-                    (step lexer), Operator (string c)
+                    step lexer, Operator (string c)
                 | '<' | '>' ->
                     let lexer = step lexer in
                     if isDone lexer then
                         lexer, Operator (string c)
-                    else
-                        ( // yup... ML syntax needs these parentheses
-                            match (c, (peek lexer)) with
-                            | ('<', '=') -> (step lexer), Operator "<="
-                            | ('>', '=') -> (step lexer), Operator ">="
-                            | ('<', '>') -> (step lexer), Operator "<>"
-                            | _ -> lexer, Operator (string c)
-                        )
+                    else // yup... ML syntax needs these parentheses
+                      ( match c, peek lexer with
+                        | ('<', '=') -> step lexer, Operator "<="
+                        | ('>', '=') -> step lexer, Operator ">="
+                        | ('<', '>') -> step lexer, Operator "<>"
+                        | _ -> lexer, Operator (string c) )
                 | '"' ->
                     let lexer, str = extractWhile (( <> ) '"') (step lexer) in
-                    if not (isDone lexer) && (peek lexer) = '"'
-                    then (step lexer), String str
+                    if not (isDone lexer) && peek lexer = '"'
+                    then step lexer, String str
                     else ( lexer,
                            LexError "text ends before closing string quotes" )
-                | c -> ( (step lexer),
+                | c -> ( step lexer,
                          LexError (sprintf "found unexpected character '%c'" c) ) in
             if isDone lexer
             then lexer, EndOfText

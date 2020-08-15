@@ -19,8 +19,7 @@ type Expression =
     | Variable of string
     | Text of string
     | Prefix of UnaryOperator * Expression
-    | Infix of Expression * BinaryOperator * Expression
-    | ParseError of string;;
+    | Infix of Expression * BinaryOperator * Expression;;
 
 type Command =
     | Remark of string
@@ -28,8 +27,7 @@ type Command =
     | Let of string * Expression
     | Print of Expression
     | Input of string
-    | If of Expression * int
-    | Invalid of string;;
+    | If of Expression * int;;
 
 type Line = { Number: int; Command: Command };;
 
@@ -41,7 +39,7 @@ type Directive =
     | Help
     | Clear
     | Noop
-    | Unknown of string;;
+    | ParseError of string;;
 
 
 module Parser =
@@ -104,7 +102,6 @@ module Parser =
                     let result = (showUnary op) + (showLeft innerPrec expr) in
                     if outerPrec >= innerPrec then parenthesize result else result
                 | Infix(lhs, op, rhs) -> showInfix ((>) outerPrec) (lhs, op, rhs)
-                | ParseError err -> failwith err
 
             // right subtree is different because, due to left-associativity,
             // we also need to parenthesize when precedences are the same
@@ -120,8 +117,7 @@ module Parser =
             | Let(var, expr) -> "LET " + var + " = " + (showExpression expr)
             | Print expr -> "PRINT " + (showExpression expr)
             | Input var -> "INPUT " + var
-            | If(e, n) -> "IF " + (showExpression e) + " THEN " + (string n)
-            | Invalid err -> err;;
+            | If(e, n) -> "IF " + (showExpression e) + " THEN " + (string n);;
 
         let showLine = function line ->
             (string line.Number) + "\t" + (showCommand line.Command);;
@@ -137,7 +133,7 @@ module Parser =
             | Unr of UnaryOperator
             | Custom of string;;
 
-        exception private ReductionException;;
+        exception private InvalidReductionException;;
 
         let private parseOperator = function
             | "!"  -> Unr Not
@@ -165,7 +161,7 @@ module Parser =
             | Expr rhs :: Op (Bin op) :: Expr lhs :: stack
                 when precedenceBinary op >= minPrec ->
                     Expr (Infix(lhs, op, rhs)) :: stack
-            | _ -> raise ReductionException;;
+            | _ -> raise InvalidReductionException;;
 
         /// LR(1) operator-precedence parsing algorithm.
         let rec internal shiftReduce lookahead stack =
@@ -190,21 +186,14 @@ module Parser =
                         | _ -> Unr Negative
                     else
                         parseOperator sym in
-                (
-                    match operator with
-                    | Unr op -> Op operator :: stack // shift unary operators
-                    | Bin op ->
-                        (
-                            // either reduce left operand or shift operator
-                            try
-                                shiftReduce lookahead
-                                            (reduce (precedenceBinary op) stack)
-                            with
-                            | ReductionException -> Op operator :: stack
-                        )
-                    | Custom op ->
-                        Err (sprintf "undefined operator '%s'" op) :: stack
-                )
+              ( match operator with
+                | Unr _ -> Op operator :: stack // shift unary operators
+                | Bin op -> // either reduce left operand or shift operator
+                  ( try shiftReduce lookahead
+                                    (reduce (precedenceBinary op) stack)
+                    with InvalidReductionException -> Op operator :: stack )
+                | Custom op ->
+                    Err (sprintf "undefined operator '%s'" op) :: stack )
             | _, _ -> failwithf "shift-reduce error with %A" (lookahead, stack);;
 
         /// If the parsed expression is well formed and the terms in one of its
@@ -220,81 +209,63 @@ module Parser =
         let internal parseExpression stop lexer =
             let rec parse lexer stack =
                 match stack, Lexer.advance lexer with
-                | Err msg :: _, (_, _) -> lexer, ParseError msg
-                | _, (_, LexError msg) -> lexer, ParseError msg
+                | Err msg :: _, (_, _) -> failwith msg
+                | _, (_, LexError msg) -> failwith msg
                 | _, (_, EndOfText) -> lexer, reduceAll stack
                 | _, (_, tok) when stop tok -> lexer, reduceAll stack
                 | _, (lexer, tok) -> parse lexer (shiftReduce tok stack) in
             parse lexer [];;
 
         let private parseCommand line lexer =
-            let error msg = Invalid (sprintf "%s in line %i" msg line) in
-            match Lexer.advance lexer with
-            | lexer, Word "REM" ->
-                let n = lexer.Length - 1 in
-                Remark lexer.Source.[min lexer.Cursor n .. n]
-            | lexer, Word "PRINT" ->
-                (
-                    match parseExpression (( = ) EndOfText) lexer with
-                    | _, ParseError err -> error err
-                    | _, expr -> Print expr
-                )
-            | lexer, Word "INPUT" ->
-                (
-                    match Lexer.advance lexer with
+            try
+                match Lexer.advance lexer with
+                | lexer, Word "REM" ->
+                    let n = lexer.Length - 1 in
+                    Remark lexer.Source.[min lexer.Cursor n .. n]
+                | lexer, Word "PRINT" ->
+                    let _, expr = parseExpression (( = ) EndOfText) lexer in
+                    Print expr
+                | lexer, Word "INPUT" ->
+                  ( match Lexer.advance lexer with
                     | _, Word var -> Input var
-                    | _, _ -> error "missing INPUT variable"
-                )
-            | lexer, Word "GOTO" ->
-                (
-                    match Lexer.advance lexer with
+                    | _, _ -> failwith "missing INPUT variable" )
+                | lexer, Word "GOTO" ->
+                  ( match Lexer.advance lexer with
                     | _, Integer target -> Goto target
-                    | _, _ -> error "invalid GOTO jump target"
-                )
-            | lexer, Word "LET" ->
-                let lexer, var = Lexer.advance lexer in
-                let lexer, eq = Lexer.advance lexer in
-                (
-                    match var, eq with
+                    | _, _ -> failwith "invalid GOTO jump target" )
+                | lexer, Word "LET" ->
+                    let lexer, var = Lexer.advance lexer in
+                    let lexer, eq = Lexer.advance lexer in
+                  ( match var, eq with
                     | Word var, Operator "=" ->
-                        (
-                            match parseExpression (( = ) EndOfText) lexer with
-                            | _, ParseError msg -> error msg
-                            | _, expr -> Let(var, expr)
-                        )
-                    | Word var, _ -> error "missing '=' after LET variable"
-                    | _, _ -> error "wrong LET syntax"
-                )
-            | lexer, Word "IF" ->
-                (
-                    match parseExpression (( = ) (Word "THEN")) lexer with
-                    | _, ParseError msg -> error msg
-                    | lexer, expr ->
-                        let lexer, _ = Lexer.advance lexer in
-                        (
-                            match Lexer.advance lexer with
-                            | _, Integer branch -> If(expr, branch)
-                            | _, _ -> error "invalid IF branch target"
-                        )
-                )
-            | _, token -> error (sprintf "unknown command \"%A\"" token);;
+                        let _, expr = parseExpression (( = ) EndOfText) lexer in
+                        Let(var, expr)
+                    | Word _, _ -> failwith "missing '=' after LET variable"
+                    | _, _ -> failwith "ill-formed LET" )
+                | lexer, Word "IF" ->
+                    let lexer, expr = parseExpression (( = ) (Word "THEN")) lexer in
+                    let lexer, _ = Lexer.advance lexer in
+                      ( match Lexer.advance lexer with
+                        | _, Integer branch -> If(expr, branch)
+                        | _, _ -> failwith "invalid IF branch target" )
+                | _, token -> failwithf "unknown command \"%A\"" token
+            with
+            | Failure msg -> failwithf "%s in line %i" msg line;;
 
         let parseDirective input =
             let lexer = Lexer.make input in
             match Lexer.advance lexer with
             | lexer, Integer line ->
-                (
-                    match parseCommand line lexer with
-                    | Invalid err -> Unknown err
-                    | command -> Instruction { Number = line; Command = command }
-                )
+              ( try Instruction { Number = line;
+                                  Command = parseCommand line lexer }
+                with Failure msg -> ParseError msg )
             | _, Word "RUN" -> Run
             | _, Word "LIST" -> List
             | _, Word "END" -> End
             | _, Word "HELP" -> Help
             | _, Word "CLEAR" -> Clear
             | _, EndOfText -> Noop
-            | _, LexError err -> Unknown err
-            | _, token -> Unknown (sprintf "unknown directive \"%A\"" token);;
+            | _, LexError err -> ParseError err
+            | _, token -> ParseError (sprintf "unknown directive \"%A\"" token);;
 
     end;;
