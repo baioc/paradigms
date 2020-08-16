@@ -1,6 +1,6 @@
 #light "off"
 
-type ('a, 'b) Duple = 'a * 'b;;
+type ('A, 'B) Duple = 'A * 'B;;
 
 type Complex =
     { Real: float;
@@ -22,15 +22,14 @@ type Complex =
         static member i = { Complex.zero with Imag = 1.0 };
     end;;
 
-type 't Sexp =
+type 'T Sexp =
     | Nil
-    | Atom of 't
-    | Pair of 't Sexp * 't Sexp;;
+    | Atom of 'T
+    | Pair of 'T Sexp * 'T Sexp;;
 
-let rec string sexp =
-    match sexp with
+let rec string = function
     | Nil -> "()"
-    | Atom(symbol) -> symbol // implies 't == string
+    | Atom(symbol) -> sprintf "%O" symbol
     | Pair(car, cdr) -> "(" + (string car) + " . " + (string cdr) + ")";;
 
 

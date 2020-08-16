@@ -17,8 +17,8 @@ done;
 printf "\n";;
 
 let r = ref 1 in
-    while !r < 11  do
-        printf "%i " !r;
-        r := !r + 1;
-    done;
+while !r < 11  do
+    printf "%i " !r;
+    r := !r + 1;
+done;
 printf "\n";;

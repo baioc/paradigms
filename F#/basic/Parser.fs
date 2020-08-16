@@ -3,16 +3,32 @@
 namespace Basic
 
 
-(* A BASIC operator-precedence grammar. *)
+(*
+    A BASIC operator-precedence grammar.
+    Higher precedence values mean stronger affinity to operands.
+*)
 
 type UnaryOperator =
     | Negative
-    | Not;;
+    | Not
+    with
+        static member precedence = function
+            | Negative -> 7
+            | Not -> 1;
+    end;;
 
 type BinaryOperator =
     | Plus | Minus | Multiplication | Division | Modulo
     | Equal | Less | Greater | LessEqual | GreaterEqual | Different
-    | And | Or;;
+    | And | Or
+    with
+        static member precedence = function
+            | Multiplication | Division -> 6
+            | Plus | Minus -> 5
+            | Modulo -> 4
+            | Equal | Less | Greater | LessEqual | GreaterEqual | Different -> 3
+            | And | Or -> 2;
+    end;;
 
 type Expression =
     | Number of int
@@ -29,41 +45,33 @@ type Command =
     | Input of string
     | If of Expression * int;;
 
-type Line = { Number: int; Command: Command };;
+type Line = Line of int * Command;;
 
 type Directive =
-    | Instruction of Line
+    | Code of Line
     | Run
     | List
     | End
     | Help
     | Clear
-    | Noop
-    | ParseError of string;;
+    | Noop;;
 
 
-module Parser =
-    begin
+/// A purely functional BASIC parser.
+module Parser = begin
 
-        (* Higher precedence values mean stronger affinity to operands. *)
+    (* pretty-printing ASTs, or the reverse process of parsing them *)
 
-        let internal precedenceUnary = function
-            | Negative -> 7
-            | Not -> 1;;
+    /// Converts an arbitrary expression to a string (eg. for PRINT).
+    let internal showExpression =
+        let parenthesize str =
+            "(" + str + ")" in
 
-        let internal precedenceBinary = function
-            | Multiplication | Division -> 6
-            | Plus | Minus -> 5
-            | Modulo -> 4
-            | Equal | Less | Greater | LessEqual | GreaterEqual | Different -> 3
-            | And | Or -> 2;;
-
-
-        let private showUnary = function
+        let showUnary = function
             | Negative -> "-"
-            | Not -> "!";;
+            | Not -> "!" in
 
-        let private showBinary = function
+        let showBinary = function
             | Plus -> " + "
             | Minus -> " - "
             | Multiplication -> " * "
@@ -76,66 +84,80 @@ module Parser =
             | GreaterEqual -> " >= "
             | Different -> " <> "
             | And -> " & "
-            | Or -> " | ";;
+            | Or -> " | " in
 
-        let internal parenthesize str = "(" + str + ")";;
+        /// pred is used to determine if parenthesis is needed.
+        let rec showInfix pred (lhs, op, rhs) =
+            let newPrecedence = BinaryOperator.precedence op in
+            let result = (showLeft newPrecedence lhs)
+                       + (showBinary op)
+                       + (showRight newPrecedence rhs) in
+            if pred newPrecedence then parenthesize result else result
 
-        /// Converts an arbitrary expression to a string (eg. for PRINT), while
-        /// considering operator precedences to emit as few parentheses as possible.
-        let internal showExpression =
-            // cond is a predicate used to determine if parenthesis is needed
-            let rec showInfix cond (lhs, op, rhs) =
-                let newPrecedence = precedenceBinary op in
-                let result = (showLeft newPrecedence lhs) +
-                             (showBinary op) +
-                             (showRight newPrecedence rhs) in
-                if cond newPrecedence then parenthesize result else result
+        // normally, we only need parenthesize when the outer expression's
+        // precedence is greater than that of the inner one
+        and showLeft outerPrec = function
+            | Number i -> string i
+            | Variable v -> v
+            | Text s -> "\"" + s + "\""
+            | Prefix(op, expr) ->
+                let innerPrec = UnaryOperator.precedence op in
+                let result = (showUnary op) + (showLeft innerPrec expr) in
+                if outerPrec >= innerPrec then parenthesize result else result
+            | Infix(lhs, op, rhs) -> showInfix ((>) outerPrec) (lhs, op, rhs)
 
-            // normally, we parenthesize when the outer expression's precedence
-            // is greater than the inner one
-            and showLeft outerPrec = function
-                | Number i -> string i
-                | Variable v -> v
-                | Text s -> "\"" + s + "\""
-                | Prefix(op, expr) ->
-                    let innerPrec = precedenceUnary op in
-                    let result = (showUnary op) + (showLeft innerPrec expr) in
-                    if outerPrec >= innerPrec then parenthesize result else result
-                | Infix(lhs, op, rhs) -> showInfix ((>) outerPrec) (lhs, op, rhs)
+        // right subtrees are different because, due to left-associativity,
+        // we also need to parenthesize when precedences are equal
+        and showRight outerPrec = function
+            | Infix(lhs, op, rhs) -> showInfix ((>=) outerPrec) (lhs, op, rhs)
+            | expr -> showLeft outerPrec expr in
 
-            // right subtree is different because, due to left-associativity,
-            // we also need to parenthesize when precedences are the same
-            and showRight outerPrec = function
-                | Infix(lhs, op, rhs) -> showInfix ((>=) outerPrec) (lhs, op, rhs)
-                | expr -> showLeft outerPrec expr in
+        showLeft 0;;
 
-            showLeft 0;;
+    let internal showCommand = function
+        | Remark remark -> "REM " + remark
+        | Goto line -> "GOTO " + (string line)
+        | Let(var, expr) -> "LET " + var + " = " + (showExpression expr)
+        | Print expr -> "PRINT " + (showExpression expr)
+        | Input var -> "INPUT " + var
+        | If(e, n) -> "IF " + (showExpression e) + " THEN " + (string n);;
 
-        let private showCommand = function
-            | Remark remark -> "REM " + remark
-            | Goto line -> "GOTO " + (string line)
-            | Let(var, expr) -> "LET " + var + " = " + (showExpression expr)
-            | Print expr -> "PRINT " + (showExpression expr)
-            | Input var -> "INPUT " + var
-            | If(e, n) -> "IF " + (showExpression e) + " THEN " + (string n);;
-
-        let showLine = function line ->
-            (string line.Number) + "\t" + (showCommand line.Command);;
+    let internal showLine = function Line(num, cmnd) ->
+        sprintf "%3i  %s" num (showCommand cmnd);;
 
 
-        type internal StackElement =
-            | Expr of Expression
-            | Op of Operator
-            | LParen
-            | Err of string
-        and Operator =
-            | Bin of BinaryOperator
-            | Unr of UnaryOperator
-            | Custom of string;;
+    (* functional bottom-up LR(1) operator-precedence parser *)
 
-        exception private InvalidReductionException;;
+    type private Operator =
+        | Bin of BinaryOperator
+        | Unr of UnaryOperator
+        | Custom of string;;
 
-        let private parseOperator = function
+    type private StackElement =
+        | Expr of Expression
+        | Op of Operator
+        | LParen
+        | Err of string;;
+
+    type private Stack = Stack of StackElement list;;
+
+    exception private InvalidReductionException;;
+
+    /// Replaces a valid handle on the stack for its nonterminal rule head,
+    /// but doing so only if its precedence is higher than the given threshold.
+    let private reduce minPrec (Stack stack) =
+        match stack with
+        | Expr expr :: Op (Unr op) :: stack
+            when UnaryOperator.precedence op >= minPrec ->
+                Stack (Expr (Prefix(op, expr)) :: stack)
+        | Expr rhs :: Op (Bin op) :: Expr lhs :: stack
+            when BinaryOperator.precedence op >= minPrec ->
+                Stack (Expr (Infix(lhs, op, rhs)) :: stack)
+        | _ -> raise InvalidReductionException;;
+
+    /// Shifts a lookahead symbol into a (possibly recursively reduced) stack.
+    let rec private shiftReduce lookahead (Stack stack) =
+        let parseOperator = function
             | "!"  -> Unr Not
             | "-"  -> Bin Minus // this is ambiguous, could be an unary negate
             | "+"  -> Bin Plus
@@ -150,122 +172,108 @@ module Parser =
             | "<>" -> Bin Different
             | "&"  -> Bin And
             | "|"  -> Bin Or
-            | op -> Custom op;;
+            | op -> Custom op in
 
-        /// Replaces a valid handle on the stack for its nonterminal rule head,
-        /// but doing so only if its precedence is higher than the given threshold.
-        let private reduce minPrec = function
-            | Expr expr :: Op (Unr op) :: stack
-                when precedenceUnary op >= minPrec ->
-                    Expr (Prefix(op, expr)) :: stack
-            | Expr rhs :: Op (Bin op) :: Expr lhs :: stack
-                when precedenceBinary op >= minPrec ->
-                    Expr (Infix(lhs, op, rhs)) :: stack
-            | _ -> raise InvalidReductionException;;
+        match lookahead, stack with
+        // shift non-terminals
+        | Positive num, _ -> Stack (Expr (Number num) :: stack)
+        | String txt, _ -> Stack (Expr (Text txt) :: stack)
+        | Word var, _ -> Stack (Expr (Variable var) :: stack)
+        | LeftParenthesis, _ -> Stack (LParen :: stack)
+        // either try reducing by <expr> := "(" <expr> ")" or shift an error
+        | RightParenthesis, Expr expr :: LParen :: s -> Stack (Expr expr :: s)
+        | RightParenthesis, [] -> Stack ([ Err "mismatched ')'" ])
+        | RightParenthesis, _ -> shiftReduce lookahead (reduce 0 (Stack stack))
+        // shunting yard
+        | Operator sym, _ ->
+            let operator =
+                if sym = "-" then
+                    // resolves ambiguity of '-' operator by looking at
+                    // the stack to see if there's a left-hand side operand
+                    match stack with
+                    | Expr _ :: _ -> Bin Minus
+                    | _ -> Unr Negative
+                else
+                    parseOperator sym in
+          ( match operator with
+            | Unr _ -> Stack (Op operator :: stack) // shift unary operators
+            | Bin op ->
+              ( try // to reduce left operand, otherwise shift operator
+                    shiftReduce lookahead
+                                (reduce (BinaryOperator.precedence op)
+                                        (Stack stack))
+                with
+                | InvalidReductionException -> Stack (Op operator :: stack) )
+            | Custom op ->
+                Stack (Err (sprintf "undefined operator '%s'" op) :: stack) )
+        // eot
+        | EndOfText, _ -> Stack stack;;
 
-        /// LR(1) operator-precedence parsing algorithm.
-        let rec internal shiftReduce lookahead stack =
-            match lookahead, stack with
-            // shift non-terminals
-            | Integer num, _ -> Expr (Number num) :: stack
-            | String txt, _ -> Expr (Text txt) :: stack
-            | Word var, _ -> Expr (Variable var) :: stack
-            | LeftParenthesis, _ -> LParen :: stack
-            // either try reducing by <expr> ::= "(" <expr> ")" or shift an error
-            | RightParenthesis, Expr expr :: LParen :: stack -> Expr expr :: stack
-            | RightParenthesis, [] -> [ Err "mismatched ')'" ]
-            | RightParenthesis, _ -> shiftReduce lookahead (reduce 0 stack)
-            // shunting yard
-            | Operator sym, _ ->
-                let operator =
-                    if sym = "-" then
-                        // @XXX: resolves ambiguity of "-" operator by looking at
-                        // the stack to see if there's a left-hand side operand
-                        match stack with
-                        | Expr _ :: _ -> Bin Minus
-                        | _ -> Unr Negative
-                    else
-                        parseOperator sym in
-              ( match operator with
-                | Unr _ -> Op operator :: stack // shift unary operators
-                | Bin op -> // either reduce left operand or shift operator
-                  ( try shiftReduce lookahead
-                                    (reduce (precedenceBinary op) stack)
-                    with InvalidReductionException -> Op operator :: stack )
-                | Custom op ->
-                    Err (sprintf "undefined operator '%s'" op) :: stack )
-            | _, _ -> failwithf "shift-reduce error with %A" (lookahead, stack);;
+    exception internal ParsingException of string;;
 
-        /// If the parsed expression is well formed and the terms in one of its
-        /// production rule's right side have been shifted to the stack, we can
-        /// apply successive reductions until we get to the AST's root.
-        let rec private reduceAll = function
-            | [ Expr root ] -> root
-            | stack -> reduceAll (reduce 0 stack);;
+    /// Drives the parser until EOT lex or when given predicate signals to stop.
+    let internal parseExpression stopAt lexer =
+        let rec reduceAll = function
+            | Stack [ Expr root ] -> root
+            | Stack s -> reduceAll (reduce 0 (Stack s)) in
 
-        /// Bottom-up parser driver, at each step extracting a token with the
-        /// lexer and passing it in as lookahead to the shift-reduce procedure;
-        /// it returns the final AST on EOT or when a given predicate signals to stop.
-        let internal parseExpression stop lexer =
-            let rec parse lexer stack =
-                match stack, Lexer.advance lexer with
-                | Err msg :: _, (_, _) -> failwith msg
-                | _, (_, LexError msg) -> failwith msg
-                | _, (_, EndOfText) -> lexer, reduceAll stack
-                | _, (_, tok) when stop tok -> lexer, reduceAll stack
-                | _, (lexer, tok) -> parse lexer (shiftReduce tok stack) in
-            parse lexer [];;
+        let rec loop lexer stack =
+            match stack, Lexer.advance lexer with
+            | Stack (Err msg :: _), (_, _) -> raise (ParsingException msg)
+            | Stack _, (_, Error msg) -> raise (ParsingException msg)
+            | Stack _, (_, Ok EndOfText) -> lexer, reduceAll stack
+            | Stack _, (_, Ok tok) when stopAt tok -> lexer, reduceAll stack
+            | Stack _, (lexer, Ok tok) -> loop lexer (shiftReduce tok stack) in
 
-        let private parseCommand line lexer =
-            try
-                match Lexer.advance lexer with
-                | lexer, Word "REM" ->
-                    let n = lexer.Length - 1 in
-                    Remark lexer.Source.[min lexer.Cursor n .. n]
-                | lexer, Word "PRINT" ->
-                    let _, expr = parseExpression (( = ) EndOfText) lexer in
-                    Print expr
-                | lexer, Word "INPUT" ->
-                  ( match Lexer.advance lexer with
-                    | _, Word var -> Input var
-                    | _, _ -> failwith "missing INPUT variable" )
-                | lexer, Word "GOTO" ->
-                  ( match Lexer.advance lexer with
-                    | _, Integer target -> Goto target
-                    | _, _ -> failwith "invalid GOTO jump target" )
-                | lexer, Word "LET" ->
-                    let lexer, var = Lexer.advance lexer in
-                    let lexer, eq = Lexer.advance lexer in
-                  ( match var, eq with
-                    | Word var, Operator "=" ->
-                        let _, expr = parseExpression (( = ) EndOfText) lexer in
-                        Let(var, expr)
-                    | Word _, _ -> failwith "missing '=' after LET variable"
-                    | _, _ -> failwith "ill-formed LET" )
-                | lexer, Word "IF" ->
-                    let lexer, expr = parseExpression (( = ) (Word "THEN")) lexer in
-                    let lexer, _ = Lexer.advance lexer in
-                      ( match Lexer.advance lexer with
-                        | _, Integer branch -> If(expr, branch)
-                        | _, _ -> failwith "invalid IF branch target" )
-                | _, token -> failwithf "unknown command \"%A\"" token
-            with
-            | Failure msg -> failwithf "%s in line %i" msg line;;
+        loop lexer (Stack []);;
 
-        let parseDirective input =
-            let lexer = Lexer.make input in
-            match Lexer.advance lexer with
-            | lexer, Integer line ->
-              ( try Instruction { Number = line;
-                                  Command = parseCommand line lexer }
-                with Failure msg -> ParseError msg )
-            | _, Word "RUN" -> Run
-            | _, Word "LIST" -> List
-            | _, Word "END" -> End
-            | _, Word "HELP" -> Help
-            | _, Word "CLEAR" -> Clear
-            | _, EndOfText -> Noop
-            | _, LexError err -> ParseError err
-            | _, token -> ParseError (sprintf "unknown directive \"%A\"" token);;
+    let internal parseCommand lexer =
+        match Lexer.advance lexer with
+        | lexer, Ok (Word "REM") ->
+            let _, r = Lexer.extractWhile (fun _ -> true) lexer in Remark r
+        | lexer, Ok (Word "PRINT") ->
+            let _, expr = parseExpression (( = ) EndOfText) lexer in Print expr
+        | lexer, Ok (Word "INPUT") ->
+          ( match Lexer.advance lexer with
+            | _, Ok (Word var) -> Input var
+            | _, _ -> raise (ParsingException "missing INPUT variable") )
+        | lexer, Ok (Word "GOTO") ->
+          ( match Lexer.advance lexer with
+            | _, Ok (Positive target) -> Goto target
+            | _, _ -> raise (ParsingException "invalid GOTO jump target") )
+        | lexer, Ok (Word "LET") ->
+            let lexer, var = Lexer.advance lexer in
+            let lexer, eq = Lexer.advance lexer in
+          ( match var, eq with
+            | Ok (Word var), Ok (Operator "=") ->
+                let _, expr = parseExpression (( = ) EndOfText) lexer in
+                Let(var, expr)
+            | Ok (Word _), _ ->
+                raise (ParsingException "missing '=' after LET variable")
+            | _, _ ->
+                raise (ParsingException "ill-formed LET") )
+        | lexer, Ok (Word "IF") ->
+            let lexer, expr = parseExpression (( = ) (Word "THEN")) lexer in
+            let lexer, _ = Lexer.advance lexer in
+              ( match Lexer.advance lexer with
+                | _, Ok (Positive branch) -> If(expr, branch)
+                | _, _ -> raise (ParsingException "invalid IF branch target") )
+        | _, token ->
+            raise (ParsingException (sprintf "unknown command \"%O\"" token));;
 
-    end;;
+    /// Parses a BASIC directive from an input line.
+    let parse userInput =
+        match Lexer.advance (Lexer.make userInput) with
+        | lexer, Ok (Positive line) ->
+          ( try Ok (Code (Line(line, parseCommand lexer)))
+            with Failure msg -> Error (sprintf "%s in line %i" msg line) )
+        | _, Ok (Word "RUN") -> Ok (Run)
+        | _, Ok (Word "LIST") -> Ok (List)
+        | _, Ok (Word "END") -> Ok (End)
+        | _, Ok (Word "HELP") -> Ok (Help)
+        | _, Ok (Word "CLEAR") -> Ok (Clear)
+        | _, Ok EndOfText -> Ok (Noop)
+        | _, Error msg -> Error msg
+        | _, token -> Error (sprintf "unknown directive \"%O\"" token);;
+
+end;;

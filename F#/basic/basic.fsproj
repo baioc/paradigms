@@ -10,6 +10,7 @@
     <Compile Include="Lexer.fs"/>
     <Compile Include="Parser.fs"/>
     <Compile Include="Interpreter.fs"/>
+    <Compile Include="main.fs"/>
   </ItemGroup>
 
 </Project>

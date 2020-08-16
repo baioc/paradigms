@@ -5,8 +5,8 @@
 let force (x: Lazy<_>) = x.Force();;
 
 
-type 't Stream = // odd streams
-    | Cons of 't * Lazy<'t Stream>
+type 'T Stream = // odd streams
+    | Cons of 'T * Lazy<'T Stream>
     | Null;;
 
 let head = function
