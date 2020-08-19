@@ -98,7 +98,8 @@ module Interpreter = begin
     type internal Process =
         { InstructionPointer: int;
           ProgramMemory: seq<Command>;
-          DataMemory: Environment; };;
+          VariableMemory: Environment;
+          ReturnStack: int list };;
 
     /// Checks if an instruction address is valid inside a process.
     let internal isValidTarget addr proc =
@@ -108,18 +109,25 @@ module Interpreter = begin
 
     /// Executes a single command and steps the process one instruction forward.
     let internal step instr proc =
+        let halt proc = { proc with InstructionPointer = -1 } in
+
         let fetchNext proc =
             let next = proc.InstructionPointer + 1 in
             if isValidTarget next proc
             then { proc with InstructionPointer = next }
-            else { proc with InstructionPointer = -1 } in
+            else halt proc in
 
         let set var value proc =
-            { proc with DataMemory = define var value proc.DataMemory } in
+            { proc with VariableMemory = define var value proc.VariableMemory } in
 
         let jump addr proc = { proc with InstructionPointer = addr } in
 
-        let eval expr = eval expr proc.DataMemory in
+        let call addr proc =
+            { proc with
+                InstructionPointer = addr;
+                ReturnStack = proc.InstructionPointer :: proc.ReturnStack } in
+
+        let eval expr = eval expr proc.VariableMemory in
 
         let runtimeError = raise << RuntimeException in
 
@@ -150,15 +158,25 @@ module Interpreter = begin
             then jump addr proc
             else runtimeError("non-existent GOTO target address", proc)
         | If(expr, addr) ->
-            match eval expr with
-            | Ok (Bool false) -> fetchNext proc
-            | Ok (Bool true) ->
-                if isValidTarget addr proc
-                then jump addr proc
-                else runtimeError("non-existent IF target address", proc)
-            | Ok v ->
-                runtimeError(sprintf "wrong type %A at IF condition" v, proc)
-            | Error msg -> runtimeError(msg, proc);;
+            ( match eval expr with
+              | Ok (Bool false) -> fetchNext proc
+              | Ok (Bool true) ->
+                  if isValidTarget addr proc
+                  then jump addr proc
+                  else runtimeError("non-existent IF target address", proc)
+              | Ok v ->
+                  runtimeError(sprintf "wrong type %A at IF condition" v, proc)
+              | Error msg -> runtimeError(msg, proc) )
+        | Gosub callee ->
+            if isValidTarget callee proc
+            then call callee proc
+            else runtimeError("non-existent GOSUB target address", proc)
+        | Return ->
+            match proc.ReturnStack with
+            | [] -> halt proc
+            | caller :: stack ->
+                fetchNext { proc with InstructionPointer = caller;
+                                      ReturnStack = stack };;
 
     /// Assembles a program with unordered and probably sparse line numbers into
     /// a sequence of commands, fixing jump and branch targets on the way.
@@ -175,6 +193,7 @@ module Interpreter = begin
             match cmnd with
             | Goto line -> Goto (findAddress line)
             | If(expr, line) -> If(expr, findAddress line)
+            | Gosub line -> Gosub (findAddress line)
             | _ -> cmnd in
 
         Seq.map patch assembly;;
@@ -185,13 +204,14 @@ module Interpreter = begin
             let ip = proc.InstructionPointer in
             if isValidTarget ip proc then
                 let instr = Seq.item ip proc.ProgramMemory in
-                step instr proc |> loop
+                loop (step instr proc)
             else // halt
                 () in
 
         loop { InstructionPointer = 0;
                ProgramMemory = assemble program;
-               DataMemory = emptyEnvironment; };;
+               VariableMemory = emptyEnvironment;
+               ReturnStack = []; };;
 
     /// Parses and loads a program from a file with BASIC code.
     let load file =
@@ -235,6 +255,9 @@ Supported BASIC commands:
   INPUT <var>             Read user input (numeric) into variable <var>.
   GOTO <num>              Jump to instruction <num>.
   IF <expr> THEN <num>    Branch to instruction <num> if <expr> is true.
+  GOSUB <num>             Go execute the subroutine at line <num>.
+  RETURN                  Return from a subroutine to its caller, or end the
+                          program when used from the main routine.
 
 Additional:
   Pressing Ctrl+D keys has the same effect of the END directive.

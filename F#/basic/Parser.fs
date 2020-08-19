@@ -43,7 +43,9 @@ type Command =
     | Let of string * Expression
     | Print of Expression
     | Input of string
-    | If of Expression * int;;
+    | If of Expression * int
+    | Gosub of int
+    | Return;;
 
 type Line = Line of int * Command;;
 
@@ -122,7 +124,9 @@ module Parser = begin
         | Let(var, expr) -> "LET " + var + " = " + (showExpression expr)
         | Print expr -> "PRINT " + (showExpression expr)
         | Input var -> "INPUT " + var
-        | If(e, n) -> "IF " + (showExpression e) + " THEN " + (string n);;
+        | If(e, n) -> "IF " + (showExpression e) + " THEN " + (string n)
+        | Gosub line -> "GOSUB " + (string line)
+        | Return -> "RETURN";;
 
     let internal showLine = function Line(num, cmnd) ->
         sprintf "%03i  %s" num (showCommand cmnd);;
@@ -260,6 +264,11 @@ module Parser = begin
                 ( match Lexer.advance lexer with
                   | _, Ok (Positive branch) -> If(expr, branch)
                   | _, _ -> raise (ParsingException "invalid IF branch target") )
+        | lexer, Ok (Word "GOSUB") ->
+            ( match Lexer.advance lexer with
+              | _, Ok (Positive target) -> Gosub target
+              | _, _ -> raise (ParsingException "invalid GOSUB subroutine target") )
+        | _, Ok (Word "RETURN") -> Return
         | _, token ->
             raise (ParsingException (sprintf "unknown command \"%A\"" token));;
 
