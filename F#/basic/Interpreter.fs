@@ -20,8 +20,10 @@ type Environment = Environment of Map<string,Value>;;
 type Program = Program of Map<int,Command>;;
 
 
-/// A functional-first BASIC interpreter.
 module Interpreter = begin
+
+    let internal fixCase = String.map System.Char.ToUpper;;
+
 
     /// Initial evaluation environment.
     let emptyEnvironment = Environment (Map [||]);;
@@ -40,15 +42,15 @@ module Interpreter = begin
         | Number num -> Ok (Int num)
         | Text str -> Ok (String str)
         | Variable var ->
-          ( match lookUp var env with
-            | Some value -> Ok (value)
-            | None -> Error (sprintf "use of undefined variable \"%s\"" var) )
+            ( match lookUp var env with
+              | Some value -> Ok (value)
+              | None -> Error (sprintf "use of undefined variable \"%s\"" var) )
         | Prefix(op, expr) ->
-          ( match op, eval expr env with
-            | Negative, Ok (Int num) -> Ok (Int -num)
-            | Not, Ok (Bool bool) -> Ok (Bool (not bool))
-            | _, Error msg -> Error msg
-            | _, Ok x ->
+            ( match op, eval expr env with
+              | Negative, Ok (Int num) -> Ok (Int -num)
+              | Not, Ok (Bool bool) -> Ok (Bool (not bool))
+              | _, Error msg -> Error msg
+              | _, Ok x ->
                 Error (sprintf "can't apply operator '%O' to type %A" op x) )
         | Infix(lhs, op, rhs) ->
            match eval lhs env, op, eval rhs env with
@@ -77,6 +79,8 @@ module Interpreter = begin
             | Ok (String a), Plus, Ok (String b) -> Ok (String (a + b))
             | Ok (String a), Equal, Ok (String b) -> Ok (Bool (a = b))
             | Ok (String a), Different, Ok (String b) -> Ok (Bool (a <> b))
+            // string x int
+            | Ok (String a), Plus, Ok (Int b) -> Ok (String (a + (string b)))
             // else
             | Error msg, _, _ -> Error msg
             | _, _, Error msg -> Error msg
@@ -122,21 +126,25 @@ module Interpreter = begin
         match instr with
         | Remark _ -> fetchNext proc
         | Print expr ->
-          ( match eval expr with
-            | Ok value -> printfn "%O" value; fetchNext proc
-            | Error msg -> runtimeError(msg, proc) )
+            ( match eval expr with
+              | Ok value ->
+                    sprintf "%O" value
+                    |> fixCase
+                    |> printfn "%s";
+                    fetchNext proc
+              | Error msg -> runtimeError(msg, proc) )
         | Let(var, expr) ->
-          ( match eval expr with
-            | Ok value -> fetchNext (set var value proc)
-            | Error msg -> runtimeError(msg, proc) )
+            ( match eval expr with
+              | Ok value -> fetchNext (set var value proc)
+              | Error msg -> runtimeError(msg, proc) )
         | Input var ->
-          ( try
-                let input = System.Console.ReadLine() in
-                let value = Int (int input) in
-                fetchNext (set var value proc)
-            with
-            | :? System.FormatException ->
-                runtimeError("received non-numeric INPUT", proc) )
+            ( try
+                  let input = System.Console.ReadLine() in
+                  let value = Int (int input) in
+                  fetchNext (set var value proc)
+              with
+              | :? System.FormatException ->
+                  runtimeError("received non-numeric INPUT", proc) )
         | Goto addr ->
             if isValidTarget addr proc
             then jump addr proc
@@ -172,7 +180,7 @@ module Interpreter = begin
         Seq.map patch assembly;;
 
     /// Executes a BASIC program with a starting environment.
-    let exec program env =
+    let exec program =
         let rec loop proc =
             let ip = proc.InstructionPointer in
             if isValidTarget ip proc then
@@ -183,51 +191,95 @@ module Interpreter = begin
 
         loop { InstructionPointer = 0;
                ProgramMemory = assemble program;
-               DataMemory = env; };;
+               DataMemory = emptyEnvironment; };;
+
+    /// Parses and loads a program from a file with BASIC code.
+    let load file =
+        let parseLine line =
+            match Parser.parse line with
+            | Ok (Code line) -> Some line
+            | Error msg ->
+                sprintf "!! Syntax error: %s" msg
+                |> fixCase
+                |> printfn "%s";
+                None
+            | Ok Noop -> None
+            | directive ->
+                sprintf "!! Syntax error: directive %A in program" directive
+                |> fixCase
+                |> printfn "%s";
+                None in
+
+        System.IO.File.ReadLines file
+        |> Seq.choose parseLine
+        |> Seq.fold (fun prog -> fun line -> insert line prog) idleProgram;;
 
     /// Runs interpreter with a program already in memory, returns it updated.
     let run program =
-        let printProgram (Program(prog)) =
-            printf "\n";
-            Map.toSeq prog // seq comes out already sorted
-            |> Seq.iter (Line >> Parser.showLine >> (printfn "%s"));
-            printf "\n" in
-
-        let help = "\
+        let help = fixCase "\
 System directives:
-  HELP            Print this help message
-  END             Shutdown BASIC system
-  CLEAR           Clear the terminal
-  LIST            Show program contents
-  RUN             Execute program in memory
-  <num>  <cmnd>   Insert command <cmnd> into line <num> of program
+  HELP            Print this help message.
+  END             Shutdown BASIC system.
+  CLEAR           Clear the terminal.
+  LIST            Show program contents.
+  LOAD <path>     Loads a BASIC program from file <path> into memory.
+  SAVE <path>     Saves the program in memory to file <path>.
+  NEW             Delete the current program.
+  RUN             Execute program in memory.
+  <num>  <cmnd>   Insert command <cmnd> into line <num> of program.
 
 Supported BASIC commands:
-  REM <remark>            Ignores comment <remark>
-  PRINT <expr>            Print the result of evaluating <expr>
-  LET <var> = <expr>      Set variable <var> to the value of <expr>
-  INPUT <var>             Read user input (numeric) into variable <var>
-  GOTO <num>              Jump to instruction <num>
-  IF <expr> THEN <num>    Branch to instruction <num> if <expr> is true
+  REM <remark>            Ignores comment <remark>.
+  PRINT <expr>            Print the result of evaluating <expr>.
+  LET <var> = <expr>      Set variable <var> to the value of <expr>.
+  INPUT <var>             Read user input (numeric) into variable <var>.
+  GOTO <num>              Jump to instruction <num>.
+  IF <expr> THEN <num>    Branch to instruction <num> if <expr> is true.
 
 Additional:
-  Pressing Ctrl+D keys has the same effect of the END directive\n" in
+  Pressing Ctrl+D keys has the same effect of the END directive.
+" in
+
+        let printProgram (Program(prog)) file =
+            Map.toSeq prog // seq comes out already sorted
+            |> Seq.map (Line >> Parser.showLine >> fixCase)
+            |> Seq.iter (fprintfn file "%s") in
 
         let rec loop prog =
             let read = printf "> "; System.Console.ReadLine() in
-            match if isNull read then Ok End else Parser.parse read with
+            match if isNull read then Ok End else Parser.parse (fixCase read) with
             | Ok Noop -> loop prog
-            | Ok Help -> printfn "%s" help ; loop prog
+            | Ok Help -> printfn "%s" help; loop prog
             | Ok End -> prog
             | Ok Clear -> System.Console.Clear(); loop prog
-            | Ok List -> printProgram prog; loop prog
+            | Ok List ->
+                printf "\n";
+                printProgram prog stdout;
+                printf "\n";
+                loop prog
+            | Ok (Load path) -> loop (load path)
+            | Ok (Save path) ->
+                using (System.IO.File.CreateText(path)) (printProgram prog);
+                loop prog
+            | Ok New -> loop idleProgram
             | Ok Run ->
-               (try exec prog emptyEnvironment
-                with RuntimeException(e, _) -> printfn "!! Runtime error: %s" e);
+                (try
+                    exec prog
+                 with
+                 | RuntimeException(e, _) ->
+                    sprintf "!! Runtime error: %s" e
+                    |> fixCase
+                    |> printfn "%s" );
                 loop prog
             | Ok (Code line) -> loop (insert line prog)
-            | Error msg -> printfn "!! Syntax error: %s" msg; loop prog in
+            | Error msg ->
+                sprintf "!! Syntax error: %s" msg
+                |> fixCase
+                |> printfn "%s";
+                loop prog in
 
-        printfn ":: Mini-BASIC version 0.1.53 by baioc\n"; loop program;;
+        fixCase ":: Mini-BASIC version 0.1.53 by baioc (tip: turn Caps Lock ON)\n"
+        |> printfn "%s";
+        loop program;;
 
 end;;

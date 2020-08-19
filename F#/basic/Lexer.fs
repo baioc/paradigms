@@ -15,7 +15,6 @@ type Token =
     | EndOfText;;
 
 
-/// A purely functional BASIC lexer.
 module Lexer = begin
 
     /// Initializes a lexer from a given input source.
@@ -70,11 +69,11 @@ module Lexer = begin
                 if isDone lexer then
                     lexer, Ok (Operator (string c))
                 else // yup... ML syntax needs these parentheses
-                  ( match c, peek lexer with
-                    | ('<', '=') -> step lexer, Ok (Operator "<=")
-                    | ('>', '=') -> step lexer, Ok (Operator ">=")
-                    | ('<', '>') -> step lexer, Ok (Operator "<>")
-                    | _ -> lexer, Ok (Operator (string c)) )
+                    ( match c, peek lexer with
+                      | ('<', '=') -> step lexer, Ok (Operator "<=")
+                      | ('>', '=') -> step lexer, Ok (Operator ">=")
+                      | ('<', '>') -> step lexer, Ok (Operator "<>")
+                      | _ -> lexer, Ok (Operator (string c)) )
             | '"' ->
                 let lexer, str = extractWhile (( <> ) '"') (step lexer) in
                 if not (isDone lexer) && peek lexer = '"'
