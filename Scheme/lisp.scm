@@ -4,42 +4,6 @@
   ; (module ufscheme) ;; module declaration for BIGLOO
   ;;
 
-;; ****************************** SOURCE INFO **********************************
-
-  ;; Copyright (c) 2019 Gabriel B. Sant'Anna <baiocchi.gabriel@gmail.com>
-  ;;
-  ;; @License Apache <https://gitlab.com/baioc/paradigms>
-  ;;
-  ;; Licensed under the Apache License, Version 2.0 (the "License");
-  ;; you may not use this file except in compliance with the License.
-  ;;
-  ;; Unless required by applicable law or agreed to in writing, software
-  ;; distributed under the License is distributed on an "AS IS" BASIS,
-  ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ;; See the License for the specific language governing permissions and
-  ;; limitations under the License.
-
-  ;; @Tested with:
-  ;; - chez-9.5.2 (Manjaro Linux, x86_64)
-  ;; - guile-2.2.6 (Manjaro Linux, x86_64)
-  ;; - bigloo-4.3e (Manjaro Linux, x86_64)
-
-  ;; @TODO list:
-  ;; - fix analyze-sequence's sequential definitions
-  ;;   - see SICP 4.1.6 - Internal Definitions
-  ;; - letrec (see SICP Exercise 4.20)
-  ;; - more primitives
-  ;;   - procedure?, apply, map, for-each, filter, ...
-  ;;   - force, delay, eval, apply, call-with-current-continuation
-  ;;     - https://schemers.org/Documents/Standards/R5RS/HTML/r5rs-Z-H-9.html
-  ;;   - load, transcript-on, transcript-off
-  ;; - macro support
-  ;; - dot notation
-  ;; - command-line options
-  ;;   - help, version, quiet, transcript, debug=, [loadfile], eval
-  ;;     - script: quiet + loadfile <- pass args
-  ;;     - eval: quiet + eval
-
 
 ;; ******************************** LOGGER *************************************
 
@@ -937,14 +901,7 @@
   (define global-environment (setup-environment))
 
   (info-log 'Greetings!)
-  (display " _   _______ _____ _____  _   _  ________  ___ _____\n")
-  (display "| | | |  ___/  ___/  __ \\| | | ||  ___|  \\/  ||  ___|\n")
-  (display "| | | | |_  \\ `--.| /  \\/| |_| || |__ | .  . || |__\n")
-  (display "| | | |  _|  `--. \\ |    |  _  ||  __|| |\\/| ||  __|\n")
-  (display "| |_| | |   /\\__/ / \\__/\\| | | || |___| |  | || |___\n")
-  (display " \\___/\\_|   \\____/ \\____/\\_| |_/\\____/\\_|  |_/\\____/\n")
-  (display ";;; UFSCheme Version 0.3.bb\n")
-  (display ";;; (c) 2019, Gabriel B. Sant'Anna <baiocchi.gabriel@gmail.com>\n")
+  (display ";;; Yet-Another-Scheme version 0.3.bb by baioc\n\n")
 
   (read-eval-print-loop)
 

@@ -1,4 +1,4 @@
-Structure and Interpretation of Computational Processes
+Study and Interpretation of Computational Processes
 ====
 
 Algorithms and Data Structures in various Programming Paradigms.

@@ -225,7 +225,7 @@ module Interpreter = begin
                 None
             | Ok Noop -> None
             | directive ->
-                sprintf "!! Syntax error: directive %A in program" directive
+                sprintf "!! Syntax error: directive \"%A\" in program" directive
                 |> fixCase
                 |> printfn "%s";
                 None in
