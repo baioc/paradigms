@@ -182,7 +182,7 @@ module Parser = begin
 
         match lookahead, stack with
         // shift non-terminals
-        | Positive num, _ -> Stack (Expr (Number num) :: stack)
+        | Natural num, _ -> Stack (Expr (Number num) :: stack)
         | String txt, _ -> Stack (Expr (Text txt) :: stack)
         | Word var, _ -> Stack (Expr (Variable var) :: stack)
         | LeftParenthesis, _ -> Stack (LParen :: stack)
@@ -238,35 +238,35 @@ module Parser = begin
         | lexer, Ok (Word "REM") ->
             let _, r = Lexer.extractWhile (fun _ -> true) lexer in Remark r
         | lexer, Ok (Word "PRINT") ->
-            let _, expr = parseExpression (( = ) EndOfText) lexer in Print expr
+            let _, expr = parseExpression ((=) EndOfText) lexer in Print expr
         | lexer, Ok (Word "INPUT") ->
             ( match Lexer.advance lexer with
               | _, Ok (Word var) -> Input var
               | _, _ -> raise (ParsingException "missing INPUT variable") )
         | lexer, Ok (Word "GOTO") ->
             ( match Lexer.advance lexer with
-              | _, Ok (Positive target) -> Goto target
+              | _, Ok (Natural target) -> Goto target
               | _, _ -> raise (ParsingException "invalid GOTO jump target") )
         | lexer, Ok (Word "LET") ->
             let lexer, var = Lexer.advance lexer in
             let lexer, eq = Lexer.advance lexer in
             ( match var, eq with
               | Ok (Word var), Ok (Operator "=") ->
-                  let _, expr = parseExpression (( = ) EndOfText) lexer in
+                  let _, expr = parseExpression ((=) EndOfText) lexer in
                   Let(var, expr)
               | Ok (Word _), _ ->
                   raise (ParsingException "missing '=' after LET variable")
               | _, _ ->
                   raise (ParsingException "ill-formed LET") )
         | lexer, Ok (Word "IF") ->
-            let lexer, expr = parseExpression (( = ) (Word "THEN")) lexer in
+            let lexer, expr = parseExpression ((=) (Word "THEN")) lexer in
             let lexer, _ = Lexer.advance lexer in
                 ( match Lexer.advance lexer with
-                  | _, Ok (Positive branch) -> If(expr, branch)
+                  | _, Ok (Natural branch) -> If(expr, branch)
                   | _, _ -> raise (ParsingException "invalid IF branch target") )
         | lexer, Ok (Word "GOSUB") ->
             ( match Lexer.advance lexer with
-              | _, Ok (Positive target) -> Gosub target
+              | _, Ok (Natural target) -> Gosub target
               | _, _ -> raise (ParsingException "invalid GOSUB subroutine target") )
         | _, Ok (Word "RETURN") -> Return
         | _, token ->
@@ -275,7 +275,7 @@ module Parser = begin
     /// Parses a BASIC directive from an input line.
     let parse userInput =
         match Lexer.advance (Lexer.make userInput) with
-        | lexer, Ok (Positive line) ->
+        | lexer, Ok (Natural line) ->
             ( try Ok (Code (Line(line, parseCommand lexer)))
               with ParsingException msg -> Error (sprintf "%s in line %i" msg line) )
         | _, Ok (Word "RUN") -> Ok Run

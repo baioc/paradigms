@@ -2,6 +2,7 @@
 
 type ('A, 'B) Duple = 'A * 'B;;
 
+[<Struct>]
 type Complex =
     { Real: float;
       Imag: float; }

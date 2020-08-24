@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <OtherFlags>--mlcompatibility</OtherFlags>
+    <OtherFlags>--sig:Basic.fsi</OtherFlags>
   </PropertyGroup>
 
   <ItemGroup>

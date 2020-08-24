@@ -18,7 +18,7 @@ let tail = function
     | Null -> failwith "empty stream";;
 
 
-let unfold gen seed = Cons(seed, lazy (gen seed));;
+let rec unfold gen seed = Cons(seed, lazy (unfold gen (gen seed)));;
 
 let rec map f = function
     | Cons(h,t) -> Cons(f h, lazy (map f (force t)))

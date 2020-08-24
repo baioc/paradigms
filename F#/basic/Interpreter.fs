@@ -22,7 +22,7 @@ type Program = Program of Map<int,Command>;;
 
 module Interpreter = begin
 
-    let internal fixCase = String.map System.Char.ToUpper;;
+    let private fixCase = String.map System.Char.ToUpper;;
 
 
     /// Initial evaluation environment.
