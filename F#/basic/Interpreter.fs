@@ -42,16 +42,16 @@ module Interpreter = begin
         | Number num -> Ok (Int num)
         | Text str -> Ok (String str)
         | Variable var ->
-            ( match lookUp var env with
-              | Some value -> Ok (value)
-              | None -> Error (sprintf "use of undefined variable \"%s\"" var) )
+            (match lookUp var env with
+             | Some value -> Ok (value)
+             | None -> Error (sprintf "use of undefined variable \"%s\"" var))
         | Prefix(op, expr) ->
-            ( match op, eval expr env with
-              | Negative, Ok (Int num) -> Ok (Int -num)
-              | Not, Ok (Bool bool) -> Ok (Bool (not bool))
-              | _, Error msg -> Error msg
-              | _, Ok x ->
-                Error (sprintf "can't apply operator '%O' to type %A" op x) )
+            (match op, eval expr env with
+             | Negative, Ok (Int num) -> Ok (Int -num)
+             | Not, Ok (Bool bool) -> Ok (Bool (not bool))
+             | _, Error msg -> Error msg
+             | _, Ok x ->
+                Error (sprintf "can't apply operator '%O' to type %A" op x))
         | Infix(lhs, op, rhs) ->
            match eval lhs env, op, eval rhs env with
             // int x int
@@ -134,39 +134,39 @@ module Interpreter = begin
         match instr with
         | Remark _ -> fetchNext proc
         | Print expr ->
-            ( match eval expr with
-              | Ok value ->
-                    sprintf "%O" value
-                    |> fixCase
-                    |> printfn "%s";
-                    fetchNext proc
-              | Error msg -> runtimeError(msg, proc) )
+            (match eval expr with
+             | Ok value ->
+                sprintf "%O" value
+                |> fixCase
+                |> printfn "%s";
+                fetchNext proc
+             | Error msg -> runtimeError(msg, proc))
         | Let(var, expr) ->
-            ( match eval expr with
-              | Ok value -> fetchNext (set var value proc)
-              | Error msg -> runtimeError(msg, proc) )
+            (match eval expr with
+             | Ok value -> fetchNext (set var value proc)
+             | Error msg -> runtimeError(msg, proc))
         | Input var ->
-            ( try
-                  let input = System.Console.ReadLine() in
-                  let value = Int (int input) in
-                  fetchNext (set var value proc)
-              with
-              | :? System.FormatException ->
-                  runtimeError("received non-numeric INPUT", proc) )
+            (try
+                let input = System.Console.ReadLine() in
+                let value = Int (int input) in
+                fetchNext (set var value proc)
+             with
+             | :? System.FormatException ->
+                runtimeError("received non-numeric INPUT", proc))
         | Goto addr ->
             if isValidTarget addr proc
             then jump addr proc
             else runtimeError("non-existent GOTO target address", proc)
         | If(expr, addr) ->
-            ( match eval expr with
-              | Ok (Bool false) -> fetchNext proc
-              | Ok (Bool true) ->
-                  if isValidTarget addr proc
-                  then jump addr proc
-                  else runtimeError("non-existent IF target address", proc)
-              | Ok v ->
-                  runtimeError(sprintf "wrong type %A at IF condition" v, proc)
-              | Error msg -> runtimeError(msg, proc) )
+            (match eval expr with
+             | Ok (Bool false) -> fetchNext proc
+             | Ok (Bool true) ->
+                if isValidTarget addr proc
+                then jump addr proc
+                else runtimeError("non-existent IF target address", proc)
+             | Ok v ->
+                runtimeError(sprintf "wrong type %A at IF condition" v, proc)
+             | Error msg -> runtimeError(msg, proc))
         | Gosub callee ->
             if isValidTarget callee proc
             then call callee proc
@@ -232,7 +232,7 @@ module Interpreter = begin
 
         System.IO.File.ReadLines file
         |> Seq.choose parseLine
-        |> Seq.fold (fun prog -> fun line -> insert line prog) idleProgram;;
+        |> Seq.fold (fun prog line -> insert line prog) idleProgram;;
 
     /// Runs interpreter with a program already in memory, returns it updated.
     let run program =
@@ -292,7 +292,7 @@ Additional:
                  | RuntimeException(e, _) ->
                     sprintf "!! Runtime error: %s" e
                     |> fixCase
-                    |> printfn "%s" );
+                    |> printfn "%s");
                 loop prog
             | Ok (Code line) -> loop (insert line prog)
             | Error msg ->

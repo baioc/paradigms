@@ -65,18 +65,18 @@ module Lexer = begin
                 step lexer, Ok (Operator (string c))
             | '<' | '>' ->
                 let lexer = step lexer in
-                ( match c, peek lexer with
-                  | _, None -> lexer, Ok (Operator (string c))
-                  | '<', Some '=' -> step lexer, Ok (Operator "<=")
-                  | '>', Some '=' -> step lexer, Ok (Operator ">=")
-                  | '<', Some '>' -> step lexer, Ok (Operator "<>")
-                  | _ -> lexer, Ok (Operator (string c)) )
+                (match c, peek lexer with
+                 | _, None -> lexer, Ok (Operator (string c))
+                 | '<', Some '=' -> step lexer, Ok (Operator "<=")
+                 | '>', Some '=' -> step lexer, Ok (Operator ">=")
+                 | '<', Some '>' -> step lexer, Ok (Operator "<>")
+                 | _ -> lexer, Ok (Operator (string c)))
             | '"' ->
                 let lexer, str = extractWhile ((<>) '"') (step lexer) in
-                ( match peek lexer with
-                  | Some '"' -> step lexer, Ok (String str)
-                  | Some _ | None ->
-                    lexer, Error "text ends before closing string quotes" )
+                (match peek lexer with
+                 | Some '"' -> step lexer, Ok (String str)
+                 | Some _ | None ->
+                    lexer, Error "text ends before closing string quotes")
             | c ->
                 step lexer, Error (sprintf "found unexpected character '%c'" c) in
         match peek lexer with

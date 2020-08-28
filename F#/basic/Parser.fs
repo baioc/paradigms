@@ -201,17 +201,17 @@ module Parser = begin
                     | _ -> Unr Negative
                 else
                     parseOperator sym in
-            ( match operator with
-              | Unr _ -> Stack (Op operator :: stack) // shift unary operators
-              | Bin op ->
-                ( try // to reduce left operand, otherwise shift operator
-                      shiftReduce lookahead
-                                  (reduce (BinaryOperator.precedence op)
-                                          (Stack stack))
-                  with
-                  | InvalidReductionException -> Stack (Op operator :: stack) )
-              | Custom op ->
-                  Stack (Err (sprintf "undefined operator '%s'" op) :: stack) )
+            (match operator with
+             | Unr _ -> Stack (Op operator :: stack) // shift unary operators
+             | Bin op ->
+                (try // to reduce left operand, otherwise shift operator
+                    shiftReduce lookahead
+                                (reduce (BinaryOperator.precedence op)
+                                        (Stack stack))
+               with
+               | InvalidReductionException -> Stack (Op operator :: stack))
+             | Custom op ->
+                Stack (Err (sprintf "undefined operator '%s'" op) :: stack))
         // eot
         | EndOfText, _ -> Stack stack;;
 
@@ -240,34 +240,34 @@ module Parser = begin
         | lexer, Ok (Word "PRINT") ->
             let _, expr = parseExpression ((=) EndOfText) lexer in Print expr
         | lexer, Ok (Word "INPUT") ->
-            ( match Lexer.advance lexer with
-              | _, Ok (Word var) -> Input var
-              | _, _ -> raise (ParsingException "missing INPUT variable") )
+            (match Lexer.advance lexer with
+             | _, Ok (Word var) -> Input var
+             | _, _ -> raise (ParsingException "missing INPUT variable"))
         | lexer, Ok (Word "GOTO") ->
-            ( match Lexer.advance lexer with
-              | _, Ok (Natural target) -> Goto target
-              | _, _ -> raise (ParsingException "invalid GOTO jump target") )
+            (match Lexer.advance lexer with
+             | _, Ok (Natural target) -> Goto target
+             | _, _ -> raise (ParsingException "invalid GOTO jump target"))
         | lexer, Ok (Word "LET") ->
             let lexer, var = Lexer.advance lexer in
             let lexer, eq = Lexer.advance lexer in
-            ( match var, eq with
-              | Ok (Word var), Ok (Operator "=") ->
-                  let _, expr = parseExpression ((=) EndOfText) lexer in
-                  Let(var, expr)
-              | Ok (Word _), _ ->
-                  raise (ParsingException "missing '=' after LET variable")
-              | _, _ ->
-                  raise (ParsingException "ill-formed LET") )
+            (match var, eq with
+             | Ok (Word var), Ok (Operator "=") ->
+                let _, expr = parseExpression ((=) EndOfText) lexer in
+                Let(var, expr)
+             | Ok (Word _), _ ->
+                raise (ParsingException "missing '=' after LET variable")
+             | _, _ ->
+                raise (ParsingException "ill-formed LET"))
         | lexer, Ok (Word "IF") ->
             let lexer, expr = parseExpression ((=) (Word "THEN")) lexer in
             let lexer, _ = Lexer.advance lexer in
-                ( match Lexer.advance lexer with
-                  | _, Ok (Natural branch) -> If(expr, branch)
-                  | _, _ -> raise (ParsingException "invalid IF branch target") )
+                (match Lexer.advance lexer with
+                 | _, Ok (Natural branch) -> If(expr, branch)
+                 | _, _ -> raise (ParsingException "invalid IF branch target"))
         | lexer, Ok (Word "GOSUB") ->
-            ( match Lexer.advance lexer with
-              | _, Ok (Natural target) -> Gosub target
-              | _, _ -> raise (ParsingException "invalid GOSUB subroutine target") )
+            (match Lexer.advance lexer with
+             | _, Ok (Natural target) -> Gosub target
+             | _, _ -> raise (ParsingException "invalid GOSUB subroutine target"))
         | _, Ok (Word "RETURN") -> Return
         | _, token ->
             raise (ParsingException (sprintf "unknown command \"%A\"" token));;
@@ -276,19 +276,19 @@ module Parser = begin
     let parse userInput =
         match Lexer.advance (Lexer.make userInput) with
         | lexer, Ok (Natural line) ->
-            ( try Ok (Code (Line(line, parseCommand lexer)))
-              with ParsingException msg -> Error (sprintf "%s in line %i" msg line) )
+            (try Ok (Code (Line(line, parseCommand lexer)))
+             with ParsingException msg -> Error (sprintf "%s in line %i" msg line))
         | _, Ok (Word "RUN") -> Ok Run
         | _, Ok (Word "LIST") -> Ok List
         | _, Ok (Word "END") -> Ok End
         | lexer, Ok (Word "SAVE") ->
-            ( match Lexer.advance lexer with
-              | _, Ok (String path) -> Ok (Save path)
-              | _, _ -> Error "bad format for SAVE file path" )
+            (match Lexer.advance lexer with
+             | _, Ok (String path) -> Ok (Save path)
+             | _, _ -> Error "bad format for SAVE file path")
         | lexer, Ok (Word "LOAD") ->
-            ( match Lexer.advance lexer with
-              | _, Ok (String path) -> Ok (Load path)
-              | _, _ -> Error "bad format for LOAD file path" )
+            (match Lexer.advance lexer with
+             | _, Ok (String path) -> Ok (Load path)
+             | _, _ -> Error "bad format for LOAD file path")
         | _, Ok (Word "NEW") -> Ok New
         | _, Ok (Word "HELP") -> Ok Help
         | _, Ok (Word "CLEAR") -> Ok Clear

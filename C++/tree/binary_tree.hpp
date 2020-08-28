@@ -85,7 +85,7 @@ bool BinaryTree<T>::TreeNode::contains(const T& element) const
 		return true;
 	else if (element < data_)
 		return left_ && left_->contains(element);
-	else /*if (data_ < element)*/
+	else /* if (data_ < element) */
 		return right_ && right_->contains(element);
 }
 
