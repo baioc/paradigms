@@ -50,7 +50,7 @@ let insert item tree =
 
 let rec inOrder f acc = function
     | Nil -> acc
-    | Tree(Red, node, left, right) | Tree(Black, node, left, right) ->
+    | Tree(_, node, left, right) ->
         let pre = inOrder f acc left in
         let mid = f pre node in
         inOrder f mid right;;
