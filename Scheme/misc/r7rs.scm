@@ -1,3 +1,7 @@
+(import (scheme base)
+        (scheme load)
+        (scheme write))
+
 (load "common.scm")
 
 
