@@ -1,7 +1,3 @@
-/** All credits to Bisqwit:
- * <https://www.youtube.com/channel/UCKTehwyGCKF-b2wo0RKwrcg>.
- */
-
 #include <stdio.h>
 #include <stdlib.h> // exit
 #include <sysexits.h>
@@ -10,7 +6,7 @@
 
 
 // Turns a non-evaluated EXPR into its string representation.
-#define STRINGIFY(expr) #expr
+#define STRINGIFY(EXPR) #EXPR
 
 // Assert macro, can be turned into dead code by defining the NDEBUG macro.
 #ifdef NDEBUG
@@ -34,30 +30,30 @@ void test_assert(void)
 
 // Begins a GOSUB-enabled block, must be closed by GOSUB_END.
 #define GOSUB_BEGIN \
-	stack_t _gosub_stack; \
-	stack_init(&_gosub_stack, 1, sizeof(int)); \
-	int _gosub_continuation = 0; \
-_gosub_switch: \
-	switch (_gosub_continuation) { \
+	stack_t __gosub_stack; \
+	stack_init(&__gosub_stack, 1, sizeof(int)); \
+	int __gosub_continuation = 0; \
+__gosub_switch: \
+	switch (__gosub_continuation) { \
 	default:;
 
 // Ends a GOSUB-enabled block.
 #define GOSUB_END \
 	} \
-	stack_destroy(&_gosub_stack, NULL);
+	stack_destroy(&__gosub_stack, NULL);
 
 // Jumps to a subroutine label inside a GOSUB enabled block.
 #define GOSUB(target) do { \
-	const int _gosub_return_address = __LINE__; \
-	stack_push(&_gosub_stack, (void*)&_gosub_return_address); \
+	const int __gosub_return_address = __LINE__; \
+	stack_push(&__gosub_stack, (void*)&__gosub_return_address); \
 	goto target; \
 	case __LINE__:; \
 } while (0)
 
 // Returns from the current GOSUB subroutine to the last caller.
 #define GOSUB_RETURN() do { \
-	stack_pop(&_gosub_stack, &_gosub_continuation); \
-	goto _gosub_switch; \
+	stack_pop(&__gosub_stack, &__gosub_continuation); \
+	goto __gosub_switch; \
 } while (0)
 
 void test_gosub(void)
@@ -77,9 +73,37 @@ GOSUB_END
 }
 
 
+/* Here we use GCC's cleanup attribute and local function definition extensions
+ * to setup a definition such that a following curly-brace block will be run
+ * when the generated temporary variables goes out of scope. */
+#define _DEFER_WITH_NAMES(THUNK_NAME, TEMP_NAME, BODY) \
+	auto void THUNK_NAME(void*); \
+	int TEMP_NAME __attribute__((cleanup(THUNK_NAME))); \
+	void THUNK_NAME(void*_) { BODY }
+
+#define _DEFER_N(n, STMT) \
+	_DEFER_WITH_NAMES(__defer_thunk_##n, __defer_temp_##n, STMT)
+
+#define _DEFER(N, STMT) _DEFER_N(N, STMT)
+
+// GCC extension used to generate new symbols for each defer statement.
+#define DEFER(STMT) _DEFER(__COUNTER__, STMT)
+
+void test_defer(void)
+{
+	DEFER(printf("Last!\n");)
+	DEFER({
+		printf("Second!\n");
+		printf("Third!\n");
+	})
+	printf("First!\n");
+}
+
+
 int main(int argc, const char* argv[])
 {
+	// test_assert();
 	test_gosub();
-	test_assert();
+	test_defer();
 	return 0;
 }
