@@ -1,5 +1,6 @@
 (import (scheme base) (scheme case-lambda))
 (import (srfi 1)) ; list library
+(import (srfi 95)) ; sort with key
 (import (debug))
 
 
@@ -76,8 +77,18 @@
     ;; if we're trying to achieve a goal as a subgoal of itself, halt
     ((contains? (state-goals state) goal) #f)
     ;; otherwise, find the means to achieve the goal and try to commit to any of that
-    (else (let ((means (filter (lambda (action) (achieves? action goal)) actions)))
-            (any (lambda (way) (try way state goal actions)) means)))))
+    (else (any (lambda (mean) (try mean state goal actions))
+               (appropriate-means state goal actions)))))
+
+(define (appropriate-means state goal actions)
+  (let ((already-achieved (state-properties state)))
+    ;; sort each possible way to achieve a goal by how many preconditions the
+    ;; current state already has achieved, such that we try "easy" ones first
+    (sort (filter (lambda (action) (achieves? action goal)) actions)
+          >
+          (lambda (action)
+            (count (lambda (precond) (contains? already-achieved precond))
+                   (action-preconditions action))))))
 
 (define (achieves? action goal)
   (contains? (action-additions action) goal))
@@ -240,3 +251,54 @@
       (21 22) (17 22) (22 23) (23 24) (20 25))))
 
 (gps '((at 1)) '((at 25)) maze-ops)
+
+
+(define (make-blocks-actions blocks)
+  (append-map!
+   (lambda (a)
+     (append-map
+      (lambda (b)
+        (if (equal? b a)
+            '()
+            (append!
+             `(,(make-block-action a 'table b)
+               ,(make-block-action a b 'table))
+             (filter-map (lambda (c)
+                           (and (not (equal? c a)) (not (equal? c b))
+                                (make-block-action a b c)))
+                         blocks))))
+      blocks))
+   blocks))
+
+(define (make-block-action block source target)
+  (define (move-properties block a b)
+    (if (eq? a 'table)
+        `((,block on ,b))
+        `((,block on ,b) (space on ,a))))
+  (make-action
+   `(move ,block from ,source to ,target)
+   `((space on ,block) (,block on ,source) (space on ,target))
+   (append (map (lambda (p) (list '+ p)) (move-properties block source target))
+           (map (lambda (p) (list '- p)) (move-properties block target source)))))
+
+(gps '((a on table) (space on a) (b on table) (space on b) (space on table))
+     '((b on table) (a on b))
+     (make-blocks-actions '(a b)))
+
+(gps '((b on table) (a on b) (space on a) (space on table))
+     '((b on a))
+     (make-blocks-actions '(a b)))
+
+(gps '((c on table) (b on c) (a on b) (space on a) (space on table))
+     '((b on a) (c on b))
+     (make-blocks-actions '(a b c)))
+
+(gps '((a on table) (c on a) (space on c) (b on table) (space on b) (space on table))
+     '((c on table) (a on b))
+     (make-blocks-actions '(a b c)))
+
+;; the Sussman anomaly: there are problems that can't be solved by any reordering of goals
+;; ... in this case it suffices to add (c on table) as a first goal
+(gps '((a on table) (c on a) (space on c) (b on table) (space on b) (space on table))
+     '((c on table) (b on c) (a on b))
+     (make-blocks-actions '(a b c)))
