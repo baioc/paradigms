@@ -70,4 +70,13 @@
         (else (find-divisor n (+ test-divisor 1)))))
 
 
-(define test '("naught" 5 1 2 3 4))
+; (insert 4 123335667 >) ; => 1233345667
+(define (insert x seq less?)
+  (define (null? x) (zero? x))
+  (define (list x) x)
+  (define (car x) (remainder x 10))
+  (define (cdr x) (quotient x 10))
+  (define (cons d x) (+ (* x 10) d))
+  (cond ((null? seq) (list x))
+        ((not (less? (car seq) x)) (cons x seq))
+        (else (cons (car seq) (insert x (cdr seq) less?)))))
