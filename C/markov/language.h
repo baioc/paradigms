@@ -7,8 +7,8 @@
 
 struct language {
 	ngrams_t ngrams;
-	unsigned long long total_chars;
-	int alphabet_size;
+	unsigned long long total_tokens;
+	int lexicon_size;
 };
 
 void language_init(struct language *model);
