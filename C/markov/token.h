@@ -1,33 +1,27 @@
-#ifndef H_TOKEN_H
-#define H_TOKEN_H
+#ifndef H_TOKEN
+#define H_TOKEN
 
 #include <stdio.h>
 
-
-#define TOKEN_CHARACTER 0
-#define TOKEN_WORD      1
-
-
-#if TOKEN_CHARACTER
-
-	typedef char token_t;
-
-#elif TOKEN_WORD
-
-	#define MAX_WORD_LEN 31
-
-	struct word {
-		char chars[MAX_WORD_LEN + 1];
-	};
-
-	typedef struct word token_t;
-
+#ifndef MAX_WORD_LEN
+#	define MAX_WORD_LEN 31
 #endif
 
+#if TOKEN_CHARACTER
+	typedef char token_t;
+#elif TOKEN_WORD
+	struct word {
+		char chars[MAX_WORD_LEN+1];
+	};
+	typedef struct word token_t;
+#else
+#	error "N-Gram token type is undefined, use either TOKEN_CHARACTER or TOKEN_WORD"
+#endif
 
-int tokencmp(const token_t a, const token_t b);
+int tokencmp(token_t a, token_t b);
 unsigned hash_string(const token_t *string, int length, unsigned modulo);
 int flex(token_t *dst, FILE *fp);
 int lex(token_t *dst, const char **string);
+int snprintok(char *dest, int max_len, token_t tok);
 
-#endif // H_TOKEN_H
+#endif // H_TOKEN

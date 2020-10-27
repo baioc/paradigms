@@ -1,15 +1,30 @@
-CFLAGS = -Wall -std=c99 -O2
-LDFLAGS = -lm -lpthread
+CC ?= clang
+CFLAGS += -Wall -std=c99
+LDFLAGS += -lm -lpthread
 
-BIN = multilang
-SRCS = $(wildcard *.c)
-OBJS = $(patsubst %.c, %.o, $(SRCS))
+BUILD_FLAGS = -O2 -DNDEBUG
+DEBUG_FLAGS = -g -O0 -DDEBUG
 
-.PHONY: all clean run
+SRCS = $(patsubst %.h, %.c, $(wildcard *.h))
+OBJS = $(wildcard *.o)
 
-all: $(BIN)
+.PHONY: clean all build debug
+
+all: build
+
+build:
+	CFLAGS="$(BUILD_FLAGS)" $(MAKE) multilang.out
+	CFLAGS="$(BUILD_FLAGS)" $(MAKE) predict.out
+
+debug:
+	CFLAGS="$(DEBUG_FLAGS)" $(MAKE) multilang.out
+	CFLAGS="$(DEBUG_FLAGS)" $(MAKE) predict.out
+
+multilang.out: multilang.c $(SRCS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(SRCS) -DTOKEN_CHARACTER -DGRAMSIZE=3 $< -o $@
+
+predict.out: predict.c $(SRCS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(SRCS) -DTOKEN_WORD -DGRAMSIZE=3 $< -o $@
 
 clean:
-	$(RM) $(OBJS) $(BIN)
-
-$(BIN): $(OBJS)
+	$(RM) $(OBJS) $(wildcard *.out)

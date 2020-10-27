@@ -2,20 +2,18 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <assert.h>
+#include <ctype.h>
 
 
 #if TOKEN_CHARACTER
 
-	int tokencmp(const token_t a, const token_t b)
+	int tokencmp(token_t a, token_t b)
 	{
 		return a - b;
 	}
 
 	unsigned hash_string(const token_t *string, int length, unsigned modulo)
 	{
-		assert(0 < length);
-		assert(0 < modulo);
 		unsigned long long a = 31415, b = 27183;
 		unsigned hash = string[0] % (modulo - 1);
 		for (int i = 0; i < length; ++i) {
@@ -35,7 +33,7 @@
 		case '\n': case '\r':
 			return -1;
 		default:
-			*dst = c;
+			*dst = isalpha(c) ? tolower(c) : c;
 			return 1;
 		}
 	}
@@ -49,22 +47,27 @@
 		case '\n': case '\r':
 			return -1;
 		default:
-			*dst = c;
+			*dst = isalpha(c) ? tolower(c) : c;
 			return 1;
 		}
 	}
 
+	int snprintok(char *dest, int max_len, token_t tok)
+	{
+		if (max_len < 1) return 1;
+		*dest = tok;
+		return 0;
+	}
+
 #elif TOKEN_WORD
 
-	int tokencmp(const token_t a, const token_t b)
+	int tokencmp(token_t a, token_t b)
 	{
 		return strcmp(a.chars, b.chars);
 	}
 
 	unsigned hash_string(const token_t *string, int length, unsigned modulo)
 	{
-		assert(0 < length);
-		assert(0 < modulo);
 		unsigned long long a = 31415, b = 27183;
 		unsigned hash = string[0].chars[0] % (modulo - 1);
 		for (int i = 0; i < length; ++i) {
@@ -81,10 +84,8 @@
 	{
 		for (char c;;) {
 			c = get(src);
-			switch (c) {
-			case '\n': case '\r': case '\t': case ' ': continue;
-			default: return c;
-			}
+			if (c == '\n' || c == '\r' || c == '\t' || c == ' ') continue;
+			else return c;
 		}
 	}
 
@@ -97,8 +98,8 @@
 
 		// single character tokens
 		case ',': case ':':
-		case '(': case ')': case '\'': case '\"':
-		case '-': case '&': case '/':
+		case '(': case ')': case '\"':
+		case '&': case '/':
 		case '$': case '%':
 		case '#':
 			dst->chars[0] = c;
@@ -116,10 +117,12 @@
 		for (count = 0; count < MAX_WORD_LEN; c = get(src)) {
 			switch (c) {
 			case '\n': case '\r': case '\t': case ' ':
+				return count;
+
 			case EOF: case '\0':
 			case ',': case ':':
-			case '(': case ')': case '\'': case '\"':
-			case '-': case '&': case '/':
+			case '(': case ')': case '\"':
+			case '&': case '/':
 			case '$': case '%':
 			case '#':
 			case '.': case '!': case '?': case ';':
@@ -127,7 +130,7 @@
 				return count;
 
 			default:
-				dst->chars[count++] = c;
+				dst->chars[count++] = isalpha(c) ? tolower(c) : c;
 				continue;
 			}
 		}
@@ -153,16 +156,24 @@
 
 	int lex(token_t *dst, const char **string)
 	{
-		const int n = lex_from(dst, (void *)string, get_string, unget_string);
+		const int n = lex_from(dst, string, get_string, unget_string);
 		if (n > 0) dst->chars[n] = '\0';
 		return n;
 	}
 
 	int flex(token_t *dst, FILE *fp)
 	{
-		const int n = lex_from(dst, (void *)fp, (char (*)(void *))fgetc, (void (*)(char, void *))ungetc);
+		const int n = lex_from(dst, fp, (char (*)(void *))fgetc, (void (*)(char, void *))ungetc);
 		if (n > 0) dst->chars[n] = '\0';
 		return n;
+	}
+
+	int snprintok(char *dest, int max_len, token_t tok)
+	{
+		const int n = strlen(tok.chars) + 1;
+		if (n > max_len) return n - max_len;
+		memcpy(dest, tok.chars, n);
+		return 0;
 	}
 
 #endif

@@ -16,13 +16,12 @@ struct ngram {
 
 static struct ngram *make_ngram(const token_t *string, int n)
 {
-	assert(0 < n);
 	struct ngram *ng = malloc(sizeof(struct ngram) + n * sizeof(token_t));
 	if (ng != NULL) {
 		ng->frequency = 0;
 		ng->next = NULL;
 		ng->length = n;
-		memmove(ng->tokens, string, n * sizeof(token_t));
+		memcpy(ng->tokens, string, n * sizeof(token_t));
 	}
 	return ng;
 }
@@ -68,9 +67,8 @@ struct ngrams {
 
 ngrams_t make_ngrams(int gramsize, int buckets)
 {
-	assert(0 < gramsize);
-	assert(0 < buckets);
-	struct ngrams *ngs = calloc(1, sizeof(struct ngrams) + buckets * sizeof(list_t));
+	if (gramsize <= 0 || buckets <= 0) return NULL;
+	struct ngrams *ngs = calloc(1, sizeof(struct ngrams) + gramsize * buckets * sizeof(list_t));
 	if (ngs != NULL) {
 		ngs->bucket_number = buckets;
 		ngs->gramsize = gramsize;
@@ -78,44 +76,57 @@ ngrams_t make_ngrams(int gramsize, int buckets)
 	return ngs;
 }
 
+static inline int get_index(const ngrams_t table, const token_t *string, int length)
+{
+	const int i = length - 1;
+	const int j = hash_string(string, length, table->bucket_number);
+	return i*table->bucket_number + j;
+}
+
 void free_ngrams(ngrams_t table)
 {
-	for (unsigned i = 0; i < table->bucket_number; ++i) {
-		list_free(table->buckets[i]);
+	for (int i = 0; i < table->gramsize; ++i) {
+		for (unsigned j = 0; j < table->bucket_number; ++j) {
+			list_free(table->buckets[i*table->bucket_number + j]);
+		}
 	}
 	free(table);
 }
 
-void ngrams_add(ngrams_t table, const token_t *string, int length)
+int ngrams_add(ngrams_t table, const token_t *string, int length)
 {
-	assert(length <= table->gramsize);
-	const int idx = hash_string(string, length, table->bucket_number);
+	const int idx = get_index(table, string, length);
 	struct ngram *found = list_find(table->buckets[idx], string, length);
 	if (found != NULL) {
+		const int n = found->frequency;
 		found->frequency++;
+		return n;
 	} else {
 		struct ngram *ng = make_ngram(string, length);
 		assert(ng != NULL);
 		ng->frequency = 1;
 		table->buckets[idx] = list_append(table->buckets[idx], ng);
+		return 0;
 	}
 }
 
 long ngrams_frequency(const ngrams_t table, const token_t *string, int length)
 {
-	assert(length <= table->gramsize);
-	const int idx = hash_string(string, length, table->bucket_number);
+	const int idx = get_index(table, string, length);
 	struct ngram *found = list_find(table->buckets[idx], string, length);
 	return found != NULL ? found->frequency : 0;
 }
 
-void ngrams_for_each(const ngrams_t table,
-                     void (*proc)(const token_t *str, int n, void *fwd),
-                     void *forward)
+void ngrams_for_each(const ngrams_t table, int n,
+                     void (*proc)(const token_t *str, void *fwd), void *forward)
 {
-	for (unsigned i = 0; i < table->bucket_number; ++i) {
-		for (const struct ngram *node = table->buckets[i]; node != NULL; node = node->next) {
-			proc(node->tokens, node->length, forward);
+	if (n < 0 || table->gramsize < n) return;
+	const int i = n - 1;
+	for (unsigned j = 0; j < table->bucket_number; ++j) {
+		const struct ngram *node = table->buckets[i*table->bucket_number + j];
+		while (node != NULL) {
+			proc(node->tokens, forward);
+			node = node->next;
 		}
 	}
 }
