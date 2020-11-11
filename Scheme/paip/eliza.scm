@@ -70,9 +70,8 @@
                 (cond ((list? elem) (display-flattened-list elem))
                       (else (display elem) (display " "))))
             list))
-  (if (list? reply)
-      (display-flattened-list reply)
-      (display "..."))
+  (cond (reply => display-flattened-list)
+        (else (display "I do not understand what you mean")))
   (newline))
 
 (eliza)
