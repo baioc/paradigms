@@ -298,7 +298,7 @@
      (make-blocks-actions '(a b c)))
 
 ;; the Sussman anomaly: there are problems that can't be solved by any reordering of goals
-;; ... in this case it suffices to add (c on table) as a first goal
+;; ... but in this case it suffices to add (c on table) as a first goal
 (gps '((a on table) (c on a) (space on c) (b on table) (space on b) (space on table))
      '((c on table) (b on c) (a on b))
      (make-blocks-actions '(a b c)))
