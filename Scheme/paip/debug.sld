@@ -17,8 +17,10 @@
     ;; no arguments.
     stop-debugging!)
 
-  (import (scheme base) (scheme case-lambda) (scheme write))
-  (import (srfi 113) (srfi 128)) ; sets and bags + comparators
+  (import (scheme base)
+          (scheme case-lambda)
+          (scheme write)
+          (srfi 113) (srfi 128)) ; sets and bags + comparators
 
   (begin
     (define *debug-symbols* (set (make-eq-comparator)))

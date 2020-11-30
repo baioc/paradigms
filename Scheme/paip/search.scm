@@ -1,6 +1,6 @@
-(import (scheme base)
-        (srfi 1) (srfi 95) ; lists and sorting
-        (debug))
+(import (scheme base))
+(import (srfi 1) (srfi 95)) ; lists and sorting
+(import (debug))
 
 ;;; Find a state satisfying a goal, starting with some initial states and
 ;;; searching their successors as defined by the given combiner function.
