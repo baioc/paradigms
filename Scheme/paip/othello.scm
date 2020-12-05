@@ -1,5 +1,5 @@
 (import (scheme base) (scheme write))
-(import (scheme read))
+(import (scheme read) (scheme char))
 (import (srfi 1)) ; lists
 (import (srfi 27)) ; randomness
 
@@ -113,6 +113,10 @@
        (any (lambda (dir) (would-flip? move player board dir))
             directions)))
 
+(define (legal-moves color board)
+  (filter (lambda (move) (legal? move color board))
+          valid-squares))
+
 (define (next-play strategy player board)
   (let ((move (strategy player (board-copy board))))
     (cond ((legal? move player board) move)
@@ -135,28 +139,35 @@
                          (find-bracketing (move-in-direction position direction)))
                         (else #f))))))))
 
-;;; A player gets a turn iff he has valid moves, game is over when both don't.
+;;; A player gets a turn iff he has legal moves, game is over when both don't.
+
+(define (has-move? player board)
+  (any (lambda (move) (legal? move player board))
+        valid-squares))
 
 (define (next-turn current board)
-  (define (has-move? player)
-    (any (lambda (move) (legal? move player board))
-         valid-squares))
-
   (let ((next (opponent current)))
-    (cond ((has-move? next) next)
-          ((has-move? current) current)
+    (cond ((has-move? next board) next)
+          ((has-move? current board) current)
           (else #f))))
 
 (define (othello-match black-play white-play)
   (let ((board (make-board)))
+    (display-board board)
     (do ((player black (next-turn player board))) ; black goes first
         ((not player)) ; game over when next-turn returns false
       (let* ((strategy (if (eqv? player black) black-play white-play))
              (move (next-play strategy player board)))
-        (execute-move! move player board)))
-    (display "Game Over\n")
-    (display-board board)
+        (execute-move! move player board)
+        (display-board board)))
     (let ((b (board-count black board)) (w (board-count white board)))
+      (display "    Game Over\n")
+      (display-board board)
+      (display "Final score: [")
+      (display-piece black) (display " = ") (display b)
+      (display "] [")
+      (display-piece white) (display " = ") (display w)
+      (display "] => ")
       (cond ((> b w) (display-piece black) (display " wins!\n"))
             ((> w b) (display-piece white) (display " wins!\n"))
             (else (display "It's a tie!\n"))))))
@@ -179,27 +190,121 @@
 
 ;;; Strategies
 
+;; Human playing through the terminal.
 (define (human color board)
-  (display-board board)
   (display "Playing as ")
   (display-piece color)
-  (display ". Next move (column line): ")
+  (display ". Next move: ")
   (let ((input (read)))
-    (and (list? input)
-         (= (length input) 2)
-         (let ((row (second input))
-               (ch (string-ref (symbol->string (first input)) 0)))
-           (let ((col (+ (- (char->integer ch) (char->integer #\a)) 1)))
-             (board-position row col))))))
+    (and (symbol? input)
+         (let ((str (symbol->string input)))
+           (and (= (string-length str) 2)
+                (let* ((c (string-ref str 0))
+                       (r (string-ref str 1))
+                       (col (+ (- (char->integer c) (char->integer #\a)) 1))
+                       (row (digit-value r)))
+                  (board-position row col)))))))
 
+;; Random strategy.
 (define (random color board)
-  (define (legal-moves color board)
-    (filter (lambda (move) (legal? move color board))
-            valid-squares))
+  (let ((moves (legal-moves color board)))
+    (list-ref moves (random-integer (length moves)))))
 
-  (let ((possibilities (legal-moves color board)))
-    (list-ref possibilities (random-integer (length possibilities)))))
+(define (maximizer score-fn)
+  (lambda (color board)
+    (let* ((moves (legal-moves color board))
+           (scores (map (lambda (move)
+                          (let ((temp-board (board-copy board)))
+                            (execute-move! move color temp-board)
+                            (score-fn color temp-board)))
+                        moves))
+           (best (fold (lambda (score move best)
+                         (let-values (((high-score best-move) best))
+                           (if (> score high-score)
+                               (values score move)
+                               best)))
+                       (values (car scores) (car moves))
+                       (cdr scores)
+                       (cdr moves))))
+      (let-values (((score move) best)) move))))
+
+(define (score-difference player board)
+  (- (board-count player board)
+     (board-count (opponent player) board)))
+
+;; Greedy strategy that tries to take as many pieces as possible on each turn.
+(define greedy (maximizer score-difference))
+
+(define (weighted-score player board)
+  (define weights
+   #(0   0   0  0  0  0  0   0   0 0
+     0 120 -20 20  5  5 20 -20 120 0
+     0 -20 -40 -5 -5 -5 -5 -40 -20 0
+     0  20  -5 15  3  3 15  -5  20 0
+     0   5  -5  3  3  3  3  -5   5 0
+     0   5  -5  3  3  3  3  -5   5 0
+     0  20  -5 15  3  3 15  -5  20 0
+     0 -20 -40 -5 -5 -5 -5 -40 -20 0
+     0 120 -20 20  5  5 20 -20 120 0
+     0   0   0  0  0  0  0   0   0 0))
+
+  (let ((opponent (opponent player)))
+    (fold
+     +
+     0
+     (map (lambda (pos)
+            (let ((piece (board-ref board pos)))
+              (cond ((eqv? piece player) (vector-ref weights pos))
+                    ((eqv? piece opponent) (- (vector-ref weights pos)))
+                    (else 0))))
+          valid-squares))))
+
+;; Prioritizes the control of strategic positions on the board.
+(define priority (maximizer weighted-score))
+
+(define (minimax player board ply-depth score-fn)
+  (define (maximin player board ply-depth score-fn)
+    (let-values (((score move) (minimax player board ply-depth score-fn)))
+      (values (- score) move)))
+
+  (define (final-score player board)
+    (let ((s (score-difference player board)))
+      (* s s s))) ; cube it to maintain sign
+
+  (define (high-score-move move best)
+    (let ((temp-board (board-copy board)))
+      (execute-move! move player temp-board)
+      (let-values (((high-score best-move) best)
+                   ((score opp-move) (maximin (opponent player)
+                                              temp-board
+                                              (- ply-depth 1)
+                                              score-fn)))
+        (if (or (not high-score) (> score high-score))
+            (values score move)
+            best))))
+
+  (if (<= ply-depth 0)
+      (values (score-fn player board) #f)
+      (let ((moves (legal-moves player board)))
+        (cond ((not (null? moves))
+               (fold high-score-move (values #f #f) moves))
+              ((has-move? (opponent player) board)
+               (maximin (opponent player) board (- ply-depth 1) score-fn))
+              (else
+               (values (final-score player board) #f))))))
+
+;; Returns the optimal strategy for a given score function and maximum ply.
+(define (optimal ply-depth score-fn)
+  (lambda (color board)
+    (let-values (((score move) (minimax color board ply-depth score-fn)))
+      move)))
 
 
-;; testing
-(othello-match human random)
+;;; Playtesting
+
+; (othello-match human random)                       ; random
+; (othello-match human greedy)                       ; easy
+; (othello-match human (optimal 2 score-difference)) ; normal
+; (othello-match human priority)                     ; medium
+; (othello-match human (optimal 2 weighted-score))   ; hard
+; (othello-match human (optimal 3 weighted-score))   ; pro
