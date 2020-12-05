@@ -262,41 +262,55 @@
 ;; Prioritizes the control of strategic positions on the board.
 (define priority (maximizer weighted-score))
 
-(define (minimax player board ply-depth score-fn)
-  (define (maximin player board ply-depth score-fn)
-    (let-values (((score move) (minimax player board ply-depth score-fn)))
-      (values (- score) move)))
+(define max-cutoff +inf.0)
+(define min-achievable -inf.0)
 
+(define (alpha-beta player board achievable cutoff ply-depth score-fn)
   (define (final-score player board)
     (let ((s (score-difference player board)))
-      (* s s s))) ; cube it to maintain sign
-
-  (define (high-score-move move best)
-    (let ((temp-board (board-copy board)))
-      (execute-move! move player temp-board)
-      (let-values (((high-score best-move) best)
-                   ((score opp-move) (maximin (opponent player)
-                                              temp-board
-                                              (- ply-depth 1)
-                                              score-fn)))
-        (if (or (not high-score) (> score high-score))
-            (values score move)
-            best))))
+      (cond ((zero? s) 0)
+            ((negative? s) min-achievable)
+            (else max-cutoff))))
 
   (if (<= ply-depth 0)
       (values (score-fn player board) #f)
       (let ((moves (legal-moves player board)))
         (cond ((not (null? moves))
-               (fold high-score-move (values #f #f) moves))
+               (let loop ((moves moves) (best-move (car moves)) (achievable achievable))
+                 (if (or (>= achievable cutoff) (null? moves))
+                     (values achievable best-move)
+                     (let ((temp-board (board-copy board)))
+                       (execute-move! (car moves) player temp-board)
+                       (let-values (((opp-score opp-move) (alpha-beta (opponent player)
+                                                                     temp-board
+                                                                     (- cutoff)
+                                                                     (- achievable)
+                                                                     (- ply-depth 1)
+                                                                     score-fn)))
+                         (let ((score (- opp-score)))
+                           (if (> score achievable)
+                               (loop (cdr moves) (car moves) score)
+                               (loop (cdr moves) best-move achievable))))))))
               ((has-move? (opponent player) board)
-               (maximin (opponent player) board (- ply-depth 1) score-fn))
+               (let-values (((score move) (alpha-beta (opponent player)
+                                                      board
+                                                      (- cutoff)
+                                                      (- achievable)
+                                                      (- ply-depth 1)
+                                                      score-fn)))
+                 (values (- score) move)))
               (else
                (values (final-score player board) #f))))))
 
 ;; Returns the optimal strategy for a given score function and maximum ply.
 (define (optimal ply-depth score-fn)
   (lambda (color board)
-    (let-values (((score move) (minimax color board ply-depth score-fn)))
+    (let-values (((score move) (alpha-beta color
+                                           board
+                                           min-achievable
+                                           max-cutoff
+                                           ply-depth
+                                           score-fn)))
       move)))
 
 
@@ -307,4 +321,4 @@
 ; (othello-match human (optimal 2 score-difference)) ; normal
 ; (othello-match human priority)                     ; medium
 ; (othello-match human (optimal 2 weighted-score))   ; hard
-; (othello-match human (optimal 3 weighted-score))   ; pro
+(othello-match human (optimal 3 weighted-score))   ; pro
