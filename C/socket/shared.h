@@ -1,6 +1,8 @@
 #ifndef H_SHARED
 #define H_SHARED
 
+#include <stdint.h>
+
 #include <netinet/in.h> // sockaddr_in
 
 
@@ -16,10 +18,10 @@ int eprintf(const char* format, ...);
 
 
 #define MAX_MESSAGE_SIZE 8192
-
 #define MAX_USERNAME_SIZE 32
-
 #define MAX_PLAYERBASE 100
+#define INITIAL_MODULUS 0xbc747fc5 // as seen in openssl tests
+#define EMPTY_BOARD 0u
 
 typedef unsigned token_t;
 
@@ -31,11 +33,13 @@ enum MessageType {
 
 	// server -> player
 	GAME_SCORES = 'S', // <printable score board>
-	GAME_BEGIN = 'B', // (B <match> <addr> <port>)
-	GAME_WAIT = 'W', // (W <match>)
+	GAME_BEGIN = 'B', // (B <match> <opponent> <addr> <port>)
+	GAME_WAIT = 'W', // (W <match> <opponent>)
 
 	// player <-> player
-	GAME_PLAY = 'P', // (P <match> <game> <signature>)
+	GAME_PLAY = 'P', // (P <match> <board> <signature>)
 };
+
+typedef uint32_t board_t;
 
 #endif // H_SHARED

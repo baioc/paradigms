@@ -3,8 +3,9 @@
 #include <string.h>
 #include <assert.h>
 #include <time.h>
+#include <errno.h>
 
-#include <sys/socket.h> // socket, connect, bind, listen, accept, recv
+#include <sys/socket.h> // socket, connect, bind, listen, accept, recv, send
 #include <netinet/in.h> // sockaddr_in
 #include <arpa/inet.h> // inet_ntoa, ntohs
 #include <unistd.h> // close
@@ -78,7 +79,7 @@ void handle_get(const int socket, const struct Player *playerbase)
 
 void handle_new(
 	const char *username, token_t password,
-	int socket, struct sockaddr_in address,
+	const int socket, struct sockaddr_in address,
 	struct Player **playerbase, struct WaitingPlayer *waiting
 ) {
 	// log in / register
@@ -100,15 +101,15 @@ ENQUEUE_PLAYER:
 		waiting->socket = socket;
 		return;
 	} else if (strncmp(waiting->player->username, player->username, MAX_USERNAME_SIZE) == 0) {
-		eprintf("Stopped user %s from connecting to the lobby twice\n", username);
-		close(socket);
-		return;
+		// player was waiting, disconeccted and tried to play again
+		waiting->player = NULL;
+		goto ENQUEUE_PLAYER;
 	}
 
 	// player 1 knows the match token and how to reach player 2
-	const token_t game = rand();
-	int size = snprintf(buffer, sizeof(buffer), "(B %u %s %d)\0",
-	                    game, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+	const token_t match = rand();
+	int size = snprintf(buffer, sizeof(buffer), "(B %u %s %s %d)\0",
+	                    match, player->username, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
 	ssize_t sent = send(waiting->socket, buffer, size, 0);
 	if (sent < 0) {
 		eprintf("Failed to send reply on connection (%d)\n", waiting->socket);
@@ -119,7 +120,7 @@ ENQUEUE_PLAYER:
 
 	// player 2 knows the match token. he should wait (listen) for 1
 	eprintf("Starting match: %s vs %s\n", waiting->player->username, player->username);
-	size = snprintf(buffer, sizeof(buffer), "(W %u)\0", game);
+	size = snprintf(buffer, sizeof(buffer), "(W %u %s)\0", match, waiting->player->username);
 	sent = send(socket, buffer, size, 0);
 	if (sent < 0) eprintf("Failed to send reply on connection (%d)\n", socket);
 
@@ -152,7 +153,7 @@ int main(const int argc, const char *const argv[])
 	err = listen(channel, 30);
 	if (err) {
 		eprintf("Failed to listen on %s:%s through socket %d\n", argv[1], argv[2], channel);
-		return err;
+		return errno;
 	}
 	eprintf("Server is initialized and listening on %s:%s\n", argv[1], argv[2]);
 	for (;;) {
@@ -178,19 +179,20 @@ int main(const int argc, const char *const argv[])
 		}
 
 		// try parsing a "get scoreboard" request
-		char b;
-		int match = sscanf(buffer, " ( %1[G] ) ", &b);
-		if (match == 1) {
+		char g;
+		int matches = sscanf(buffer, " ( %1[G] ) ", &g);
+		if (matches == 1) {
 			handle_get(connection, playerbase);
+			close(connection);
 			continue;
 		}
 
 		// try parsing a "new game" request
-		char type;
+		char n;
 		char username[MAX_USERNAME_SIZE];
 		token_t password;
-		match = sscanf(buffer, " ( %1[N] %31s %u ) ", &type, username, &password);
-		if (match == 3) {
+		matches = sscanf(buffer, " ( %1[N] %31s %u ) ", &n, username, &password);
+		if (matches == 3) {
 			handle_new(username, password, connection, client, &playerbase, &waiting);
 			continue;
 		}
