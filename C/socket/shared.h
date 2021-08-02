@@ -24,7 +24,7 @@ typedef unsigned token_t;
 enum MessageType {
 	// player -> server
 	GAME_NEW = 'N', // (N <username> <password>)
-	GAME_END = 'E', // (E <match> <game> <signature>)
+	GAME_END = 'E', // (E <match> <game> <P1> <P2> <signature>)
 
 	// server -> player
 	GAME_START = 'S', // (S <match> <addr> <port>)
