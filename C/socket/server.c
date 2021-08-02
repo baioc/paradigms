@@ -20,76 +20,112 @@ struct Player {
 	char username[MAX_USERNAME_SIZE];
 	token_t password;
 	unsigned score;
+	struct Player *next;
 };
 
 struct WaitingPlayer {
 	const struct Player* player;
-	int connection;
+	int socket;
 };
 
-struct Player *user_add(const char *username, token_t password)
+struct Player *user_add(struct Player **playerbase, const char *username, token_t password)
 {
 	struct Player *player = calloc(1, sizeof(struct Player));
 	strncpy(player->username, username, MAX_USERNAME_SIZE - 1);
 	player->password = password;
 	player->score = 0;
+	player->next = *playerbase;
+	*playerbase = player;
 	hsearch((ENTRY){ .key = player->username, .data = player }, ENTER);
 	return player;
 }
 
-const struct Player *user_find(const char *username)
+const struct Player *user_find(const struct Player *playerbase, const char *username)
 {
 	ENTRY *e = hsearch((ENTRY){ .key = (void *)username }, FIND);
 	return e == NULL ? NULL : e->data;
 }
 
+void users_free(struct Player *playerbase)
+{
+	if (playerbase == NULL) return;
+	struct Player *rest = playerbase->next;
+	free(playerbase);
+	return users_free(rest);
+}
+
+
+void handle_get(const int socket, const struct Player *playerbase)
+{
+	// print scoreboard line by line
+	int players = 0;
+	int size = 0;
+	size += sprintf(buffer + size, "|             Player              | Score |\n");
+	size += sprintf(buffer + size, "|---------------------------------|-------|\n");
+	while (playerbase != NULL) {
+		players++;
+		size += sprintf(buffer + size, "| %-31s | %5d |\n", playerbase->username, playerbase->score);
+		playerbase = playerbase->next;
+	}
+	size += sprintf(buffer + size, "\0");
+
+	// send everything and close the connection
+	eprintf("Printing out score board with %d players\n", players);
+	ssize_t sent = send(socket, buffer, size, 0);
+	if (sent < 0) eprintf("Failed to send reply on connection (%d)\n", socket);
+	close(socket);
+}
 
 void handle_new(
 	const char *username, token_t password,
-	const struct sockaddr_in *client, const int connection,
-	struct WaitingPlayer *waiting
+	int socket, struct sockaddr_in address,
+	struct Player **playerbase, struct WaitingPlayer *waiting
 ) {
 	// log in / register
-	const struct Player *player = user_find(username);
+	const struct Player *player = user_find(*playerbase, username);
 	if (player == NULL) {
 		eprintf("Registered user %s\n", username);
-		player = user_add(username, password);
+		player = user_add(playerbase, username, password);
 	} else if (player->password != password) {
 		eprintf("Failed login attempt for user %s\n", username);
-		close(connection);
+		close(socket);
 		return;
 	}
 
-	// either put a player on hold
+ENQUEUE_PLAYER:
+	// check if player will get put on hold
 	if (waiting->player == NULL) {
 		eprintf("Queuing up player %s\n", player->username);
 		waiting->player = player;
-		waiting->connection = connection;
+		waiting->socket = socket;
 		return;
 	} else if (strncmp(waiting->player->username, player->username, MAX_USERNAME_SIZE) == 0) {
 		eprintf("Stopped user %s from connecting to the lobby twice\n", username);
-		close(connection);
+		close(socket);
 		return;
 	}
 
-	// or start a match
-	eprintf("Starting match: %s vs %s\n", waiting->player->username, player->username);
-	const token_t game = rand();
-
-	// player 2 knows the match token. he should listen for 1
-	int size = snprintf(buffer, sizeof(buffer), "(W %u)\0", game);
-	ssize_t sent = send(connection, buffer, size, 0);
-	if (sent < 0) eprintf("Failed to send reply on connection (%d)\n", connection);
-
 	// player 1 knows the match token and how to reach player 2
-	size = snprintf(buffer, sizeof(buffer), "(S %u %s %d)\0",
-					game, inet_ntoa(client->sin_addr), ntohs(client->sin_port));
-	sent = send(waiting->connection, buffer, size, 0);
-	if (sent < 0) eprintf("Failed to send reply on connection (%d)\n", waiting->connection);
+	const token_t game = rand();
+	int size = snprintf(buffer, sizeof(buffer), "(B %u %s %d)\0",
+	                    game, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+	ssize_t sent = send(waiting->socket, buffer, size, 0);
+	if (sent < 0) {
+		eprintf("Failed to send reply on connection (%d)\n", waiting->socket);
+		close(waiting->socket);
+		waiting->player = NULL;
+		goto ENQUEUE_PLAYER;
+	}
+
+	// player 2 knows the match token. he should wait (listen) for 1
+	eprintf("Starting match: %s vs %s\n", waiting->player->username, player->username);
+	size = snprintf(buffer, sizeof(buffer), "(W %u)\0", game);
+	sent = send(socket, buffer, size, 0);
+	if (sent < 0) eprintf("Failed to send reply on connection (%d)\n", socket);
 
 	// close connections
-	close(waiting->connection);
-	close(connection);
+	close(socket);
+	close(waiting->socket);
 	waiting->player = NULL;
 }
 
@@ -104,7 +140,8 @@ int main(const int argc, const char *const argv[])
 	}
 
 	// initialize server state
-	hcreate(100);
+	hcreate(MAX_PLAYERBASE);
+	struct Player *playerbase = NULL;
 	struct WaitingPlayer waiting = { .player = NULL };
 	srand(time(NULL));
 
@@ -117,7 +154,7 @@ int main(const int argc, const char *const argv[])
 		eprintf("Failed to listen on %s:%s through socket %d\n", argv[1], argv[2], channel);
 		return err;
 	}
-
+	eprintf("Server is initialized and listening on %s:%s\n", argv[1], argv[2]);
 	for (;;) {
 		// wait for a client to connect
 		eprintf("\nWaiting for client, press Ctrl-C to quit\n");
@@ -140,15 +177,25 @@ int main(const int argc, const char *const argv[])
 			continue;
 		}
 
+		// try parsing a "get scoreboard" request
+		char b;
+		int match = sscanf(buffer, " ( %1[G] ) ", &b);
+		if (match == 1) {
+			handle_get(connection, playerbase);
+			continue;
+		}
+
 		// try parsing a "new game" request
 		char type;
 		char username[MAX_USERNAME_SIZE];
 		token_t password;
-		const int match = sscanf(buffer, " ( %1[N] %31s %u ) ", &type, username, &password);
+		match = sscanf(buffer, " ( %1[N] %31s %u ) ", &type, username, &password);
 		if (match == 3) {
-			handle_new(username, password, &client, connection, &waiting);
+			handle_new(username, password, connection, client, &playerbase, &waiting);
 			continue;
 		}
+
+		// TODO: "end match" request
 
 		eprintf("Dropping connection (%d) after invalid message: %.*s\n",
 		        connection, received, buffer);
@@ -157,6 +204,7 @@ int main(const int argc, const char *const argv[])
 
 	// exit gracefully
 	close(channel);
+	users_free(playerbase);
 	hdestroy();
 	return 0;
 }

@@ -15,19 +15,23 @@ int parse_address(const char *ip, const char *port, struct sockaddr_in *addr);
 int eprintf(const char* format, ...);
 
 
-#define MAX_MESSAGE_SIZE 256
+#define MAX_MESSAGE_SIZE 8192
 
 #define MAX_USERNAME_SIZE 32
+
+#define MAX_PLAYERBASE 100
 
 typedef unsigned token_t;
 
 enum MessageType {
 	// player -> server
+	GAME_GET = 'G', // (G)
 	GAME_NEW = 'N', // (N <username> <password>)
-	GAME_END = 'E', // (E <match> <game> <P1> <P2> <signature>)
+	GAME_END = 'E', // (E <match> <game> <player1> <player2> <signature>)
 
 	// server -> player
-	GAME_START = 'S', // (S <match> <addr> <port>)
+	GAME_SCORES = 'S', // <printable score board>
+	GAME_BEGIN = 'B', // (B <match> <addr> <port>)
 	GAME_WAIT = 'W', // (W <match>)
 
 	// player <-> player
