@@ -2,6 +2,7 @@
 #define H_SHARED
 
 #include <stdint.h>
+#include <stdio.h>
 
 #include <netinet/in.h> // sockaddr_in
 
@@ -17,19 +18,19 @@ int parse_address(const char *ip, const char *port, struct sockaddr_in *addr);
 int eprintf(const char* format, ...);
 
 
-#define MAX_MESSAGE_SIZE 8192
-#define MAX_USERNAME_SIZE 32
-#define MAX_PLAYERBASE 100
-#define INITIAL_MODULUS 0xbc747fc5 // as seen in openssl tests
-#define EMPTY_BOARD 0u
+// server/shared configs
+#define MAX_MESSAGE_SIZE 8192u
+#define MAX_USERNAME_SIZE 32u
+#define MAX_PLAYERBASE_LEN 100u
+#define SHARED_MODULUS 0xbc747fc5U // as seen in openssl tests
 
-typedef unsigned token_t;
+typedef uint64_t Token;
 
 enum MessageType {
 	// player -> server
 	GAME_GET = 'G', // (G)
 	GAME_NEW = 'N', // (N <username> <password>)
-	GAME_END = 'E', // (E <match> <game> <player1> <player2> <signature>)
+	GAME_END = 'E', // (E <player1> <player2> <log> <certificate>)
 
 	// server -> player
 	GAME_SCORES = 'S', // <printable score board>
@@ -37,9 +38,41 @@ enum MessageType {
 	GAME_WAIT = 'W', // (W <match> <opponent>)
 
 	// player <-> player
-	GAME_PLAY = 'P', // (P <match> <board> <signature>)
+	GAME_PLAY = 'P', // (P <match> <log> <certificate>)
 };
 
-typedef uint32_t board_t;
+enum Slot {
+	BOARD_EMPTY    = ' ',
+	BOARD_PLAYER_1 = 'X',
+	BOARD_PLAYER_2 = 'O',
+};
+
+struct Board { enum Slot slots[10]; };
+
+#define BOARD_INITIAL (struct Board){ .slots = { \
+	[1] = BOARD_EMPTY, [2] = BOARD_EMPTY, [3] = BOARD_EMPTY, \
+	[4] = BOARD_EMPTY, [5] = BOARD_EMPTY, [6] = BOARD_EMPTY, \
+	[7] = BOARD_EMPTY, [8] = BOARD_EMPTY, [9] = BOARD_EMPTY, \
+} }
+
+enum GameStatus {
+	GAME_NOT_OVER = 0,
+	GAME_PLAYER_1 = 1,
+	GAME_PLAYER_2 = 2,
+	GAME_TIE,
+};
+
+typedef Token Log;
+
+// one hex digit for each turn, with at most 9 available
+#define LOG_INITIAL ((Log)0xFFFFFFF000000000u)
+
+Log log_add(Log log, unsigned turn, unsigned position);
+unsigned log_get(Log log, unsigned turn);
+Log log_sign(Log log, Token secret);
+
+int board_play(unsigned turn, enum Slot value, unsigned position, struct Board *board, Log *log);
+int board_load(unsigned turn, Log previous, Log next, struct Board *board);
+enum GameStatus board_check(const struct Board *board);
 
 #endif // H_SHARED

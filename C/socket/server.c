@@ -19,7 +19,7 @@ static char buffer[MAX_MESSAGE_SIZE];
 
 struct Player {
 	char username[MAX_USERNAME_SIZE];
-	token_t password;
+	Token password;
 	unsigned score;
 	struct Player *next;
 };
@@ -29,7 +29,7 @@ struct WaitingPlayer {
 	int socket;
 };
 
-struct Player *user_add(struct Player **playerbase, const char *username, token_t password)
+static struct Player *user_add(struct Player **playerbase, const char *username, Token password)
 {
 	struct Player *player = calloc(1, sizeof(struct Player));
 	strncpy(player->username, username, MAX_USERNAME_SIZE - 1);
@@ -41,13 +41,13 @@ struct Player *user_add(struct Player **playerbase, const char *username, token_
 	return player;
 }
 
-const struct Player *user_find(const struct Player *playerbase, const char *username)
+static struct Player *user_find(const struct Player *playerbase, const char *username)
 {
 	ENTRY *e = hsearch((ENTRY){ .key = (void *)username }, FIND);
 	return e == NULL ? NULL : e->data;
 }
 
-void users_free(struct Player *playerbase)
+static void users_free(struct Player *playerbase)
 {
 	if (playerbase == NULL) return;
 	struct Player *rest = playerbase->next;
@@ -56,7 +56,7 @@ void users_free(struct Player *playerbase)
 }
 
 
-void handle_get(const int socket, const struct Player *playerbase)
+static void handle_get(const int socket, const struct Player *playerbase)
 {
 	// print scoreboard line by line
 	int players = 0;
@@ -77,8 +77,8 @@ void handle_get(const int socket, const struct Player *playerbase)
 	close(socket);
 }
 
-void handle_new(
-	const char *username, token_t password,
+static void handle_new(
+	const char *username, Token password,
 	const int socket, struct sockaddr_in address,
 	struct Player **playerbase, struct WaitingPlayer *waiting
 ) {
@@ -107,8 +107,8 @@ ENQUEUE_PLAYER:
 	}
 
 	// player 1 knows the match token and how to reach player 2
-	const token_t match = rand();
-	int size = snprintf(buffer, sizeof(buffer), "(B %u %s %s %d)\0",
+	Token match; do { match = rand(); } while (match % SHARED_MODULUS == 0);
+	int size = snprintf(buffer, sizeof(buffer), "(B %lu %s %s %d)\0",
 	                    match, player->username, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
 	ssize_t sent = send(waiting->socket, buffer, size, 0);
 	if (sent < 0) {
@@ -120,7 +120,7 @@ ENQUEUE_PLAYER:
 
 	// player 2 knows the match token. he should wait (listen) for 1
 	eprintf("Starting match: %s vs %s\n", waiting->player->username, player->username);
-	size = snprintf(buffer, sizeof(buffer), "(W %u %s)\0", match, waiting->player->username);
+	size = snprintf(buffer, sizeof(buffer), "(W %lu %s)\0", match, waiting->player->username);
 	sent = send(socket, buffer, size, 0);
 	if (sent < 0) eprintf("Failed to send reply on connection (%d)\n", socket);
 
@@ -128,6 +128,58 @@ ENQUEUE_PLAYER:
 	close(socket);
 	close(waiting->socket);
 	waiting->player = NULL;
+}
+
+static void handle_end(const char *user1, const char *user2, Log log, Log certificate, struct Player *playerbase)
+{
+	// ensure both players are different, and in the playerbase
+	if (strcmp(user1, user2) == 0) return;
+	struct Player *players[] = {
+		[1] = user_find(playerbase, user1),
+		[2] = user_find(playerbase, user2),
+	};
+	if (players[1] == NULL || players[2] == NULL) {
+		eprintf("Refused match result between invalid players %s and %s\n", user1, user2);
+		return;
+	}
+
+	// to avoid cheating, verify the game log+certificate using their secrets
+	struct Board board = BOARD_INITIAL;
+	Log repro = LOG_INITIAL;
+	Log cert = LOG_INITIAL;
+	int p = 1;
+	for (unsigned turn = 0; turn < 9; turn++) {
+		const unsigned move = log_get(log, turn);
+		if (!move) break;
+		const enum Slot s = p == 1 ? BOARD_PLAYER_1 : BOARD_PLAYER_2;
+		const int err = board_play(turn, s, move, &board, &repro);
+		if (err) break;
+		cert = log_add(cert, turn, move);
+		cert = log_sign(cert, players[p]->password);
+		p = (p % 2) + 1;
+	}
+	if (repro != log || cert != certificate) {
+		eprintf("Refused illegitimate result of %s vs %s\n", user1, user2);
+		return;
+	}
+
+	// update scores
+	switch (board_check(&board)) {
+	case GAME_PLAYER_1:
+		players[1]->score += 3;
+		break;
+	case GAME_PLAYER_2:
+		players[2]->score += 3;
+		break;
+	case GAME_TIE:
+		players[1]->score += 1;
+		players[2]->score += 1;
+		break;
+	default:
+		eprintf("Refused unexpected result of %s vs %s\n", user1, user2);
+		return;
+	}
+	eprintf("Registered result of %s vs %s match\n", user1, user2);
 }
 
 
@@ -141,7 +193,7 @@ int main(const int argc, const char *const argv[])
 	}
 
 	// initialize server state
-	hcreate(MAX_PLAYERBASE);
+	hcreate(MAX_PLAYERBASE_LEN);
 	struct Player *playerbase = NULL;
 	struct WaitingPlayer waiting = { .player = NULL };
 	srand(time(NULL));
@@ -190,14 +242,25 @@ int main(const int argc, const char *const argv[])
 		// try parsing a "new game" request
 		char n;
 		char username[MAX_USERNAME_SIZE];
-		token_t password;
-		matches = sscanf(buffer, " ( %1[N] %31s %u ) ", &n, username, &password);
+		Token password;
+		matches = sscanf(buffer, " ( %1[N] %31s %lu ) ", &n, username, &password);
 		if (matches == 3) {
 			handle_new(username, password, connection, client, &playerbase, &waiting);
 			continue;
 		}
 
-		// TODO: "end match" request
+		// try parsing an "end match" request
+		char e;
+		char player1[MAX_USERNAME_SIZE];
+		char player2[MAX_USERNAME_SIZE];
+		Log log;
+		Log certificate;
+		matches = sscanf(buffer, " ( %1[E] %31s %31s %lu %lu ) ", &e, player1, player2, &log, &certificate);
+		if (matches == 5) {
+			handle_end(player1, player2, log, certificate, playerbase);
+			close(connection);
+			continue;
+		}
 
 		eprintf("Dropping connection (%d) after invalid message: %.*s\n",
 		        connection, received, buffer);
