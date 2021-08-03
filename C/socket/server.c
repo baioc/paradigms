@@ -107,7 +107,7 @@ ENQUEUE_PLAYER:
 	}
 
 	// player 1 knows the match token and how to reach player 2
-	Token match; do { match = rand(); } while (match % SHARED_MODULUS == 0);
+	Token match; do { match = rand(); } while (match % (uint64_t)SHARED_MODULUS == 0);
 	int size = snprintf(buffer, sizeof(buffer), "(B %lu %s %s %d)\0",
 	                    match, player->username, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
 	ssize_t sent = send(waiting->socket, buffer, size, 0);

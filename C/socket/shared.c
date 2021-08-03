@@ -43,11 +43,9 @@ unsigned log_get(Log log, unsigned turn)
 Log log_sign(Log log, Token secret)
 {
 	// Diffie-Hellman-inspired "cryptosystem" (not actually secure)
-	log = log % (u_int64_t)SHARED_MODULUS;
-	secret = secret;
 	Log result = 1;
 	for (uint64_t exp = 0; exp < secret; ++exp) {
-		result = (result * log) % (u_int64_t)SHARED_MODULUS;
+		result = (result * log) % (uint64_t)SHARED_MODULUS;
 	}
 	return log;
 }
