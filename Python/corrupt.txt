@@ -1,0 +1,21 @@
+4
+
+# process 0 starts a new election
+e - - -
+
+# process 3 would win the election, but it fails
+n n n n
+n n n n
+n n n n
+- - - X
+
+# all processes decide to start new elections
+E E E
+n n n
+n n n
+
+# process 2 wins and results propagate
+n n n
+n n n
+n n n
+n n n

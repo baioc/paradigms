@@ -1,0 +1,29 @@
+8
+
+# process 2 starts a new election
+- - e - - - - -
+
+# process 7 wins the election
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
+
+# results propagate, now every process knows 7 is the leader
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
+n n n n n n n n
