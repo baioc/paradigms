@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Análise de Malware</title>
+  <style>
+    :root {
+      --bg: #0c0c0d;
+      --card: #17171a;
+      --line: #2b2b31;
+      --fg: #f2f2f4;
+      --muted: #9b9ba3;
+      --yellow: #ffe600;
+      --yellow-dim: #4a4200;
+      --blue: #3483fa;
+      --red: #ff5b5b;
+      --amber: #ffa63d;
+      --green: #3ecf8e;
+      --slate: #8b93a7;
+      --gap: 1rem;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 2rem 1rem;
+      background: var(--bg);
+      color: var(--fg);
+      font: 15px/1.6 ui-monospace, monospace;
+    }
+
+    main {
+      max-width: 860px;
+      margin: auto;
+    }
+
+    h1 {
+      margin: 0 0 var(--gap);
+      padding-left: .6rem;
+      border-left: 4px solid var(--yellow);
+      font-size: 1.3rem;
+    }
+
+    h2 {
+      margin: var(--gap) 0 .5rem;
+      color: var(--muted);
+      font-size: .75rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .card {
+      margin-bottom: var(--gap);
+      padding: var(--gap);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    input,
+    select,
+    button {
+      font: inherit;
+      border-radius: 8px;
+    }
+
+    input[type=text] {
+      flex: 1 1 20rem;
+      min-width: 0;
+      padding: .6rem .7rem;
+      background: var(--bg);
+      color: var(--fg);
+      border: 1px solid var(--line);
+    }
+
+    select {
+      padding: .5rem;
+      background: var(--bg);
+      color: var(--fg);
+      border: 1px solid var(--line);
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: -1px;
+    }
+
+    button {
+      padding: .6rem 1rem;
+      background: var(--yellow);
+      color: #000;
+      border: 0;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .35;
+      cursor: not-allowed;
+    }
+
+    button.quiet {
+      background: none;
+      border: 1px solid var(--line);
+      color: var(--fg);
+      font-weight: 400;
+    }
+
+    button:hover:not(:disabled) {
+      filter: brightness(1.1);
+    }
+
+    button.quiet:hover:not(:disabled) {
+      border-color: var(--blue);
+      color: var(--blue);
+      filter: none;
+    }
+
+    .msg {
+      margin: .8rem 0 0;
+      padding: .6rem .7rem;
+      border-radius: 8px;
+      font-size: .9rem;
+    }
+
+    .msg.error {
+      background: #2a1417;
+      border: 1px solid #5c2b31;
+      color: #ffb4b4;
+    }
+
+    .msg.busy {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      background: #1e1a06;
+      border: 1px solid var(--yellow-dim);
+      color: var(--yellow);
+    }
+
+    .msg.busy::before {
+      content: "";
+      flex: none;
+      width: .8em;
+      height: .8em;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .msg.busy::before {
+        animation: none;
+      }
+    }
+
+    dl {
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: .3rem var(--gap);
+      margin: 0;
+    }
+
+    dt {
+      color: var(--muted);
+      font-size: .85rem;
+    }
+
+    dd {
+      margin: 0;
+      word-break: break-word;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .35rem;
+    }
+
+    .chip {
+      padding: .2rem .5rem;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: .82rem;
+    }
+
+    .chip b {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .chip.malicious {
+      border-color: var(--red);
+    }
+
+    .chip.suspicious {
+      border-color: var(--amber);
+    }
+
+    .chip.harmless {
+      border-color: var(--green);
+    }
+
+    .chip.undetected {
+      border-color: var(--blue);
+    }
+
+    .chip.engine {
+      border-color: var(--slate);
+    }
+
+    .analysis p {
+      margin: 0 0 .8rem;
+      white-space: pre-wrap;
+    }
+
+    .analysis p:last-child {
+      margin: 0;
+    }
+
+    .pager {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: .8rem;
+    }
+
+    .pos {
+      color: var(--muted);
+      font-size: .85rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .history {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .history li+li {
+      border-top: 1px solid var(--line);
+    }
+
+    .history button {
+      display: block;
+      width: 100%;
+      padding: .5rem .3rem;
+      background: none;
+      border: 0;
+      border-radius: 0;
+      color: var(--fg);
+      text-align: left;
+      font-weight: 400;
+      word-break: break-all;
+    }
+
+    .history button:hover {
+      background: var(--bg);
+      color: var(--blue);
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <h1>Análise de Malware Automatizada</h1>
+
+    <section class="card">
+      <form id="form">
+        <div class="row">
+          <input id="hash" type="text" spellcheck="false" autocomplete="off" placeholder="hash SHA-256, SHA-1 ou MD5">
+          <button type="submit">Analisar</button>
+        </div>
+      </form>
+      <p id="loading" class="msg busy" hidden>Carregando...</p>
+      <p id="error" class="msg error" hidden></p>
+    </section>
+
+    <section id="report" class="card" hidden>
+      <h2>Resultado (VirusTotal)</h2>
+      <dl id="fields"></dl>
+      <h2>Detecções (Vendors)</h2>
+      <div id="stats" class="chips"></div>
+      <h2>Análise (GenAI / LLM)</h2>
+      <div id="analysis" class="analysis"></div>
+    </section>
+
+    <section class="card">
+      <h2>Resultados anteriores</h2>
+      <div class="pager">
+        <button id="prev" type="button" class="quiet">&larr; Anterior</button>
+        <span id="pos" class="pos"></span>
+        <button id="next" type="button" class="quiet">Próxima &rarr;</button>
+        <label class="pos" for="page-size">Por página</label>
+        <select id="page-size">
+          <option>10</option>
+          <option selected>25</option>
+          <option>50</option>
+          <option>100</option>
+        </select>
+      </div>
+      <ul id="history" class="history"></ul>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    const $ = (id) => document.getElementById(id);
+
+    const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+    const STAT_LABELS = {
+      malicious: "malicioso",
+      suspicious: "suspeito",
+      undetected: "não detectado",
+      harmless: "inofensivo",
+      engine: "falha ao processar",
+    };
+
+    const ENGINE_STATS = ["timeout", "confirmed-timeout", "failure", "type-unsupported"];
+
+    const MESSAGES = {
+      400: "Verifique o hash informado e tente novamente.",
+      404: "Hash não encontrado.",
+      500: "O servidor encontrou um erro ao processar o hash.",
+    };
+    const GENERIC_ERROR = "Não foi possível concluir a operação.";
+
+    const paging = { offset: 0, limit: 25 };
+
+    function showError(message) {
+      $("error").textContent = message;
+      $("error").hidden = !message;
+    }
+
+    function formatBytes(bytes) {
+      const units = ["B", "KB", "MB", "GB"];
+      let i = 0;
+      while (bytes >= 1024 && i < units.length - 1) { bytes /= 1024; i++; }
+      return `${i ? bytes.toFixed(1) : bytes} ${units[i]}`;
+    }
+
+    const formatDate = (ts) => new Date(ts * 1000).toLocaleString();
+
+    function renderReport(payload) {
+      const data = payload.data;
+
+      const fields = [
+        ["Hash", data.hash],
+        ["Tamanho", formatBytes(data.size)],
+        ["Magic", data.magic],
+        ["Tipo", data.type],
+        ["Filenames", data.names.join(", ")],
+        ["Tags", data.tags.join(", ")],
+        ["Ativo entre", `${formatDate(data.first_submission)} e ${formatDate(data.last_submission)}`],
+        ["Data da análise", formatDate(data.analysis_date)],
+        ["Família de malware", data.threat_label],
+      ].filter(([, value]) => value);
+
+      $("fields").innerHTML = fields
+        .map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd>`)
+        .join("");
+
+      const stats = data.stats;
+      const total = Object.values(stats).reduce((sum, n) => sum + n, 0);
+      const counts = {
+        malicious: stats.malicious,
+        suspicious: stats.suspicious,
+        undetected: stats.undetected,
+        harmless: stats.harmless,
+        engine: ENGINE_STATS.reduce((sum, key) => sum + (stats[key] ?? 0), 0),
+      };
+
+      const keys = ["malicious", "suspicious", "undetected", "harmless"];
+      if (counts.engine) keys.push("engine");
+
+      $("stats").innerHTML = keys
+        .map((key) => `<span class="chip ${key}">${STAT_LABELS[key]} <b>${counts[key]}/${total}</b></span>`)
+        .join("");
+
+      const text = (payload.analysis || "").trim();
+      const box = $("analysis");
+      box.replaceChildren();
+      for (const paragraph of text ? text.split(/\n\s*\n+/) : ["sem análise armazenada para este hash"]) {
+        const p = document.createElement("p");
+        p.textContent = paragraph;
+        box.append(p);
+      }
+
+      $("report").hidden = false;
+      $("report").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    async function api(path, options) {
+      const method = (options && options.method) || "GET";
+      const response = await fetch(path, options).catch((err) => {
+        console.error(method, path, err.message);
+        throw err;
+      });
+
+      const body = await response.json();
+      if (!response.ok) {
+        console.error(method, path, response.status, body.error);
+        throw Object.assign(new Error(body.error), { status: response.status });
+      }
+
+      console.debug(method, path, response.status);
+      return body;
+    }
+
+    async function withSpinner(action, showSpinner) {
+      showError("");
+      $("loading").hidden = !showSpinner;
+      try {
+        await action();
+      } catch (err) {
+        showError(MESSAGES[err.status] || GENERIC_ERROR);
+      } finally {
+        $("loading").hidden = true;
+      }
+    }
+
+    async function loadPage(offset) {
+      paging.offset = offset;
+      try {
+        const body = await api(`/files?limit=${paging.limit}&offset=${paging.offset}`);
+
+        $("history").innerHTML = body.files
+          .map((h) => `<li><button type="button" data-hash="${escapeHtml(h)}">${escapeHtml(h)}</button></li>`)
+          .join("");
+
+        const page = Math.floor(paging.offset / paging.limit) + 1;
+        $("pos").textContent = `Página ${page} de ${Math.max(1, Math.ceil(body.total / paging.limit))}`;
+
+        $("prev").disabled = paging.offset === 0;
+        $("next").disabled = paging.offset + body.files.length >= body.total;
+      } catch (err) {
+        $("history").innerHTML = "";
+        $("pos").textContent = "";
+        $("prev").disabled = $("next").disabled = true;
+        showError(MESSAGES[err.status] || GENERIC_ERROR);
+      }
+    }
+
+    $("form").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const hash = $("hash").value.trim();
+      if (!hash) return showError("Informe um hash para enviar à análise.");
+      withSpinner(async () => {
+        renderReport(await api("/file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hash }),
+        }));
+        loadPage(0);
+      }, true);
+    });
+
+    $("hash").addEventListener("input", () => showError(""));
+
+    $("history").addEventListener("click", (ev) => {
+      const button = ev.target.closest("button[data-hash]");
+      if (!button) return;
+      withSpinner(async () => {
+        renderReport(await api(`/file/${encodeURIComponent(button.dataset.hash)}`));
+      }, false);
+    });
+
+    $("prev").addEventListener("click", () => loadPage(paging.offset - paging.limit));
+    $("next").addEventListener("click", () => loadPage(paging.offset + paging.limit));
+    $("page-size").addEventListener("change", (ev) => {
+      paging.limit = Number(ev.target.value);
+      loadPage(0);
+    });
+
+    $("hash").focus();
+    loadPage(0);
+  </script>
+</body>
+
+</html>
